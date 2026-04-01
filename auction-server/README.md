@@ -1,0 +1,12 @@
+com.auction.app
+├── config                <- [1đ Design Pattern] Cấu hình WebSocket, Security
+├── controller            <- [0.5đ MVC] Tiếp nhận yêu cầu từ Client
+├── service               <- [1đ Chức năng] Xử lý logic đấu giá
+│   ├── impl              <- Triển khai cụ thể các Service
+│   └── strategy          <- [1đ Design Pattern] Ví dụ: Các chiến lược đấu giá (Auto-bid)
+├── repository            <- [0.5đ MVC] DAO - Tương tác Database
+├── entity                <- [0.5đ Thiết kế lớp] User, Item, Auction, BidTransaction
+├── dto                   <- Data Transfer Object (Payload gửi qua Socket)
+├── socket                <- [0.5đ Realtime] Xử lý WebSocket Handler / Observer
+├── exception             <- [1đ Xử lý lỗi] Global Exception Handler, Custom Exception
+└── concurrency           <- [1đ Concurrency] Quản lý Lock, xử lý Race Condition
