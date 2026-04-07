@@ -1,8 +1,8 @@
 package src.main.java.com.app.common.entity;
 
-public class User extends Entity{
+public abstract class User extends Entity{
     private String username, password, email;
-    public static final int permissionLevel = 3;
+//    public static final int permissionLevel = 3;
 
     public User(String username, String password, String email){
         this.username = username;

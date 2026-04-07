@@ -1,6 +1,13 @@
 package src.main.java.com.app.common.entity;
 
-public interface Seller {
-    void postItem();
-    void removeItem();
+public class Seller extends User{
+
+    public Seller(String username, String password, String email) {
+        super(username, password, email);
+    }
+
+    public void sellItem(String itemId){
+
+    }
+
 }
