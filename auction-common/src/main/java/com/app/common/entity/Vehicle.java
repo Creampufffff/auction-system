@@ -3,8 +3,8 @@ package src.main.java.com.app.common.entity;
 public class Vehicle extends Item{
     private String brand;
 
-    public Vehicle(String name, double startPrice, double minIncreasement, String brand){
-        super(name, startPrice, minIncreasement);
+    public Vehicle(String description, String name, String startDateString, String endDateString, double startPrice, double minIncreasement, String brand) {
+        super(description, name, startDateString, endDateString, startPrice, minIncreasement);
         this.brand = brand;
     }
 

@@ -1,6 +1,6 @@
 package src.main.java.com.app.common.entity;
 
-public abstract class User extends Entity{
+public abstract class User extends BaseEntity {
     private String username, password, email;
 //    public static final int permissionLevel = 3;
 
