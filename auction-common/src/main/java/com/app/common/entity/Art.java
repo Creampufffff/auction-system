@@ -3,8 +3,8 @@ package src.main.java.com.app.common.entity;
 public class Art extends Item{
     private String author;
 
-    public Art(String name, double startPrice, double minIncreasement, String author){
-        super(name, startPrice, minIncreasement);
+    public Art(String description, String name, String startDateString, String endDateString, double startPrice, double minIncreasement, String author) {
+        super(description, name, startDateString, endDateString, startPrice, minIncreasement);
         this.author = author;
     }
 
