@@ -1,4 +1,4 @@
-package com.auction.app.service.impl;
+package src.main.java.com.auction.app.service;
 
 public class AuctionManager {
     private static AuctionManager instance;
