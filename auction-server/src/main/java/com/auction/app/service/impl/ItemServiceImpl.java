@@ -1,4 +1,36 @@
 package src.main.java.com.auction.app.service.impl;
 
-public class ItemServiceImpl {
+import src.main.java.com.app.common.entity.Item;
+import src.main.java.com.auction.app.repository.ItemDAO;
+import src.main.java.com.auction.app.service.ItemService;
+
+import java.util.List;
+
+public class ItemServiceImpl implements ItemService {
+
+    private final ItemDAO itemDAO;
+
+    public ItemServiceImpl(ItemDAO itemDAO) {
+        this.itemDAO = itemDAO;
+    }
+
+    @Override
+    public void deleteItem(String id) {
+        itemDAO.delete(id);
+    }
+
+    @Override
+    public Item getById(String id) {
+        return itemDAO.findById(id);
+    }
+
+    @Override
+    public List<Item> getItemsList() {
+        return itemDAO.findAll();
+    }
+
+    @Override
+    public void saveItem(Item item) {
+        itemDAO.save(item);
+    }
 }

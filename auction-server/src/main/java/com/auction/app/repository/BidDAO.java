@@ -1,4 +1,4 @@
-package com.auction.app.repository;
+package src.main.java.com.auction.app.repository;
 
 import src.main.java.com.app.common.entity.BidTransaction;
 
@@ -10,4 +10,7 @@ public interface BidDAO extends BaseDAO<BidTransaction> {
 
     // Lấy giá cao nhất mà một người dùng đã đặt trong một phiên
     double getMaxBidByBidder(String auctionId, String bidderId);
+
+    // Lấy giá cao nhất của phiên đấu giá
+    BidTransaction getMaxBidByAuctionId(String auctionId);
 }

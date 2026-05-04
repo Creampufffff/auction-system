@@ -4,6 +4,5 @@ public enum Status {
     OPEN,
     RUNNING,
     FINISHED,
-    PAID,
     CACELED
 }

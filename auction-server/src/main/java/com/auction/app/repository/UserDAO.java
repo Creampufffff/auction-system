@@ -1,4 +1,4 @@
-package com.auction.app.repository;
+package src.main.java.com.auction.app.repository;
 
 import src.main.java.com.app.common.entity.User;
 
