@@ -1,4 +1,4 @@
-package src.main.java.com.auction.app.service;
+package com.auction.app.service;
 
 public interface BidService {
 }
