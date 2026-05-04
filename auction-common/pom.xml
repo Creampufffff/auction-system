@@ -1,6 +1,8 @@
-<dependency>
-    <groupId>org.projectlombok</groupId>
-    <artifactId>lombok</artifactId>
-    <version>1.18.36</version>
-    <scope>provided</scope>
-</dependency>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>vn.uet.auction</groupId>
+    <artifactId>auction-common</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <dependencies>
+    </dependencies>
+</project>
