@@ -16,11 +16,15 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public void deleteItem(String id) {
-        itemDAO.delete(id);
+        validateId(id);
+        if (!itemDAO.delete(id)) {
+            throw new IllegalArgumentException("Item not found");
+        }
     }
 
     @Override
     public Item getById(String id) {
+        validateId(id);
         return itemDAO.findById(id);
     }
 
@@ -31,6 +35,38 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public void saveItem(Item item) {
-        itemDAO.save(item);
+        if (item == null) {
+            throw new IllegalArgumentException("Item cannot be null");
+        }
+
+        if (item.getName() == null || item.getName().isBlank()) {
+            throw new IllegalArgumentException("Item name cannot be empty");
+        }
+
+        if (item.getStartDateString() == null || item.getStartDateString().isBlank()) {
+            throw new IllegalArgumentException("Start date cannot be empty");
+        }
+
+        if (item.getEndDateString() == null || item.getEndDateString().isBlank()) {
+            throw new IllegalArgumentException("End date cannot be empty");
+        }
+
+        if (item.getStartPrice() < 0) {
+            throw new IllegalArgumentException("Start price cannot be negative");
+        }
+
+        if (item.getMinIncreasement() <= 0) {
+            throw new IllegalArgumentException("Minimum increment must be greater than 0");
+        }
+
+        if (!itemDAO.save(item)) {
+            throw new IllegalStateException("Cannot save item");
+        }
+    }
+
+    private void validateId(String id) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Item id cannot be empty");
+        }
     }
 }
