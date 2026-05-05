@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 1. Trỏ về Project Cha (Parent) -->
+    <parent>
+        <groupId>com.app</groupId>
+        <artifactId>auction-system</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>auction-server</artifactId>
+
+    <dependencies>
+        <!-- 2. Quan trọng nhất: Kết nối với module Common để dùng Entity/DTO/Exception -->
+        <dependency>
+            <groupId>com.app</groupId>
+            <artifactId>auction-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- 3. Driver kết nối Database MySQL -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+        </dependency>
+
+        <!-- 4. HikariCP để quản lý Connection Pool (giúp server chịu tải tốt) -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+
+        <!-- 5. JUnit 5 để làm Unit Test (bắt buộc trong bảng điểm) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>25</source> <!-- Đổi đúng version Java ông đang dùng -->
+                    <target>25</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

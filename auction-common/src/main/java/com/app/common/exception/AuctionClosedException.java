@@ -1,0 +1,7 @@
+package src.main.java.com.app.common.exception;
+
+public class AuctionClosedException extends RuntimeException {
+    public AuctionClosedException(String message) {
+        super(message);
+    }
+}
