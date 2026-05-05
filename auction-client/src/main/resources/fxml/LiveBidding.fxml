@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.controllers.LiveBiddingController" spacing="20">
+    <VBox spacing="10">
+        <Label text="Sản phẩm đang đấu giá: ..."/>
+        <Label text="Thời gian còn lại: 00:05:30"/>
+        <Label text="Giá cao nhất: $500"/>
+    </VBox>
+    <VBox spacing="10">
+        <ListView fx:id="bidHistoryList" prefHeight="300"/>
+        <HBox spacing="5">
+            <TextField fx:id="bidAmountField" promptText="Nhập giá..."/>
+            <Button text="Đặt Giá" onAction="#handlePlaceBid"/>
+        </HBox>
+    </VBox>
+</HBox>
