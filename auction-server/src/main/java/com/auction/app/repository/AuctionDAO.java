@@ -1,7 +1,7 @@
-package src.main.java.com.auction.app.repository;
+package com.auction.app.repository;
 
-import src.main.java.com.app.common.entity.Auction;
-import src.main.java.com.auction.app.repository.BaseDAO;
+import com.app.common.entity.Auction;
+import com.auction.app.repository.BaseDAO;
 
 import java.util.List;
 

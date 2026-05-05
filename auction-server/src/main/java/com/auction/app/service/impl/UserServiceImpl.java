@@ -1,8 +1,8 @@
-package src.main.java.com.auction.app.service.impl;
+package com.auction.app.service.impl;
 
-import src.main.java.com.app.common.entity.User;
-import src.main.java.com.auction.app.repository.UserDAO;
-import src.main.java.com.auction.app.service.UserService;
+import com.app.common.entity.User;
+import com.auction.app.repository.UserDAO;
+import com.auction.app.service.UserService;
 
 import java.util.List;
 

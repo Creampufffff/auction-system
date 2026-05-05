@@ -6,24 +6,26 @@
 
     <!-- 1. Trỏ về Project Cha (Parent) -->
     <parent>
-        <groupId>com.app</groupId>
-        <artifactId>auction-system</artifactId>
+        <groupId>vn.uet.auction</groupId>
+        <artifactId>auction-app</artifactId>
         <version>1.0-SNAPSHOT</version>
+<!--        <relativePath>../pom.xml</relativePath>-->
     </parent>
     <artifactId>auction-server</artifactId>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId></groupId>-->
-<!--            <artifactId></artifactId>-->
-<!--        </dependency>-->
-        <!-- 2. Quan trọng nhất: Kết nối với module Common để dùng Entity/DTO/Exception -->
         <dependency>
-            <groupId>com.app</groupId>
+            <groupId>vn.uet.auction</groupId>
             <artifactId>auction-common</artifactId>
-            <version>${project.version}</version>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.46</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- 3. Driver kết nối Database MySQL -->
         <dependency>
             <groupId>mysql</groupId>

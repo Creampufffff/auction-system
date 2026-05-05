@@ -1,6 +1,6 @@
-package src.main.java.com.auction.app.service;
+package com.auction.app.service;
 
-import src.main.java.com.app.common.entity.User;
+import com.app.common.entity.User;
 
 import java.util.List;
 

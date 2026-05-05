@@ -1,6 +1,6 @@
-package src.main.java.com.auction.app.repository;
+package com.auction.app.repository;
 
-import src.main.java.com.app.common.entity.BaseEntity;
+import com.app.common.entity.BaseEntity;
 
 import java.util.List;
 import java.util.Optional;

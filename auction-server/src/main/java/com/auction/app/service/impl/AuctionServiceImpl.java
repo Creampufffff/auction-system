@@ -1,8 +1,8 @@
-package src.main.java.com.auction.app.service.impl;
-import src.main.java.com.app.common.entity.Auction;
-import src.main.java.com.app.common.enums.Status;
-import src.main.java.com.auction.app.repository.AuctionDAO;
-import src.main.java.com.auction.app.service.AuctionService;
+package com.auction.app.service.impl;
+import com.app.common.entity.Auction;
+import com.app.common.enums.Status;
+import com.auction.app.repository.AuctionDAO;
+import com.auction.app.service.AuctionService;
 
 import java.util.ArrayList;
 import java.util.List;

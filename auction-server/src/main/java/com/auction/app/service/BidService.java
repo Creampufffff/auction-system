@@ -1,6 +1,6 @@
 package com.auction.app.service;
 
-import src.main.java.com.app.common.entity.BidTransaction;
+import com.app.common.entity.BidTransaction;
 
 import java.util.List;
 
