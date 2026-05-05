@@ -1,20 +1,14 @@
 package com.app.common.entity;
 
-import lombok.Getter;
-import lombok.Setter;
 import com.app.common.enums.Status;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Setter
-@Getter
-public class Auction extends BaseEntity{
+public class Auction extends BaseEntity {
     private Item item;
     private List<BidTransaction> bidHistory;
     private Status auctionStatus;
-
-
 
     public Auction(Item item) {
         this.item = item;
@@ -22,6 +16,29 @@ public class Auction extends BaseEntity{
         this.auctionStatus = Status.OPEN;
     }
 
+    public Item getItem() {
+        return item;
+    }
+
+    public void setItem(Item item) {
+        this.item = item;
+    }
+
+    public List<BidTransaction> getBidHistory() {
+        return bidHistory;
+    }
+
+    public void setBidHistory(List<BidTransaction> bidHistory) {
+        this.bidHistory = bidHistory;
+    }
+
+    public Status getAuctionStatus() {
+        return auctionStatus;
+    }
+
+    public void setAuctionStatus(Status auctionStatus) {
+        this.auctionStatus = auctionStatus;
+    }
 }
 
 

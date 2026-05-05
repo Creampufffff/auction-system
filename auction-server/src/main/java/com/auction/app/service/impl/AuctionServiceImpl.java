@@ -35,7 +35,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     @Override
     public void startAuction(String auctionId) {
-        validateId(auctionId, "Auction id");
+        validateId(auctionId);
         Auction auction = getAuctionById(auctionId);
 
         if (auction == null) {
@@ -54,7 +54,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     @Override
     public void endAuction(String auctionId) {
-        validateId(auctionId, "Auction id");
+        validateId(auctionId);
         Auction auction = getAuctionById(auctionId);
 
         if (auction == null) {
@@ -73,7 +73,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     @Override
     public Auction getAuctionById(String id) {
-        validateId(id, "Auction id");
+        validateId(id);
         return auctionDAO.findById(id);
     }
 
@@ -87,9 +87,9 @@ public class AuctionServiceImpl implements AuctionService {
         return auctionDAO.findActiveAuctions();
     }
 
-    private void validateId(String id, String fieldName) {
+    private void validateId(String id) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " cannot be empty");
+            throw new IllegalArgumentException("Auction id" + " cannot be empty");
         }
     }
 }

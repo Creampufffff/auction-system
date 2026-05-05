@@ -13,4 +13,7 @@ public interface BidDAO extends BaseDAO<BidTransaction> {
 
     // Lấy giá cao nhất của phiên đấu giá
     BidTransaction getMaxBidByAuctionId(String auctionId);
+
+    // Đặt giá trong một transaction để tránh lost update khi nhiều client bid cùng lúc
+    boolean placeBidSafely(BidTransaction bid);
 }

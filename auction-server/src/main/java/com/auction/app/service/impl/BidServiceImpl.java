@@ -1,8 +1,6 @@
 package com.auction.app.service.impl;
 
-import com.app.common.entity.Auction;
 import com.app.common.entity.BidTransaction;
-import com.app.common.enums.Status;
 import com.auction.app.repository.AuctionDAO;
 import com.auction.app.repository.BidDAO;
 import com.auction.app.service.BidService;
@@ -11,11 +9,9 @@ import java.util.List;
 
 public class BidServiceImpl implements BidService {
     private final BidDAO bidDAO;
-    private final AuctionDAO auctionDAO;
 
     public BidServiceImpl(BidDAO bidDAO, AuctionDAO auctionDAO) {
         this.bidDAO = bidDAO;
-        this.auctionDAO = auctionDAO;
     }
 
     @Override
@@ -36,45 +32,8 @@ public class BidServiceImpl implements BidService {
             throw new IllegalArgumentException("Bid amount must be greater than 0");
         }
 
-        Auction auction = auctionDAO.findById(bid.getAuction().getId());
-
-        if (auction == null) {
-            throw new IllegalArgumentException("Auction not found");
-        }
-
-        if (auction.getAuctionStatus() != Status.RUNNING) {
-            throw new IllegalArgumentException("Auction is not active");
-        }
-
-        if (auction.getItem() == null) {
-            throw new IllegalStateException("Auction item not found");
-        }
-
-        double currentPrice = auction.getItem().getHighestCurrentPrice();
-        if (currentPrice <= 0) {
-            currentPrice = auction.getItem().getStartPrice();
-        }
-
-        double minimumAcceptedBid = currentPrice + auction.getItem().getMinIncreasement();
-        if (bid.getBidAmount() < minimumAcceptedBid) {
-            throw new IllegalArgumentException("Bid must be at least " + minimumAcceptedBid);
-        }
-
-        BidTransaction highestBid = bidDAO.getMaxBidByAuctionId(auction.getId());
-
-        if (highestBid != null && bid.getBidAmount() <= highestBid.getBidAmount()) {
-            throw new IllegalArgumentException("Bid must be higher than current highest bid");
-        }
-
-        bid.setAuction(auction);
-
-        if (!bidDAO.save(bid)) {
+        if (!bidDAO.placeBidSafely(bid)) {
             throw new IllegalStateException("Cannot save bid");
-        }
-
-        auction.getItem().setHighestCurrentPrice(bid.getBidAmount());
-        if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Cannot update auction current price");
         }
     }
 

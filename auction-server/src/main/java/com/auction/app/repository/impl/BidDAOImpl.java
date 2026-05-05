@@ -151,6 +151,56 @@ public class BidDAOImpl implements BidDAO {
     }
 
     @Override
+    public boolean placeBidSafely(BidTransaction bid) {
+        String lockAuctionSql = """
+                SELECT a.status,
+                       i.start_price,
+                       i.min_increment,
+                       i.highest_current_price
+                FROM auctions a
+                JOIN items i ON i.id = a.item_id
+                WHERE a.id = ?
+                FOR UPDATE
+                """;
+        String bidderSql = "SELECT role FROM users WHERE id = ?";
+        String maxBidSql = "SELECT MAX(bid_amount) AS max_bid FROM bid_transactions WHERE auction_id = ?";
+        String insertBidSql = """
+                INSERT INTO bid_transactions (id, auction_id, bidder_id, bid_amount)
+                VALUES (?, ?, ?, ?)
+                """;
+        String updateAuctionSql = """
+                UPDATE auctions a
+                JOIN items i ON i.id = a.item_id
+                SET i.highest_current_price = ?,
+                    a.last_bidder_id = ?,
+                    a.current_version = a.current_version + 1
+                WHERE a.id = ?
+                """;
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                LockedAuction lockedAuction = lockAuction(connection, lockAuctionSql, bid.getAuction().getId());
+                validateBidder(connection, bidderSql, bid.getBidder().getId());
+                validateBidAmount(connection, maxBidSql, bid, lockedAuction);
+                insertBid(connection, insertBidSql, bid);
+                updateAuctionPrice(connection, updateAuctionSql, bid);
+
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot place bid safely: " + bid.getId(), e);
+        }
+    }
+
+    @Override
     public boolean delete(String id) {
         String sql = "DELETE FROM bid_transactions WHERE id = ?";
 
@@ -174,5 +224,96 @@ public class BidDAOImpl implements BidDAO {
         BidTransaction bid = new BidTransaction((Bidder) user, auction, resultSet.getDouble("bid_amount"));
         bid.setId(resultSet.getString("id"));
         return bid;
+    }
+
+    private LockedAuction lockAuction(Connection connection, String sql, String auctionId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, auctionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalArgumentException("Auction not found");
+                }
+
+                String status = resultSet.getString("status");
+                if (!"RUNNING".equals(status)) {
+                    throw new IllegalArgumentException("Auction is not active");
+                }
+
+                double startPrice = resultSet.getDouble("start_price");
+                double minIncrement = resultSet.getDouble("min_increment");
+                double highestCurrentPrice = resultSet.getDouble("highest_current_price");
+
+                return new LockedAuction(startPrice, minIncrement, highestCurrentPrice);
+            }
+        }
+    }
+
+    private void validateBidder(Connection connection, String sql, String bidderId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, bidderId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next() || !"BIDDER".equals(resultSet.getString("role"))) {
+                    throw new IllegalArgumentException("Bidder not found");
+                }
+            }
+        }
+    }
+
+    private void validateBidAmount(Connection connection, String sql, BidTransaction bid, LockedAuction auction) throws SQLException {
+        double currentPrice = auction.highestCurrentPrice > 0 ? auction.highestCurrentPrice : auction.startPrice;
+        double minimumAcceptedBid = currentPrice + auction.minIncrement;
+
+        if (bid.getBidAmount() < minimumAcceptedBid) {
+            throw new IllegalArgumentException("Bid must be at least " + minimumAcceptedBid);
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, bid.getAuction().getId());
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    double maxBid = resultSet.getDouble("max_bid");
+                    if (!resultSet.wasNull() && bid.getBidAmount() <= maxBid) {
+                        throw new IllegalArgumentException("Bid must be higher than current highest bid");
+                    }
+                }
+            }
+        }
+    }
+
+    private void insertBid(Connection connection, String sql, BidTransaction bid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, bid.getId());
+            statement.setString(2, bid.getAuction().getId());
+            statement.setString(3, bid.getBidder().getId());
+            statement.setDouble(4, bid.getBidAmount());
+            statement.executeUpdate();
+        }
+    }
+
+    private void updateAuctionPrice(Connection connection, String sql, BidTransaction bid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDouble(1, bid.getBidAmount());
+            statement.setString(2, bid.getBidder().getId());
+            statement.setString(3, bid.getAuction().getId());
+
+            if (statement.executeUpdate() == 0) {
+                throw new IllegalStateException("Cannot update auction current price");
+            }
+        }
+    }
+
+    private static class LockedAuction {
+        private final double startPrice;
+        private final double minIncrement;
+        private final double highestCurrentPrice;
+
+        private LockedAuction(double startPrice, double minIncrement, double highestCurrentPrice) {
+            this.startPrice = startPrice;
+            this.minIncrement = minIncrement;
+            this.highestCurrentPrice = highestCurrentPrice;
+        }
     }
 }
