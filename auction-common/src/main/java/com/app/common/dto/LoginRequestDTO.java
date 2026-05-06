@@ -1,4 +1,4 @@
-package src.main.java.com.app.common.dto;
+package com.app.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

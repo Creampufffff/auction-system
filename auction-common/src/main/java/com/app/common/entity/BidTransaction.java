@@ -1,4 +1,4 @@
-package src.main.java.com.app.common.entity;
+package com.app.common.entity;
 
 public class BidTransaction extends BaseEntity {
     private Bidder bidder;

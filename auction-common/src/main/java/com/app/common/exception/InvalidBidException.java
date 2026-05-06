@@ -1,4 +1,4 @@
-package src.main.java.com.app.common.exception;
+package com.app.common.exception;
 
 public class InvalidBidException extends RuntimeException {
     public InvalidBidException(String message) {

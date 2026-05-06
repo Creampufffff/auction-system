@@ -1,4 +1,4 @@
-package src.main.java.com.app.common.entity;
+package com.app.common.entity;
 
 abstract public class Item extends BaseEntity {
 
