@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.controllers.ProductManagementController" spacing="10">
+    <Label text="Quản Lý Sản Phẩm Của Tôi"/>
+    <TableView fx:id="myProductsTable" prefHeight="300">
+    </TableView>
+    <HBox spacing="10">
+        <Button text="Thêm Sản Phẩm Mới" onAction="#handleAddProduct"/>
+        <Button text="Sửa" onAction="#handleEditProduct"/>
+        <Button text="Xóa" onAction="#handleDeleteProduct"/>
+    </HBox>
+</VBox>
