@@ -1,5 +1,5 @@
-package src.main.java.com.app.common.dto;
-import src.main.java.com.app.common.enums.Status;
+package com.app.common.dto;
+import com.app.common.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

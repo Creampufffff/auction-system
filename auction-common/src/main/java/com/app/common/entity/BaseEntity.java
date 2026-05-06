@@ -1,4 +1,4 @@
-package src.main.java.com.app.common.entity;
+package com.app.common.entity;
 
 import java.io.Serializable;
 import java.util.UUID;
