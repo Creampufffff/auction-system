@@ -12,7 +12,7 @@
     <Insets top="40" right="50" bottom="40" left="50"/>
 </padding>
 
-    <ImageView fitWidth="120" preserveRatio="true">
+    <ImageView fitWidth="120" preserveRatio="true" smooth="true" cache="true" cacheHint="QUALITY">
         <image>
             <Image url="@../images/img.png" />
         </image>

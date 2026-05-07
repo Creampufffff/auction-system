@@ -5,21 +5,32 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import java.io.IOException;
 
 public class MainApp extends Application {
+    private static Stage primaryStage;
+
     @Override
-    public void start(Stage primaryStage) throws Exception {
-        // 1. Đổi đường dẫn về Login.fxml
-        Parent root = FXMLLoader.load(getClass().getResource("/fxml/Login.fxml"));
-
-        Scene scene = new Scene(root);
-
-        // 2. Gắn CSS vào để màn hình Login cũng đẹp luôn
-        scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
-
-        primaryStage.setTitle("Đăng nhập - Auction System");
-        primaryStage.setScene(scene);
+    public void start(Stage stage) throws Exception {
+        primaryStage = stage;
+        setRoot("/fxml/AuctionList.fxml", "UET Auction System");
         primaryStage.show();
+    }
+
+    public static void setRoot(String fxml, String title) {
+        try {
+            Parent root = FXMLLoader.load(MainApp.class.getResource(fxml));
+            Scene scene = new Scene(root);
+
+            // Ép nạp file CSS của bạn
+            String css = MainApp.class.getResource("/css/style.css").toExternalForm();
+            scene.getStylesheets().add(css);
+
+            primaryStage.setTitle(title);
+            primaryStage.setScene(scene);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {

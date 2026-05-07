@@ -1,19 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
-<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.client.controller.LiveBiddingController" spacing="20">
-    <VBox spacing="10">
-        <Label text="Sản phẩm đang đấu giá: ..."/>
-        <Label text="Thời gian còn lại: 00:05:30"/>
-        <Label text="Giá cao nhất: $500"/>
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.LiveBiddingController"
+      styleClass="live-root">
+
+    <VBox prefWidth="230" spacing="22" style="-fx-background-color: #172033;">
+        <padding><Insets top="28" right="18" bottom="24" left="18"/></padding>
+        <VBox spacing="2">
+            <Label text="ĐẤU GIÁ" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
+            <Label text="Live Room" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        </VBox>
+        <VBox spacing="8">
+            <Button text="← Quay lại" onAction="#handleBack" maxWidth="Infinity" alignment="CENTER_LEFT" styleClass="btn-back-modern"/>
+        </VBox>
+        <Region VBox.vgrow="ALWAYS"/>
+        <VBox spacing="6" style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
+            <Label text="Trạng thái" style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
+            <Label text="Đang trực tiếp" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #00c853;"/>
+        </VBox>
     </VBox>
-    <VBox spacing="10">
-        <ListView fx:id="bidHistoryList" prefHeight="300"/>
-        <HBox spacing="5">
-            <TextField fx:id="bidAmountField" promptText="Nhập giá..."/>
-            <Button text="Đặt Giá" onAction="#handlePlaceBid"/>
+
+    <VBox spacing="20" HBox.hgrow="ALWAYS" style="-fx-background-color: #f3f6fb;">
+        <padding><Insets top="28" right="34" bottom="28" left="34"/></padding>
+
+        <HBox alignment="CENTER_LEFT">
+            <VBox spacing="4">
+                <Label fx:id="productNameLabel" styleClass="product-title-fancy"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="ID: #UET-2026" style="-fx-text-fill: #667085;"/>
+                    <Label text="● LIVE" style="-fx-text-fill: #d92d20; -fx-font-weight: bold;"/>
+                </HBox>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <VBox alignment="CENTER_RIGHT" spacing="5" styleClass="timer-container">
+                <Label text="THỜI GIAN CÒN LẠI" style="-fx-font-size: 10px; -fx-text-fill: white;"/>
+                <Label fx:id="timerLabel" styleClass="timer-text"/>
+            </VBox>
+        </HBox>
+
+        <HBox spacing="20" VBox.vgrow="ALWAYS">
+            <VBox spacing="20" prefWidth="380">
+                <VBox spacing="15" styleClass="product-card-fancy">
+                    <padding><Insets top="25" right="25" bottom="25" left="25"/></padding>
+                    <VBox spacing="10" styleClass="price-box">
+                        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+                        <Label text="GIÁ HIỆN TẠI" styleClass="label-price-title"/>
+                        <Label fx:id="currentPriceLabel" styleClass="price-value-big"/>
+                    </VBox>
+                    <VBox spacing="8">
+                        <Label text="Người dẫn đầu:" style="-fx-text-fill: #667085; -fx-font-size: 13px;"/>
+                        <Label text="dang_thang_uet" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
+                    </VBox>
+                </VBox>
+
+                <VBox spacing="15" styleClass="product-card-fancy">
+                    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+                    <Label text="ĐẶT GIÁ CỦA BẠN" style="-fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                    <TextField fx:id="bidAmountField" promptText="Nhập mức giá..." styleClass="modern-input"/>
+                    <Button text="XÁC NHẬN ĐẶT GIÁ" onAction="#handlePlaceBid" maxWidth="Infinity" styleClass="btn-bid-fire"/>
+                </VBox>
+            </VBox>
+
+            <VBox spacing="15" HBox.hgrow="ALWAYS" styleClass="history-container">
+                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+                <Label text="LỊCH SỬ ĐẤU GIÁ" style="-fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS" styleClass="modern-list-view"/>
+            </VBox>
         </HBox>
     </VBox>
 </HBox>

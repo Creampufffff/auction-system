@@ -1,4 +1,7 @@
-/* Background gradient cho sang trọng */
+/* ============================================================
+   SECTION 1: LOGIN SCREEN
+   ============================================================ */
+
 .login-container {
     -fx-background-color: linear-gradient(to bottom right, #ffffff, #e3e9ff);
 }
@@ -19,23 +22,21 @@
     -fx-text-fill: #3949ab;
 }
 
-/* Input field bo góc và có viền khi focus */
 .modern-input {
     -fx-background-color: white;
-    -fx-border-color: #c5cae9;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
+    -fx-border-color: #d0d5dd; /* Màu viền đồng bộ dashboard */
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
     -fx-padding: 10;
 }
 
 .modern-input:focused {
-    -fx-border-color: #3f51b5;
+    -fx-border-color: #2d6cdf; /* Màu xanh chủ đạo dashboard */
     -fx-border-width: 2;
 }
 
-/* Nút bấm chính */
 .primary-button {
-    -fx-background-color: #3f51b5;
+    -fx-background-color: #2d6cdf;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-background-radius: 25;
@@ -44,7 +45,7 @@
 }
 
 .primary-button:hover {
-    -fx-background-color: #303f9f;
+    -fx-background-color: #1a237e;
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
 }
@@ -58,4 +59,143 @@
 
 .error-label {
     -fx-text-fill: #d32f2f;
+}
+
+/* ============================================================
+   SECTION 2: LIVE BIDDING SCREEN (COLORFUL & MODERN)
+   ============================================================ */
+
+.live-root {
+    /* Đổi sang màu nền trung tính giống AuctionList để đồng bộ */
+    -fx-background-color: #f3f6fb;
+}
+
+/* Sidebar tối màu giống bản AuctionList */
+.sidebar-uet {
+    -fx-background-color: #172033;
+}
+
+.header-gradient {
+    /* Đổi sang màu trắng để làm nổi bật Sidebar và Card */
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #e4e7ec transparent;
+    -fx-border-width: 1;
+}
+
+.header-text-main {
+    -fx-text-fill: #172033;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.status-badge {
+    /* Màu xanh lá nhẹ phong cách Dashboard hiện đại */
+    -fx-background-color: #ecfdf3;
+    -fx-text-fill: #027a48;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 10;
+    -fx-background-radius: 12;
+}
+
+.timer-container {
+    -fx-background-color: #172033;
+    -fx-padding: 8 20;
+    -fx-background-radius: 8;
+}
+
+.timer-text {
+    -fx-text-fill: #ffeb3b;
+    -fx-font-family: "Monospaced";
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.product-card-fancy {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #e0e7f0;
+    -fx-border-radius: 12;
+    /* Đổ bóng nhẹ hơn cho chuyên nghiệp */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 15, 0, 0, 5);
+}
+
+.product-title-fancy {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #172033;
+}
+
+.price-box {
+    /* Gradient xanh công nghệ */
+    -fx-background-color: linear-gradient(to right, #2d6cdf 0%, #1a237e 100%);
+    -fx-background-radius: 10;
+}
+
+.price-value-big {
+    -fx-text-fill: white;
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+}
+
+.label-price-title {
+    -fx-text-fill: rgba(255,255,255,0.7);
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.btn-bid-fire {
+    /* Đặt giá màu xanh chủ đạo cho đồng bộ Dashboard */
+    -fx-background-color: #2d6cdf;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+    -fx-background-radius: 8;
+    -fx-padding: 12 30;
+    -fx-cursor: hand;
+}
+
+.btn-bid-fire:hover {
+    -fx-background-color: #1a237e;
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+}
+
+.btn-back-modern {
+    -fx-background-color: transparent;
+    -fx-text-fill: #c7d0dd;
+    -fx-border-color: rgba(255,255,255,0.2);
+    -fx-border-radius: 6;
+    -fx-padding: 8 12;
+}
+
+.btn-back-modern:hover {
+    -fx-background-color: #2d6cdf;
+    -fx-text-fill: white;
+    -fx-border-color: #2d6cdf;
+}
+
+.history-container {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #e0e7f0;
+    -fx-border-radius: 12;
+}
+
+.modern-list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* Trang trí các dòng trong List cho đẹp */
+.modern-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 10 5;
+    -fx-border-color: transparent transparent #f2f4f7 transparent;
+    -fx-border-width: 1;
+    -fx-text-fill: #344054;
+}
+
+.modern-list-view .list-cell:filled:hover {
+    -fx-background-color: #f9fafb;
 }
