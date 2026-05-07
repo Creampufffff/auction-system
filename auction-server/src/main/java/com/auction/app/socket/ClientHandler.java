@@ -271,7 +271,7 @@ public class ClientHandler implements Runnable {
     private String[] splitBySpace(String payload, int expectedLength) {
         String[] args = requirePayload(payload, "Payload").split("\\s+");
         if (args.length != expectedLength) {
-            throw new IllegalArgumentException("Expected " + expectedLength + " arguments");
+            throw new IllegalArgumentException("Cần đúng " + expectedLength + " tham số");
         }
         return args;
     }
@@ -279,14 +279,14 @@ public class ClientHandler implements Runnable {
     private String[] splitByPipe(String payload, int expectedLength) {
         String[] args = requirePayload(payload, "Payload").split("\\|", -1);
         if (args.length != expectedLength) {
-            throw new IllegalArgumentException("Expected " + expectedLength + " pipe-separated arguments");
+            throw new IllegalArgumentException("Cần đúng " + expectedLength + " tham số, ngăn cách bởi ký tự |");
         }
         return args;
     }
 
     private String requirePayload(String payload, String fieldName) {
         if (payload == null || payload.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " cannot be empty");
+            throw new IllegalArgumentException(fieldName + " không được để trống");
         }
         return payload.trim();
     }

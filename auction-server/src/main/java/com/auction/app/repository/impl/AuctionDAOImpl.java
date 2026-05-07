@@ -29,7 +29,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot load active auctions", e);
+            throw new IllegalStateException("Không tải được đấu giá ", e);
         }
 
         return auctions;
@@ -55,7 +55,7 @@ public class AuctionDAOImpl implements AuctionDAO {
 
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot update current price for auction: " + auctionId, e);
+            throw new IllegalStateException("Không cập nhập được giá cho phieen: " + auctionId, e);
         }
     }
 
@@ -73,7 +73,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot find auction by id: " + id, e);
+            throw new IllegalStateException("Không thể tìm được phiên đấu " + id, e);
         }
 
         return null;
@@ -91,7 +91,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 auctions.add(mapAuction(resultSet));
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot load auctions", e);
+            throw new IllegalStateException("Không load được đáu giá", e);
         }
 
         return auctions;
@@ -126,7 +126,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot save auction: " + entity.getId(), e);
+            throw new IllegalStateException("Không thể lưu đấu giá: " + entity.getId(), e);
         }
     }
 
@@ -139,7 +139,7 @@ public class AuctionDAOImpl implements AuctionDAO {
             statement.setString(1, id);
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot delete auction: " + id, e);
+            throw new IllegalStateException("Không xóa được phiên đấu: " + id, e);
         }
     }
 

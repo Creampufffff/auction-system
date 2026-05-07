@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Text?>
+
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.RegisterController"
+      prefWidth="800" prefHeight="600"
+      style="-fx-background-color: white;">
+
+    <VBox prefWidth="320" alignment="CENTER" spacing="20"
+          style="-fx-background-color: #172033; -fx-padding: 40;">
+        <Label text="UET AUCTION"
+               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        <Text text="Hệ thống đấu giá trực tuyến hiện đại dành cho sinh viên VNU-UET."
+              wrappingWidth="220" textAlignment="CENTER"
+              style="-fx-fill: #8fb2ff; -fx-font-size: 14px;"/>
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label text="© 2026 UET IT Student" style="-fx-text-fill: #5a6b89; -fx-font-size: 11px;"/>
+    </VBox>
+
+    <VBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="20" style="-fx-padding: 0 60 0 60;">
+        <VBox spacing="5">
+            <Label text="Đăng ký tài khoản"
+                   style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+            <Label text="Khám phá và sở hữu các sản phẩm giá trị."
+                   style="-fx-font-size: 14px; -fx-text-fill: #667085;"/>
+        </VBox>
+
+        <VBox spacing="15" maxWidth="380">
+            <VBox spacing="6">
+                <Label text="Tên đăng nhập" style="-fx-font-weight: bold; -fx-text-fill: #344054;"/>
+                <TextField fx:id="usernameField" promptText="Ví dụ: thang_uet"
+                           style="-fx-padding: 10; -fx-background-radius: 8; -fx-border-color: #d0d5dd; -fx-border-radius: 8;"/>
+            </VBox>
+
+            <VBox spacing="6">
+                <Label text="Email" style="-fx-font-weight: bold; -fx-text-fill: #344054;"/>
+                <TextField fx:id="emailField" promptText="nhap_email@vnu.edu.vn"
+                           style="-fx-padding: 10; -fx-background-radius: 8; -fx-border-color: #d0d5dd; -fx-border-radius: 8;"/>
+            </VBox>
+
+            <HBox spacing="10">
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="Mật khẩu" style="-fx-font-weight: bold; -fx-text-fill: #344054;"/>
+                    <PasswordField fx:id="passwordField" promptText="••••••••"
+                                   style="-fx-padding: 10; -fx-background-radius: 8; -fx-border-color: #d0d5dd; -fx-border-radius: 8;"/>
+                </VBox>
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="Xác nhận" style="-fx-font-weight: bold; -fx-text-fill: #344054;"/>
+                    <PasswordField fx:id="confirmPasswordField" promptText="••••••••"
+                                   style="-fx-padding: 10; -fx-background-radius: 8; -fx-border-color: #d0d5dd; -fx-border-radius: 8;"/>
+                </VBox>
+            </HBox>
+
+            <Label fx:id="messageLabel" wrapText="true" style="-fx-font-size: 13px;"/>
+
+            <Button text="Tạo tài khoản ngay" onAction="#handleRegister" maxWidth="Infinity"
+                    style="-fx-background-color: #2d6cdf; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 8; -fx-cursor: hand;"/>
+
+            <HBox alignment="CENTER" spacing="5">
+                <Label text="Đã có tài khoản?" style="-fx-text-fill: #667085;"/>
+                <Button text="Đăng nhập" onAction="#handleBackToLogin"
+                        style="-fx-background-color: transparent; -fx-text-fill: #2d6cdf; -fx-font-weight: bold; -fx-padding: 0; -fx-cursor: hand;"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</HBox>
