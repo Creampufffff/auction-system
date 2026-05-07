@@ -1,0 +1,61 @@
+/* Background gradient cho sang trọng */
+.login-container {
+    -fx-background-color: linear-gradient(to bottom right, #ffffff, #e3e9ff);
+}
+
+.title-label {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1a237e; /* Màu xanh đậm UET */
+}
+
+.subtitle-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #5c6bc0;
+}
+
+.field-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #3949ab;
+}
+
+/* Input field bo góc và có viền khi focus */
+.modern-input {
+    -fx-background-color: white;
+    -fx-border-color: #c5cae9;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 10;
+}
+
+.modern-input:focused {
+    -fx-border-color: #3f51b5;
+    -fx-border-width: 2;
+}
+
+/* Nút bấm chính */
+.primary-button {
+    -fx-background-color: #3f51b5;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 25;
+    -fx-padding: 12;
+    -fx-cursor: hand;
+}
+
+.primary-button:hover {
+    -fx-background-color: #303f9f;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #3f51b5;
+    -fx-underline: true;
+    -fx-cursor: hand;
+}
+
+.error-label {
+    -fx-text-fill: #d32f2f;
+}
