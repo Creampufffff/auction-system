@@ -51,6 +51,11 @@ public class LoginController {
             messageLabel.setStyle("-fx-text-fill: red;");
             messageLabel.setText("Sai username hoặc password!");
         }
+
+        // để check UI AuctionList (test)
+        if (username.equals("anhdaden") && password.equals("123")){
+            switchToAuctionList();
+        }
     }
 
     private void switchToAuctionList() {
