@@ -3,25 +3,24 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+<VBox spacing="20" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.client.controller.AuctionListController"
-      spacing="15" alignment="CENTER" prefHeight="600.0" prefWidth="800.0" style="-fx-padding: 20;">
+      style="-fx-padding: 30;">
 
-    <Label text="Danh Sách Phiên Đấu Giá" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-
-    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS">
-        <columns>
-            <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
-            <TableColumn fx:id="nameColumn" text="Tên Sản Phẩm" prefWidth="250"/>
-            <TableColumn fx:id="priceColumn" text="Giá Hiện Tại" prefWidth="150"/>
-            <TableColumn fx:id="statusColumn" text="Trạng Thái" prefWidth="150"/>
-        </columns>
-    </TableView>
-
-    <HBox spacing="15" alignment="CENTER">
-        <Button text="Xem Chi Tiết" onAction="#handleViewDetail"/>
-        <Button text="Tham Gia Đấu Giá" onAction="#handleJoinBidding"/>
-        <Button text="Quản Lý (Seller)" onAction="#handleSellerManagement"/>
+    <HBox alignment="CENTER_LEFT" spacing="20">
+        <Label text="Current Auctions" styleClass="title-label"/>
+        <Region HBox.hgrow="ALWAYS" /> <!-- Pushes next element to the right -->
+        <TextField promptText="Search products..." prefWidth="250"/>
     </HBox>
 
+    <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS">
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+        </columnResizePolicy>
+    </TableView>
+
+    <HBox spacing="15" alignment="CENTER_RIGHT">
+        <Button text="View Details" style="-fx-background-color: #94e2d5;"/>
+        <Button text="Join Bidding" />
+    </HBox>
 </VBox>
