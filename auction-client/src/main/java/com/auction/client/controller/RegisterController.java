@@ -42,6 +42,10 @@ public class RegisterController {
             return;
         }
 
+        if (!isValidUsername(username)){
+            showError("Tên đăng nhập không được vượt quá 18 kí tự, chỉ bao gồm chữ cái in thường hoặc in hoa, chỉ được bao gồm dấu gạch dưới.");
+        }
+
         if (email == null || email.trim().isEmpty()) {
             showError("Vui lòng nhập email.");
             return;
@@ -61,6 +65,8 @@ public class RegisterController {
             showError("Mật khẩu nhập lại không khớp.");
             return;
         }
+
+
 
         RegisterResponseDTO registerResponse = authService.register(username, password, email);
 
@@ -89,6 +95,11 @@ public class RegisterController {
             showError("Không thể quay lại màn hình đăng nhập.");
         }
     }
+
+    private boolean isValidUsername(String username) {
+        return username.matches("^[a-zA-Z0-9_]{3,18}$");
+    }
+
 
     private void showError(String message) {
         messageLabel.setStyle("-fx-text-fill: red;");

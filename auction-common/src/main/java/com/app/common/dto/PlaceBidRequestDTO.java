@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data // Tự động sinh ra tất cả Getter, Setter, toString, equals, hashCode
 @NoArgsConstructor // Tự động sinh ra Constructor rỗng
 @AllArgsConstructor // Tự động sinh ra Constructor có đủ tất cả tham số
-public class BidRequestDTO implements Serializable {
+public class PlaceBidRequestDTO implements Serializable {
     private String auctionId;
     private String bidderId;
     private double bidAmount;
