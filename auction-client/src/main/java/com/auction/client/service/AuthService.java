@@ -97,7 +97,9 @@ public class AuthService {
             return null;
         }
 
-        return createLoginResponse(parts[2], parts[3], parts[4]);
+        double balance = Double.parseDouble(parts[5]);
+
+        return createLoginResponse(parts[2], parts[3], parts[4], balance);
     }
 
     private RegisterResponseDTO parseRegisterResponse(String response) {
@@ -118,11 +120,12 @@ public class AuthService {
         return createRegisterResponse(false, "Phản hồi đăng ký không hợp lệ.", null);
     }
 
-    private LoginResponseDTO createLoginResponse(String userId, String username, String role) {
+    private LoginResponseDTO createLoginResponse(String userId, String username, String role, double balance) {
         LoginResponseDTO response = new LoginResponseDTO();
         response.setUserId(userId);
         response.setUsername(username);
         response.setRole(role);
+        response.setBalance(balance);
         return response;
     }
 
