@@ -12,10 +12,7 @@ import com.auction.app.service.AuctionService;
 import com.auction.app.service.BidService;
 import com.auction.app.service.ItemService;
 import com.auction.app.service.UserService;
-import com.auction.app.service.impl.AuctionServiceImpl;
-import com.auction.app.service.impl.BidServiceImpl;
-import com.auction.app.service.impl.ItemServiceImpl;
-import com.auction.app.service.impl.UserServiceImpl;
+import com.auction.app.service.impl.*;
 import com.auction.app.socket.AuctionSocketServer;
 
 import java.io.IOException;
@@ -33,6 +30,9 @@ public class AuctionApplication {
         ItemService itemService = new ItemServiceImpl(itemDAO);
         AuctionService auctionService = new AuctionServiceImpl(auctionDAO);
         BidService bidService = new BidServiceImpl(bidDAO, auctionDAO);
+
+        AuctionLifecycleManager auctionLifecycleManager = new AuctionLifecycleManager(auctionService);
+        auctionLifecycleManager.start();
 
         AuctionSocketServer server = new AuctionSocketServer(
                 DEFAULT_PORT,

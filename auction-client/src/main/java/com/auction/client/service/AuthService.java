@@ -23,15 +23,12 @@ public class AuthService {
     }
 
     public LoginResponseDTO login(LoginRequestDTO request) {
-        if (request == null
-                || request.getUsername() == null
-                || request.getUsername().isBlank()
-                || request.getPassword() == null
-                || request.getPassword().isBlank()) {
+        if (isInvalidLoginRequest(request)) {
             return null;
         }
 
-        String response = sendCommand("LOGIN " + request.getUsername() + " " + request.getPassword());
+        String command = "LOGIN " + request.getUsername() + " " + request.getPassword();
+        String response = sendCommand(command);
         return parseLoginResponse(response);
     }
 
@@ -44,21 +41,33 @@ public class AuthService {
     }
 
     public RegisterResponseDTO register(RegisterRequestDTO request) {
-        if (request == null
-                || request.getUsername() == null
-                || request.getUsername().isBlank()
-                || request.getPassword() == null
-                || request.getPassword().isBlank()
-                || request.getEmail() == null
-                || request.getEmail().isBlank()) {
+        if (isInvalidRegisterRequest(request)) {
             return createRegisterResponse(false, "Thong tin dang ky khong hop le.", null);
         }
 
-        String response = sendCommand("REGISTER_BIDDER "
+        String command = "REGISTER_BIDDER "
                 + request.getUsername() + " "
                 + request.getPassword() + " "
-                + request.getEmail());
+                + request.getEmail();
+        String response = sendCommand(command);
         return parseRegisterResponse(response);
+    }
+
+    private boolean isInvalidLoginRequest(LoginRequestDTO request) {
+        return request == null
+                || isBlank(request.getUsername())
+                || isBlank(request.getPassword());
+    }
+
+    private boolean isInvalidRegisterRequest(RegisterRequestDTO request) {
+        return request == null
+                || isBlank(request.getUsername())
+                || isBlank(request.getPassword())
+                || isBlank(request.getEmail());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private String sendCommand(String command) {
