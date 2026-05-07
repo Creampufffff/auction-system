@@ -66,9 +66,9 @@ public class RegisterController {
 
         if (registerResponse != null && registerResponse.isSuccess()) {
             messageLabel.setStyle("-fx-text-fill: green;");
-            messageLabel.setText("Dang ky thanh cong. Hay quay lai dang nhap.");
+            messageLabel.setText("Đăng ký thành công. Hãy quay lại đăng nhập.");
         } else {
-            String message = registerResponse == null ? "Dang ky that bai." : registerResponse.getMessage();
+            String message = registerResponse == null ? "Đăng ký thất bại." : registerResponse.getMessage();
             showError(message);
         }
     }
@@ -81,12 +81,12 @@ public class RegisterController {
             );
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
-            stage.setTitle("Dang nhap he thong dau gia");
+            stage.setTitle("Đăng nhập vào hệ thống đấu giá");
             stage.setScene(new Scene(root, 800, 600));
 
         } catch (Exception e) {
             e.printStackTrace();
-            showError("Khong the quay lai man hinh dang nhap.");
+            showError("Không thể quay lại màn hình đăng nhập.");
         }
     }
 

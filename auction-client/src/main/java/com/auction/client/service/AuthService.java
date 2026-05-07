@@ -48,11 +48,6 @@ public class AuthService {
         }
     }
 
-    public boolean register(String username, String password) {
-        RegisterResponseDTO response = register(username, password, null);
-        return response != null && response.isSuccess();
-    }
-
     public RegisterResponseDTO register(String username, String password, String email) {
         RegisterRequestDTO request = new RegisterRequestDTO();
         request.setUsername(username);
@@ -69,7 +64,7 @@ public class AuthService {
                 || request.getPassword().isBlank()
                 || request.getEmail() == null
                 || request.getEmail().isBlank()) {
-            return createRegisterResponse(false, "Thong tin dang ky khong hop le.", null);
+            return createRegisterResponse(false, "Thông tin đăng ký không hợp lệ.", null);
         }
 
         try (
@@ -77,7 +72,7 @@ public class AuthService {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            reader.readLine(); // OK|CONNECTED|Type HELP for commands
+            reader.readLine(); // OK|CONNECTED|Type HELP for commands, read bỏ line thừa
 
             writer.println("REGISTER_BIDDER "
                     + request.getUsername() + " "
@@ -88,7 +83,7 @@ public class AuthService {
             return parseRegisterResponse(response);
         } catch (IOException e) {
             e.printStackTrace();
-            return createRegisterResponse(false, "Khong the ket noi toi server.", null);
+            return createRegisterResponse(false, "Không thể kết nối tới server.", null);
         }
     }
 
@@ -102,29 +97,33 @@ public class AuthService {
             return null;
         }
 
-        LoginResponseDTO loginResponse = new LoginResponseDTO();
-        loginResponse.setUserId(parts[2]);
-        loginResponse.setUsername(parts[3]);
-        loginResponse.setBalance(0.0);
-        return loginResponse;
+        return createLoginResponse(parts[2], parts[3], parts[4]);
     }
 
     private RegisterResponseDTO parseRegisterResponse(String response) {
         if (response == null || response.isBlank()) {
-            return createRegisterResponse(false, "Server khong phan hoi.", null);
+            return createRegisterResponse(false, "Server không phản hồi.", null);
         }
 
         if (response.startsWith("OK|REGISTER_BIDDER|")) {
             String[] parts = response.split("\\|");
             String userId = parts.length >= 3 ? parts[2] : null;
-            return createRegisterResponse(true, "Dang ky thanh cong.", userId);
+            return createRegisterResponse(true, "Đăng ký thành công.", userId);
         }
 
         if (response.startsWith("ERR|")) {
             return createRegisterResponse(false, response.substring(4), null);
         }
 
-        return createRegisterResponse(false, "Phan hoi dang ky khong hop le.", null);
+        return createRegisterResponse(false, "Phản hồi đăng ký không hợp lệ.", null);
+    }
+
+    private LoginResponseDTO createLoginResponse(String userId, String username, String role) {
+        LoginResponseDTO response = new LoginResponseDTO();
+        response.setUserId(userId);
+        response.setUsername(username);
+        response.setRole(role);
+        return response;
     }
 
     private RegisterResponseDTO createRegisterResponse(boolean success, String message, String userId) {

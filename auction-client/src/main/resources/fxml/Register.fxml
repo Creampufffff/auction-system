@@ -19,27 +19,27 @@
     <Label text="Register"
            style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
 
-    <Label text="Tao tai khoan moi"
+    <Label text="Tạo tài khoản mới"
            style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
 
     <VBox spacing="8" maxWidth="300">
         <Label text="Username"/>
-        <TextField fx:id="usernameField" promptText="Nhap username"/>
+        <TextField fx:id="usernameField" promptText="Nhập username"/>
     </VBox>
 
     <VBox spacing="8" maxWidth="300">
         <Label text="Email"/>
-        <TextField fx:id="emailField" promptText="Nhap email"/>
+        <TextField fx:id="emailField" promptText="Nhập email"/>
     </VBox>
 
     <VBox spacing="8" maxWidth="300">
         <Label text="Password"/>
-        <PasswordField fx:id="passwordField" promptText="Nhap password"/>
+        <PasswordField fx:id="passwordField" promptText="Nhập password"/>
     </VBox>
 
     <VBox spacing="8" maxWidth="300">
         <Label text="Confirm Password"/>
-        <PasswordField fx:id="confirmPasswordField" promptText="Nhap lai password"/>
+        <PasswordField fx:id="confirmPasswordField" promptText="Nhập lại password"/>
     </VBox>
 
     <Button text="Register"
@@ -47,7 +47,7 @@
             maxWidth="300"
             style="-fx-background-color: #2d6cdf; -fx-text-fill: white; -fx-font-weight: bold;"/>
 
-    <Button text="Quay lai dang nhap"
+    <Button text="Quay lại đăng nhập"
             onAction="#handleBackToLogin"
             maxWidth="300"
             style="-fx-background-color: transparent; -fx-text-fill: #2d6cdf; -fx-underline: true;"/>

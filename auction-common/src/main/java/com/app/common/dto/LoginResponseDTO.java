@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 public class LoginResponseDTO {
     private String userId;
     private String username;
+    private String role;
     private double balance;
 }
