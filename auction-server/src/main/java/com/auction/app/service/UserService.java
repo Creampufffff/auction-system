@@ -14,4 +14,10 @@ public interface UserService {
     List<User> getAllUser();
 
     void deleteUser(String userId);
+
+    double getBalance(String userId);
+
+    void deposit(String userId, double amount);
+
+    void withdraw(String userId, double amount);
 }

@@ -26,8 +26,8 @@ public class ServerSocket {
 
         UserService userService = new UserServiceImpl(userDAO);
         ItemService itemService = new ItemServiceImpl(itemDAO);
-        AuctionService auctionService = new AuctionServiceImpl(auctionDAO);
-        BidService bidService = new BidServiceImpl(bidDAO, auctionDAO);
+        AuctionService auctionService = new AuctionServiceImpl(auctionDAO, bidDAO, userDAO);
+        BidService bidService = new BidServiceImpl(bidDAO, auctionDAO, userDAO);
 
         new AuctionSocketServer(5000, userService, itemService, auctionService, bidService).start();
     }

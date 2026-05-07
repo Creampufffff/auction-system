@@ -1,6 +1,7 @@
 package com.auction.app.service.impl;
 
 import com.app.common.entity.User;
+import com.app.common.exception.UserAuthException;
 import com.auction.app.repository.UserDAO;
 import com.auction.app.service.UserService;
 
@@ -55,11 +56,11 @@ public class UserServiceImpl implements UserService {
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
-            throw new IllegalArgumentException("User not found");
+            throw new UserAuthException("User not found");
         }
 
         if (!user.getPassword().equals(password)) {
-            throw new IllegalArgumentException("Wrong password");
+            throw new UserAuthException("Wrong password");
         }
 
         return user;
@@ -84,9 +85,42 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public double getBalance(String userId) {
+        User user = getRequiredUser(userId);
+        return user.getBalance();
+    }
+
+    @Override
+    public void deposit(String userId, double amount) {
+        User user = getRequiredUser(userId);
+        user.deposit(amount);
+        if (!userDAO.save(user)) {
+            throw new IllegalStateException("Cannot update balance");
+        }
+    }
+
+    @Override
+    public void withdraw(String userId, double amount) {
+        User user = getRequiredUser(userId);
+        user.withdraw(amount);
+        if (!userDAO.save(user)) {
+            throw new IllegalStateException("Cannot update balance");
+        }
+    }
+
     private void validateId(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("UserId cannot be empty");
         }
+    }
+
+    private User getRequiredUser(String userId) {
+        validateId(userId);
+        User user = userDAO.findById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+        return user;
     }
 }

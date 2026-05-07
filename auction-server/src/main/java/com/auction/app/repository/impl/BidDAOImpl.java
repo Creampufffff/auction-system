@@ -35,7 +35,7 @@ public class BidDAOImpl implements BidDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot load bids for auction: " + auctionId, e);
+            throw new IllegalStateException("Không thể tải phiên đấu: " + auctionId, e);
         }
 
         return bids;
@@ -152,6 +152,7 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public boolean placeBidSafely(BidTransaction bid) {
+        // Khóa bản ghi auction để serialize các lệnh bid đồng thời.
         String lockAuctionSql = """
                 SELECT a.status,
                        i.start_price,
@@ -181,6 +182,7 @@ public class BidDAOImpl implements BidDAO {
             connection.setAutoCommit(false);
 
             try {
+                // Toàn bộ các bước kiểm tra + ghi bid + cập nhật giá phải cùng 1 transaction.
                 LockedAuction lockedAuction = lockAuction(connection, lockAuctionSql, bid.getAuction().getId());
                 validateBidder(connection, bidderSql, bid.getBidder().getId());
                 validateBidAmount(connection, maxBidSql, bid, lockedAuction);

@@ -9,6 +9,7 @@ abstract public class Item extends BaseEntity {
     private String endDateString;
     private String startDateString;
     private double highestCurrentPrice;
+    private String sellerId;
 
 
     public Item(String description, String name, String startDateString, String endDateString, double startPrice, double minIncreasement) {
@@ -40,6 +41,10 @@ abstract public class Item extends BaseEntity {
         return endDateString;
     }
 
+    public void setEndDateString(String endDateString) {
+        this.endDateString = endDateString;
+    }
+
     public double getMinIncreasement() {
         return minIncreasement;
     }
@@ -54,5 +59,13 @@ abstract public class Item extends BaseEntity {
 
     public double getStartPrice() {
         return startPrice;
+    }
+
+    public String getSellerId() {
+        return sellerId;
+    }
+
+    public void setSellerId(String sellerId) {
+        this.sellerId = sellerId;
     }
 }

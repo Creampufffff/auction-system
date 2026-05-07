@@ -20,7 +20,7 @@ public class ItemDAOImpl implements ItemDAO {
     public Item findById(String id) {
         String sql = """
                 SELECT id, type, name, description, start_date, end_date, start_price,
-                       min_increment, highest_current_price, author, warranty_months, brand
+                       min_increment, highest_current_price, author, warranty_months, brand, seller_id
                 FROM items
                 WHERE id = ?
                 """;
@@ -45,7 +45,7 @@ public class ItemDAOImpl implements ItemDAO {
     public List<Item> findAll() {
         String sql = """
                 SELECT id, type, name, description, start_date, end_date, start_price,
-                       min_increment, highest_current_price, author, warranty_months, brand
+                       min_increment, highest_current_price, author, warranty_months, brand, seller_id
                 FROM items
                 ORDER BY name
                 """;
@@ -77,9 +77,9 @@ public class ItemDAOImpl implements ItemDAO {
         String sql = """
                 INSERT INTO items (
                     id, type, name, description, start_date, end_date, start_price,
-                    min_increment, highest_current_price, author, warranty_months, brand
+                    min_increment, highest_current_price, author, warranty_months, brand, seller_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     type = VALUES(type),
                     name = VALUES(name),
@@ -91,7 +91,8 @@ public class ItemDAOImpl implements ItemDAO {
                     highest_current_price = VALUES(highest_current_price),
                     author = VALUES(author),
                     warranty_months = VALUES(warranty_months),
-                    brand = VALUES(brand)
+                    brand = VALUES(brand),
+                    seller_id = VALUES(seller_id)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -113,6 +114,7 @@ public class ItemDAOImpl implements ItemDAO {
             }
 
             statement.setString(12, entity instanceof Vehicle ? ((Vehicle) entity).getBrand() : null);
+            statement.setString(13, entity.getSellerId());
 
             return statement.executeUpdate() > 0;
         }
@@ -169,6 +171,7 @@ public class ItemDAOImpl implements ItemDAO {
 
         item.setId(resultSet.getString("id"));
         item.setHighestCurrentPrice(resultSet.getDouble("highest_current_price"));
+        item.setSellerId(resultSet.getString("seller_id"));
         return item;
     }
 

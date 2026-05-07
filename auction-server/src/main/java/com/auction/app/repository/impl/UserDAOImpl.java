@@ -19,7 +19,7 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public User findById(String id) {
-        String sql = "SELECT id, username, password, email, role FROM users WHERE id = ?";
+        String sql = "SELECT id, username, password, email, role, balance FROM users WHERE id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -39,7 +39,7 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public List<User> findAll() {
-        String sql = "SELECT id, username, password, email, role FROM users ORDER BY username";
+        String sql = "SELECT id, username, password, email, role, balance FROM users ORDER BY username";
         List<User> users = new ArrayList<>();
 
         try (Connection connection = DatabaseConfig.getConnection();
@@ -58,13 +58,14 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public boolean save(User entity) {
         String sql = """
-                INSERT INTO users (id, username, password, email, role)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (id, username, password, email, role, balance)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     username = VALUES(username),
                     password = VALUES(password),
                     email = VALUES(email),
-                    role = VALUES(role)
+                    role = VALUES(role),
+                    balance = VALUES(balance)
                 """;
 
         try (Connection connection = DatabaseConfig.getConnection();
@@ -74,6 +75,7 @@ public class UserDAOImpl implements UserDAO {
             statement.setString(3, entity.getPassword());
             statement.setString(4, entity.getEmail());
             statement.setString(5, resolveRole(entity));
+            statement.setDouble(6, entity.getBalance());
 
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -96,7 +98,7 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public User findByUsername(String username) {
-        String sql = "SELECT id, username, password, email, role FROM users WHERE username = ?";
+        String sql = "SELECT id, username, password, email, role, balance FROM users WHERE username = ?";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -139,6 +141,7 @@ public class UserDAOImpl implements UserDAO {
         }
 
         user.setId(resultSet.getString("id"));
+        user.setBalance(resultSet.getDouble("balance"));
         return user;
     }
 

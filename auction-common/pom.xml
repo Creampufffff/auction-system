@@ -1,6 +1,7 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>auction-common</artifactId>
+
     <parent>
         <groupId>vn.uet.auction</groupId>
         <artifactId>auction-app</artifactId>

@@ -1,27 +1,43 @@
 package com.auction.app.service.impl;
 
 import com.app.common.entity.Auction;
+import com.app.common.entity.BidTransaction;
+import com.app.common.entity.User;
+import com.app.common.exception.AuctionClosedException;
+import com.app.common.exception.AuctionNotFoundException;
 import com.app.common.enums.Status;
 import com.auction.app.repository.AuctionDAO;
+import com.auction.app.repository.BidDAO;
+import com.auction.app.repository.UserDAO;
+import com.auction.app.repository.impl.BidDAOImpl;
+import com.auction.app.repository.impl.UserDAOImpl;
 import com.auction.app.service.AuctionService;
 
 import java.util.List;
 
 public class AuctionServiceImpl implements AuctionService {
     private final AuctionDAO auctionDAO;
+    private final BidDAO bidDAO;
+    private final UserDAO userDAO;
 
     public AuctionServiceImpl(AuctionDAO auctionDAO) {
+        this(auctionDAO, new BidDAOImpl(), new UserDAOImpl());
+    }
+
+    public AuctionServiceImpl(AuctionDAO auctionDAO, BidDAO bidDAO, UserDAO userDAO) {
         this.auctionDAO = auctionDAO;
+        this.bidDAO = bidDAO;
+        this.userDAO = userDAO;
     }
 
     @Override
     public void saveAuction(Auction auction) {
         if (auction == null) {
-            throw new IllegalArgumentException("Auction cannot be null!");
+            throw new IllegalArgumentException("Auction không thể null!");
         }
 
         if (auction.getItem() == null) {
-            throw new IllegalArgumentException("Auction item cannot be null");
+            throw new IllegalArgumentException("Item của Auction không thể null");
         }
 
         if (auction.getAuctionStatus() == null) {
@@ -29,45 +45,51 @@ public class AuctionServiceImpl implements AuctionService {
         }
 
         if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Cannot save auction");
+            throw new IllegalStateException("Không thể lưu phiên đấu giá");
         }
     }
 
     @Override
     public void startAuction(String auctionId) {
         validateId(auctionId);
+
         Auction auction = getAuctionById(auctionId);
 
         if (auction == null) {
-            throw new IllegalArgumentException("Auction not found");
+            throw new AuctionNotFoundException("Không tìm thấy phiên đấu giá");
         }
 
         if (auction.getAuctionStatus() != Status.OPEN) {
-            throw new IllegalArgumentException("Only OPEN auctions can be started");
+            throw new AuctionClosedException("Chỉ có thể bắt đầu phiên ở trạng thái OPEN");
         }
 
         auction.setAuctionStatus(Status.RUNNING);
+
         if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Cannot start auction");
+            throw new IllegalStateException("Không thể bắt đầu phiên đấu giá");
         }
     }
 
     @Override
     public void endAuction(String auctionId) {
         validateId(auctionId);
+
         Auction auction = getAuctionById(auctionId);
 
         if (auction == null) {
-            throw new IllegalArgumentException("Auction not found");
+            throw new AuctionNotFoundException("Không tìm thấy phiên đấu giá");
         }
 
         if (auction.getAuctionStatus() == Status.FINISHED) {
             return;
         }
 
+        settleWinningBid(auction);
+
         auction.setAuctionStatus(Status.FINISHED);
+
         if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Cannot end auction");
+            throw new IllegalStateException("Không thể kết thúc phiên đấu giá");
         }
     }
 
@@ -89,7 +111,38 @@ public class AuctionServiceImpl implements AuctionService {
 
     private void validateId(String id) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("Auction id" + " cannot be empty");
+            throw new IllegalArgumentException("ID phiên không được để trống");
+        }
+    }
+
+    private void settleWinningBid(Auction auction) {
+
+        BidTransaction highestBid = bidDAO.getMaxBidByAuctionId(auction.getId());
+
+        if (highestBid == null) {
+            return;
+        }
+
+        User winner = userDAO.findById(highestBid.getBidder().getId());
+        if (winner == null) {
+            throw new IllegalStateException("Không tìm thấy người thắng");
+        }
+
+        winner.withdraw(highestBid.getBidAmount());
+
+        String sellerId = auction.getItem().getSellerId();
+        User seller = userDAO.findById(sellerId);
+        if (seller == null) {
+            throw new IllegalStateException("Không tìm thấy người bán");
+        }
+
+        seller.deposit(highestBid.getBidAmount());
+
+        if (!userDAO.save(winner)) {
+            throw new IllegalStateException("Không thể cập nhật tài khoản người thắng");
+        }
+        if (!userDAO.save(seller)) {
+            throw new IllegalStateException("Không thể cập nhật tài khoản người bán");
         }
     }
 }
