@@ -1,9 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
-<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.client.controller.ProductDetailController" spacing="10" alignment="CENTER">
-    <Label text="Chi Tiết Sản Phẩm"/>
-    <Button text="Quay lại" onAction="#handleBack"/>
-</VBox>
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.ProductDetailController"
+      prefWidth="1040" prefHeight="660"
+      style="-fx-background-color: #f3f6fb;">
+
+    <VBox prefWidth="230" spacing="22" style="-fx-background-color: #172033;">
+        <padding><Insets top="28" right="18" bottom="24" left="18"/></padding>
+        <VBox spacing="2">
+            <Label text="THÔNG TIN" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
+            <Label text="Sản phẩm" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        </VBox>
+        <VBox spacing="8">
+            <Button text="← Quay lại" onAction="#handleBack" maxWidth="Infinity" alignment="CENTER_LEFT"
+                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14; -fx-border-color: rgba(255,255,255,0.2); -fx-border-radius: 6;"/>
+        </VBox>
+        <Region VBox.vgrow="ALWAYS"/>
+    </VBox>
+
+    <VBox spacing="18" HBox.hgrow="ALWAYS">
+        <padding><Insets top="28" right="34" bottom="28" left="34"/></padding>
+
+        <HBox alignment="CENTER_LEFT" spacing="18">
+            <VBox spacing="4">
+                <Label fx:id="productNameLabel" style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                <Label fx:id="categoryLabel" style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Tham gia đấu giá" onAction="#handleJoinAuction"
+                    style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 20;"/>
+        </HBox>
+
+        <HBox spacing="14" VBox.vgrow="ALWAYS">
+            <VBox spacing="14" prefWidth="380">
+                <VBox alignment="CENTER" prefHeight="320"
+                      style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e0e7f0; -fx-border-radius: 10;">
+                    <Label text="[ CHƯA CÓ HÌNH ẢNH ]" style="-fx-text-fill: #9aa8bd;"/>
+                </VBox>
+                <VBox spacing="8" style="-fx-background-color: #172033; -fx-background-radius: 10; -fx-padding: 20;">
+                    <Label text="GIÁ HIỆN TẠI" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
+                    <Label fx:id="startingPriceLabel" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                </VBox>
+            </VBox>
+
+            <VBox spacing="20" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e0e7f0; -fx-border-radius: 10; -fx-padding: 25;">
+                <Label text="CHI TIẾT KỸ THUẬT" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
+                <GridPane vgap="18" hgap="20">
+                    <columnConstraints>
+                        <ColumnConstraints prefWidth="100"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="0"/>
+                    <Label fx:id="conditionLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="1"/>
+                    <Label fx:id="specsLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="Bảo hành:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
+                    <Label fx:id="warrantyLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                </GridPane>
+                <Region VBox.vgrow="ALWAYS"/>
+                <Separator style="-fx-opacity: 0.5;"/>
+                <Label fx:id="endTimeLabel" style="-fx-font-weight: bold; -fx-text-fill: #d92d20;"/>
+            </VBox>
+        </HBox>
+    </VBox>
+</HBox>

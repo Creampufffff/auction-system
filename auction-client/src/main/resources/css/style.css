@@ -24,15 +24,18 @@
 
 .modern-input {
     -fx-background-color: white;
-    -fx-border-color: #d0d5dd; /* Màu viền đồng bộ dashboard */
+    -fx-border-color: #d0d5dd;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 10;
+    /* Thêm hiệu ứng mượt khi focus */
+    -fx-transition: all 0.3s ease-in-out;
 }
 
 .modern-input:focused {
-    -fx-border-color: #2d6cdf; /* Màu xanh chủ đạo dashboard */
+    -fx-border-color: #2d6cdf;
     -fx-border-width: 2;
+    -fx-effect: dropshadow(three-pass-box, rgba(45, 108, 223, 0.1), 10, 0, 0, 0);
 }
 
 .primary-button {
@@ -62,46 +65,69 @@
 }
 
 /* ============================================================
-   SECTION 2: LIVE BIDDING SCREEN (COLORFUL & MODERN)
+   SECTION 2: LIVE BIDDING & DASHBOARD SYSTEM
    ============================================================ */
 
 .live-root {
-    /* Đổi sang màu nền trung tính giống AuctionList để đồng bộ */
     -fx-background-color: #f3f6fb;
 }
 
-/* Sidebar tối màu giống bản AuctionList */
 .sidebar-uet {
     -fx-background-color: #172033;
 }
 
+/* --- FIX TRIỆT ĐỂ NÚT QUAY LẠI: KHÔNG CÒN VIỀN XÁM --- */
+.btn-back-outline {
+    -fx-background-color: rgba(255, 255, 255, 0.03) !important;
+    -fx-border-color: rgba(255, 255, 255, 0.2) !important;
+    -fx-border-width: 1px !important;
+    -fx-border-radius: 6px !important;
+    -fx-background-radius: 6px !important;
+    -fx-text-fill: #afb9c7 !important;
+    -fx-font-size: 13px !important;
+    -fx-font-weight: bold !important;
+    -fx-padding: 8 15 !important;
+    -fx-cursor: hand !important;
+
+    /* XÓA BỎ HOÀN TOÀN FOCUS RING VÀ VIỀN XÁM MẶC ĐỊNH */
+    -fx-background-insets: 0 !important;
+    -fx-focus-color: transparent !important;
+    -fx-faint-focus-color: transparent !important;
+    -fx-effect: null !important;
+}
+
+/* Ép trạng thái khi nút được focus (mới vào màn hình) phải giống trạng thái bình thường */
+.btn-back-outline:focused {
+    -fx-background-insets: 0 !important;
+    -fx-background-color: rgba(255, 255, 255, 0.03) !important;
+    -fx-border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-back-outline:hover {
+    -fx-background-color: #2d6cdf !important; /* Đổi sang xanh UET khi di chuột */
+    -fx-text-fill: white !important;
+    -fx-border-color: #2d6cdf !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(45, 108, 223, 0.4), 8, 0, 0, 0);
+}
+
+/* Loại bỏ class thừa để tránh xung đột */
+.btn-back-modern {
+    -fx-display: none;
+}
+
+/* --- CÁC THÀNH PHẦN KHÁC --- */
 .header-gradient {
-    /* Đổi sang màu trắng để làm nổi bật Sidebar và Card */
     -fx-background-color: white;
     -fx-border-color: transparent transparent #e4e7ec transparent;
     -fx-border-width: 1;
-}
-
-.header-text-main {
-    -fx-text-fill: #172033;
-    -fx-font-size: 20px;
-    -fx-font-weight: bold;
-}
-
-.status-badge {
-    /* Màu xanh lá nhẹ phong cách Dashboard hiện đại */
-    -fx-background-color: #ecfdf3;
-    -fx-text-fill: #027a48;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-padding: 4 10;
-    -fx-background-radius: 12;
 }
 
 .timer-container {
     -fx-background-color: #172033;
     -fx-padding: 8 20;
     -fx-background-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.1);
+    -fx-border-radius: 8;
 }
 
 .timer-text {
@@ -111,25 +137,10 @@
     -fx-font-weight: bold;
 }
 
-.product-card-fancy {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-border-color: #e0e7f0;
-    -fx-border-radius: 12;
-    /* Đổ bóng nhẹ hơn cho chuyên nghiệp */
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 15, 0, 0, 5);
-}
-
-.product-title-fancy {
-    -fx-font-size: 26px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #172033;
-}
-
 .price-box {
-    /* Gradient xanh công nghệ */
     -fx-background-color: linear-gradient(to right, #2d6cdf 0%, #1a237e 100%);
-    -fx-background-radius: 10;
+    -fx-background-radius: 12;
+    -fx-padding: 15;
 }
 
 .price-value-big {
@@ -138,56 +149,22 @@
     -fx-font-weight: bold;
 }
 
-.label-price-title {
-    -fx-text-fill: rgba(255,255,255,0.7);
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-}
-
 .btn-bid-fire {
-    /* Đặt giá màu xanh chủ đạo cho đồng bộ Dashboard */
     -fx-background-color: #2d6cdf;
     -fx-text-fill: white;
     -fx-font-weight: bold;
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
     -fx-background-radius: 8;
-    -fx-padding: 12 30;
+    -fx-padding: 12 35;
     -fx-cursor: hand;
 }
 
 .btn-bid-fire:hover {
     -fx-background-color: #1a237e;
-    -fx-scale-x: 1.03;
-    -fx-scale-y: 1.03;
+    -fx-translate-y: -2;
+    -fx-effect: dropshadow(three-pass-box, rgba(26, 35, 126, 0.4), 12, 0, 0, 5);
 }
 
-.btn-back-modern {
-    -fx-background-color: transparent;
-    -fx-text-fill: #c7d0dd;
-    -fx-border-color: rgba(255,255,255,0.2);
-    -fx-border-radius: 6;
-    -fx-padding: 8 12;
-}
-
-.btn-back-modern:hover {
-    -fx-background-color: #2d6cdf;
-    -fx-text-fill: white;
-    -fx-border-color: #2d6cdf;
-}
-
-.history-container {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-border-color: #e0e7f0;
-    -fx-border-radius: 12;
-}
-
-.modern-list-view {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-/* Trang trí các dòng trong List cho đẹp */
 .modern-list-view .list-cell {
     -fx-background-color: transparent;
     -fx-padding: 10 5;
@@ -196,6 +173,28 @@
     -fx-text-fill: #344054;
 }
 
-.modern-list-view .list-cell:filled:hover {
-    -fx-background-color: #f9fafb;
+.modern-list-view .list-cell:filled:selected {
+    -fx-background-color: #f0f7ff;
+    -fx-text-fill: #2d6cdf;
+    -fx-font-weight: bold;
+}
+
+/* ============================================================
+   ADDITIONAL UTILITIES
+   ============================================================ */
+
+.custom-separator {
+    -fx-background-color: #e4e7ec;
+    -fx-pref-height: 1;
+}
+
+.grid-label-header {
+    -fx-text-fill: #667085;
+    -fx-font-size: 13px;
+}
+
+.grid-label-value {
+    -fx-text-fill: #172033;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
 }

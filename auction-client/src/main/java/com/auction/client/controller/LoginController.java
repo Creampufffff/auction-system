@@ -1,104 +1,73 @@
 package com.auction.client.controller;
 
-import com.app.common.dto.LoginResponseDTO;
-import com.auction.client.service.AuthService;
-import com.auction.client.session.SessionManager;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 public class LoginController {
 
-    @FXML
-    private TextField usernameField;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button loginButton;
+    @FXML private Label messageLabel;
 
     @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private Label messageLabel;
-
-    private final AuthService authService = new AuthService();
-
-    @FXML
-    private void handleLogin() {
+    private void handleLogin(ActionEvent event) {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        if (username == null || username.trim().isEmpty()) {
-            messageLabel.setText("Vui lòng nhập username!");
+        // 1. Kiểm tra rỗng
+        if (username.isEmpty() || password.isEmpty()) {
+            showError("Vui lòng nhập đầy đủ tài khoản và mật khẩu.");
             return;
         }
 
-        if (password == null || password.trim().isEmpty()) {
-            messageLabel.setText("Vui lòng nhập password!");
-            return;
-        }
+        // 2. Kiểm tra tài khoản (Bổ sung anhdaden/123)
+        // Mình giữ cả admin/123 để Thang có thêm phương án dự phòng
+        if ((username.equals("anhdaden") && password.equals("123")) ||
+                (username.equals("admin") && password.equals("123"))) {
 
-        LoginResponseDTO loginResponse = authService.login(username, password);
+            messageLabel.setStyle("-fx-text-fill: #2ecc71;");
+            messageLabel.setText("Đăng nhập thành công! Đang vào hệ thống...");
 
-        if (loginResponse != null) {
-            SessionManager.setCurrentUser(loginResponse);
-            messageLabel.setStyle("-fx-text-fill: green;");
-            messageLabel.setText("Đăng nhập thành công!");
-
-            // đăng nhập thành công thì chuyển sang AuctionList
-            switchToAuctionList();
+            // Chuyển sang Dashboard (Kích thước chuẩn cho bảng đấu giá)
+            switchScene("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1040, 660);
         } else {
-            messageLabel.setStyle("-fx-text-fill: red;");
-            messageLabel.setText("Sai username hoặc password!");
-        }
-
-        // để check UI AuctionList (test)
-        if (username.equals("anhdaden") && password.equals("123")){
-            LoginResponseDTO testUser = new LoginResponseDTO();
-            testUser.setUserId("test-user-id");
-            testUser.setUsername(username);
-            testUser.setRole("Bidder");
-            testUser.setBalance(0.0);
-            SessionManager.setCurrentUser(testUser);
-            switchToAuctionList();
-        }
-    }
-
-    private void switchToAuctionList() {
-        try {
-            Parent root = FXMLLoader.load(
-                    getClass().getResource("/fxml/AuctionList.fxml")
-            );
-
-            Stage stage = (Stage) usernameField.getScene().getWindow();
-            stage.setTitle("Hệ thống đấu giá");
-            stage.setScene(new Scene(root, 800, 600));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            messageLabel.setText("Không thể mở màn hình danh sách đấu giá");
+            showError("Sai tên đăng nhập hoặc mật khẩu.");
         }
     }
 
     @FXML
-    private void handleOpenRegister() {
+    private void handleOpenRegister(ActionEvent event) {
+        // Chuyển sang màn hình Register (Kích thước 800x600)
+        switchScene("/fxml/Register.fxml", "Đăng ký tài khoản", 800, 600);
+    }
+
+    /**
+     * Hàm hỗ trợ chuyển cảnh linh hoạt kích thước
+     */
+    private void switchScene(String fxmlPath, String title, double width, double height) {
         try {
-            Parent root = FXMLLoader.load(
-                    getClass().getResource("/fxml/Register.fxml")
-            );
-
-            Stage stage = (Stage) usernameField.getScene().getWindow();
-            stage.setTitle("Đăng ký tài khoản");
-            stage.setScene(new Scene(root, 800, 600));
-
+            Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
+            Stage stage = (Stage) loginButton.getScene().getWindow();
+            stage.setTitle(title);
+            stage.setScene(new Scene(root, width, height));
+            stage.centerOnScreen();
         } catch (Exception e) {
             e.printStackTrace();
-            messageLabel.setStyle("-fx-text-fill: red;");
-            messageLabel.setText("Không thể mở màn hình đăng ký.");
+            showError("Lỗi hệ thống: Không thể nạp file giao diện.");
         }
     }
 
-
+    private void showError(String message) {
+        messageLabel.setStyle("-fx-text-fill: #e74c3c;");
+        messageLabel.setText(message);
+    }
 }
