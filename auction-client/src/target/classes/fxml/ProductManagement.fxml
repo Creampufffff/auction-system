@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.ProductManagementController" spacing="10">
+      fx:controller="com.auction.client.controller.ProductManagementController" spacing="10">
     <Label text="Quản Lý Sản Phẩm Của Tôi"/>
     <TableView fx:id="myProductsTable" prefHeight="300">
     </TableView>

@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.LiveBiddingController" spacing="20">
+      fx:controller="com.auction.client.controller.LiveBiddingController" spacing="20">
     <VBox spacing="10">
         <Label text="Sản phẩm đang đấu giá: ..."/>
         <Label text="Thời gian còn lại: 00:05:30"/>

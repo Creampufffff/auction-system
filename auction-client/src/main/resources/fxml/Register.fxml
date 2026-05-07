@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.RegisterController"
+      alignment="CENTER"
+      spacing="15"
+      prefWidth="800"
+      prefHeight="600"
+      style="-fx-background-color: #f5f5f5;">
+
+    <padding>
+        <Insets top="30" right="40" bottom="30" left="40"/>
+    </padding>
+
+    <Label text="Register"
+           style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+
+    <Label text="Tao tai khoan moi"
+           style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
+
+    <VBox spacing="8" maxWidth="300">
+        <Label text="Username"/>
+        <TextField fx:id="usernameField" promptText="Nhap username"/>
+    </VBox>
+
+    <VBox spacing="8" maxWidth="300">
+        <Label text="Email"/>
+        <TextField fx:id="emailField" promptText="Nhap email"/>
+    </VBox>
+
+    <VBox spacing="8" maxWidth="300">
+        <Label text="Password"/>
+        <PasswordField fx:id="passwordField" promptText="Nhap password"/>
+    </VBox>
+
+    <VBox spacing="8" maxWidth="300">
+        <Label text="Confirm Password"/>
+        <PasswordField fx:id="confirmPasswordField" promptText="Nhap lai password"/>
+    </VBox>
+
+    <Button text="Register"
+            onAction="#handleRegister"
+            maxWidth="300"
+            style="-fx-background-color: #2d6cdf; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+    <Button text="Quay lai dang nhap"
+            onAction="#handleBackToLogin"
+            maxWidth="300"
+            style="-fx-background-color: transparent; -fx-text-fill: #2d6cdf; -fx-underline: true;"/>
+
+    <Label fx:id="messageLabel"
+           text=""
+           style="-fx-text-fill: red;"/>
+
+</VBox>

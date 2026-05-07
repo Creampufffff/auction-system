@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.AuctionListController"
+      fx:controller="com.auction.client.controller.AuctionListController"
       spacing="15" alignment="CENTER" prefHeight="600.0" prefWidth="800.0" style="-fx-padding: 20;">
 
     <Label text="Danh Sách Phiên Đấu Giá" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
