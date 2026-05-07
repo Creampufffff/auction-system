@@ -1,0 +1,22 @@
+package com.app.common.dto;
+
+import com.app.common.enums.Status;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data // Tự động sinh ra tất cả Getter, Setter, toString, equals, hashCode
+@NoArgsConstructor // Tự động sinh ra Constructor rỗng
+@AllArgsConstructor // Tự động sinh ra Constructor có đủ tất cả tham số
+public class AuctionListDTO {
+    private String auctionId;
+    private String itemId;
+    private String name;
+    private double currentPrice;
+    private Status auctionStatus;
+
+    // --- CÁC TRƯỜNG BỔ SUNG ĐỂ HIỂN THỊ CHI TIẾT KỸ THUẬT ---
+    private String condition;   // Tình trạng sản phẩm
+    private String description; // Mô tả chi tiết
+    private String warranty;    // Thông tin bảo hành
+}
