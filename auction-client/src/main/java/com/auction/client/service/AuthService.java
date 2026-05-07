@@ -31,21 +31,8 @@ public class AuthService {
             return null;
         }
 
-        try (
-                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
-        ) {
-            reader.readLine(); // OK|CONNECTED|Type HELP for commands
-
-            writer.println("LOGIN " + request.getUsername() + " " + request.getPassword());
-            String response = reader.readLine();
-
-            return parseLoginResponse(response);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        String response = sendCommand("LOGIN " + request.getUsername() + " " + request.getPassword());
+        return parseLoginResponse(response);
     }
 
     public RegisterResponseDTO register(String username, String password, String email) {
@@ -64,26 +51,29 @@ public class AuthService {
                 || request.getPassword().isBlank()
                 || request.getEmail() == null
                 || request.getEmail().isBlank()) {
-            return createRegisterResponse(false, "Thông tin đăng ký không hợp lệ.", null);
+            return createRegisterResponse(false, "Thong tin dang ky khong hop le.", null);
         }
 
+        String response = sendCommand("REGISTER_BIDDER "
+                + request.getUsername() + " "
+                + request.getPassword() + " "
+                + request.getEmail());
+        return parseRegisterResponse(response);
+    }
+
+    private String sendCommand(String command) {
         try (
                 Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            reader.readLine(); // OK|CONNECTED|Type HELP for commands, read bỏ line thừa
+            reader.readLine(); // OK|CONNECTED|Type HELP for commands
 
-            writer.println("REGISTER_BIDDER "
-                    + request.getUsername() + " "
-                    + request.getPassword() + " "
-                    + request.getEmail());
-            String response = reader.readLine();
-
-            return parseRegisterResponse(response);
+            writer.println(command);
+            return reader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
-            return createRegisterResponse(false, "Không thể kết nối tới server.", null);
+            return null;
         }
     }
 
@@ -97,27 +87,26 @@ public class AuthService {
             return null;
         }
 
-        double balance = Double.parseDouble(parts[5]);
-
+        double balance = parts.length >= 6 ? Double.parseDouble(parts[5]) : 0.0;
         return createLoginResponse(parts[2], parts[3], parts[4], balance);
     }
 
     private RegisterResponseDTO parseRegisterResponse(String response) {
         if (response == null || response.isBlank()) {
-            return createRegisterResponse(false, "Server không phản hồi.", null);
+            return createRegisterResponse(false, "Server khong phan hoi.", null);
         }
 
         if (response.startsWith("OK|REGISTER_BIDDER|")) {
             String[] parts = response.split("\\|");
             String userId = parts.length >= 3 ? parts[2] : null;
-            return createRegisterResponse(true, "Đăng ký thành công.", userId);
+            return createRegisterResponse(true, "Dang ky thanh cong.", userId);
         }
 
         if (response.startsWith("ERR|")) {
             return createRegisterResponse(false, response.substring(4), null);
         }
 
-        return createRegisterResponse(false, "Phản hồi đăng ký không hợp lệ.", null);
+        return createRegisterResponse(false, "Phan hoi dang ky khong hop le.", null);
     }
 
     private LoginResponseDTO createLoginResponse(String userId, String username, String role, double balance) {

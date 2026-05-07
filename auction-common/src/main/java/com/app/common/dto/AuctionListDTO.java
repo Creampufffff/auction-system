@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 
 public class AuctionListDTO {
     private String auctionId;
-    private String itemName;
+    private String itemId;
+    private String name;
     private double currentPrice;
-    private Status AuctionStatus;
+    private Status auctionStatus;
 }

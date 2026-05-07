@@ -2,6 +2,7 @@ package com.auction.client.controller;
 
 import com.app.common.dto.LoginResponseDTO;
 import com.auction.client.service.AuthService;
+import com.auction.client.session.SessionManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -42,6 +43,7 @@ public class LoginController {
         LoginResponseDTO loginResponse = authService.login(username, password);
 
         if (loginResponse != null) {
+            SessionManager.setCurrentUser(loginResponse);
             messageLabel.setStyle("-fx-text-fill: green;");
             messageLabel.setText("Đăng nhập thành công!");
 
@@ -54,6 +56,12 @@ public class LoginController {
 
         // để check UI AuctionList (test)
         if (username.equals("anhdaden") && password.equals("123")){
+            LoginResponseDTO testUser = new LoginResponseDTO();
+            testUser.setUserId("test-user-id");
+            testUser.setUsername(username);
+            testUser.setRole("Bidder");
+            testUser.setBalance(0.0);
+            SessionManager.setCurrentUser(testUser);
             switchToAuctionList();
         }
     }
