@@ -9,8 +9,8 @@ import javafx.stage.Stage;
 public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/fxml/AuctionList.fxml"));
-        primaryStage.setTitle("Hệ thống Đấu giá");
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/Login.fxml"));
+        primaryStage.setTitle("Đăng nhập vào hệ thống đấu giá");
         primaryStage.setScene(new Scene(root, 800, 600));
         primaryStage.show();
     }

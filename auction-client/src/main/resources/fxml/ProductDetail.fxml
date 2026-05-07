@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.controllers.ProductDetailController" spacing="10" alignment="CENTER">
+      fx:controller="com.auction.client.controller.ProductDetailController" spacing="10" alignment="CENTER">
     <Label text="Chi Tiết Sản Phẩm"/>
     <Button text="Quay lại" onAction="#handleBack"/>
 </VBox>
