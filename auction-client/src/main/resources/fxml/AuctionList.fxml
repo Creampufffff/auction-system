@@ -18,26 +18,30 @@
         </padding>
 
         <VBox spacing="2">
-            <Label text="AUCTION"
+            <Label text="ĐẤU GIÁ"
                    style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
-            <Label text="Command"
+            <Label text="Bảng điều khiển"
                    style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         </VBox>
 
         <VBox spacing="8">
-            <Button text="Current Auctions"
+            <Button text="Phiên đấu giá"
+                    onAction="#handleCurrentAuctions"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
-            <Button text="Live Bidding"
+            <Button text="Đấu giá trực tiếp"
+                    onAction="#handleSidebarBidding"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
-            <Button text="Products"
+            <Button text="Sản phẩm"
+                    onAction="#handleSidebarProducts"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
-            <Button text="Account"
+            <Button text="Tài khoản"
+                    onAction="#handleSidebarAccount"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
@@ -47,9 +51,9 @@
 
         <VBox spacing="6"
               style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
-            <Label text="Signed in"
+            <Label text="Đã đăng nhập"
                    style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
-            <Label text="Ready to bid"
+            <Label text="Sẵn sàng đấu giá"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         </VBox>
     </VBox>
@@ -61,15 +65,15 @@
 
         <HBox alignment="CENTER_LEFT" spacing="18">
             <VBox spacing="4">
-                <Label text="Current Auctions"
+                <Label text="Các phiên đấu giá"
                        style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
-                <Label text="Track active sessions, compare prices, and join bidding rooms."
+                <Label text="Theo dõi phiên đang mở, so sánh giá và tham gia phòng đấu giá."
                        style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
             </VBox>
 
             <Region HBox.hgrow="ALWAYS"/>
 
-            <TextField promptText="Search products..."
+            <TextField promptText="Tìm sản phẩm..."
                        prefWidth="270"
                        style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #d0d5dd; -fx-border-radius: 6; -fx-padding: 10 13;"/>
         </HBox>
@@ -78,33 +82,33 @@
             <VBox spacing="8"
                   HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
-                <Label text="TOTAL SESSIONS"
+                <Label text="TỔNG PHIÊN"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
-                <Label text="Active"
+                <Label text="Đang mở"
                        style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
-                <Label text="Loaded from server"
+                <Label text="Tải từ máy chủ"
                        style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
             </VBox>
 
             <VBox spacing="8"
                   HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
-                <Label text="BIDDING MODE"
+                <Label text="CHẾ ĐỘ"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
-                <Label text="Live"
+                <Label text="Trực tiếp"
                        style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #12a594;"/>
-                <Label text="Select a row to continue"
+                <Label text="Chọn một dòng để tiếp tục"
                        style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
             </VBox>
 
             <VBox spacing="8"
                   HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
-                <Label text="ACCOUNT STATUS"
+                <Label text="TÀI KHOẢN"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
-                <Label text="Verified"
+                <Label text="Hợp lệ"
                        style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;"/>
-                <Label text="Session available"
+                <Label text="Phiên đăng nhập sẵn sàng"
                        style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
             </VBox>
         </HBox>
@@ -115,9 +119,9 @@
 
             <HBox alignment="CENTER_LEFT" spacing="12">
                 <VBox spacing="2">
-                    <Label text="Auction Sessions"
+                    <Label text="Danh sách phiên đấu giá"
                            style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
-                    <Label text="Choose a product row to inspect or enter bidding."
+                    <Label text="Chọn một sản phẩm để xem chi tiết hoặc tham gia đấu giá."
                            style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
                 </VBox>
                 <Region HBox.hgrow="ALWAYS"/>
@@ -133,21 +137,21 @@
                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                 </columnResizePolicy>
                 <columns>
-                    <TableColumn fx:id="idColumn" text="Auction ID"/>
-                    <TableColumn fx:id="nameColumn" text="Product"/>
-                    <TableColumn fx:id="priceColumn" text="Current Price"/>
-                    <TableColumn fx:id="statusColumn" text="Status"/>
+                    <TableColumn fx:id="idColumn" text="Mã phiên"/>
+                    <TableColumn fx:id="nameColumn" text="Sản phẩm"/>
+                    <TableColumn fx:id="priceColumn" text="Giá hiện tại"/>
+                    <TableColumn fx:id="statusColumn" text="Trạng thái"/>
                 </columns>
             </TableView>
         </VBox>
 
         <HBox spacing="12" alignment="CENTER_RIGHT">
-            <Button text="View Details"
+            <Button text="Xem chi tiết"
                     onAction="#handleViewDetail"
                     prefWidth="150"
                     style="-fx-background-color: white; -fx-border-color: #b8c2d6; -fx-border-radius: 6; -fx-background-radius: 6; -fx-text-fill: #344054; -fx-font-weight: bold; -fx-padding: 11 14;"/>
 
-            <Button text="Join Bidding"
+            <Button text="Tham gia"
                     onAction="#handleJoinBidding"
                     prefWidth="150"
                     style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
