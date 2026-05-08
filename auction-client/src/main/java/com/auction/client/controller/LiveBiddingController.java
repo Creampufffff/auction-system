@@ -19,6 +19,7 @@ public class LiveBiddingController {
     @FXML private Label productNameLabel;
     @FXML private Label currentPriceLabel;
     @FXML private Label timerLabel;
+    @FXML private Label accountBalanceLabel; // MỚI: Thêm Label ví tiền
     @FXML private TextField bidAmountField;
     @FXML private ListView<String> bidHistoryList;
     @FXML private Button backButton;
@@ -26,7 +27,7 @@ public class LiveBiddingController {
     private Product currentProduct;
     private Timer timer;
     private int timeLeft = 30;
-
+    private boolean isDialogShown = false; // Biến cờ để kiểm tra
     private ObservableList<String> bidHistory;
     private static LiveBiddingController activeController;
 
@@ -35,6 +36,14 @@ public class LiveBiddingController {
         activeController = this;
         setupBackButton();
         startCountdown();
+        updateBalanceUI(); // Cập nhật ví ngay khi vào phòng
+    }
+
+    private void updateBalanceUI() {
+        if (accountBalanceLabel != null) {
+            double balance = ProductDataManager.getInstance().getUserBalance();
+            accountBalanceLabel.setText("$" + String.format("%.2f", balance));
+        }
     }
 
     @FXML
@@ -43,7 +52,6 @@ public class LiveBiddingController {
 
         if (timeLeft <= 0) {
             showAlert("Thông báo", "Phiên đấu giá đã kết thúc!");
-            bidAmountField.setDisable(true);
             return;
         }
 
@@ -52,30 +60,35 @@ public class LiveBiddingController {
             double currentPrice = currentProduct.getPrice();
 
             if (bidAmount > currentPrice) {
-                currentProduct.setPrice(bidAmount);
-                currentPriceLabel.setText("$" + String.format("%.2f", bidAmount));
+                ProductDataManager manager = ProductDataManager.getInstance();
+                double previouslyHeld = manager.getHeldMoney(currentProduct.getId());
 
-                // 1. Lưu giá vào Manager để đồng bộ dữ liệu
-                ProductDataManager.getInstance().setCurrentPrice(currentProduct.getId(), bidAmount);
+                if (manager.getUserBalance() + previouslyHeld >= bidAmount) {
+                    // Xử lý trừ tiền
+                    manager.refundBalance(previouslyHeld);
+                    manager.deductBalance(bidAmount);
+                    manager.setHeldMoney(currentProduct.getId(), bidAmount);
 
-                // [MỚI] 2. CẬP NHẬT GIÁ REAL-TIME CHO BẢNG DANH SÁCH BÊN NGOÀI
-                ProductDataManager.getInstance().getServerAuctionList().stream()
-                        .filter(a -> a.getAuctionId().equals(currentProduct.getId()))
-                        .findFirst()
-                        .ifPresent(a -> a.setCurrentPrice(bidAmount));
+                    // Cập nhật giá
+                    currentProduct.setPrice(bidAmount);
+                    currentPriceLabel.setText("$" + String.format("%.2f", bidAmount));
+                    manager.setCurrentPrice(currentProduct.getId(), bidAmount);
 
-                // 3. Cập nhật người dẫn đầu
-                ProductDataManager.getInstance().setLeadingUser(currentProduct.getId(), "dang_thang_uet");
+                    // Cập nhật ví trên UI ngay lập tức
+                    updateBalanceUI();
 
-                // Anti-Sniping logic
-                if (timeLeft <= 30) {
-                    timeLeft += 30;
-                    ProductDataManager.getInstance().setTimeLeft(currentProduct.getId(), timeLeft);
-                    bidHistory.add(0, "⚠️ Hệ thống: Gia hạn thêm 30 giây!");
+                    bidHistory.add(0, "Bạn đã đặt giá thành công: $" + bidAmount);
+                    bidAmountField.clear();
+
+                    // Tweak gia hạn thời gian
+                    if (timeLeft <= 30) {
+                        timeLeft += 30;
+                        manager.setTimeLeft(currentProduct.getId(), timeLeft);
+                        bidHistory.add(0, "⚠️ Hệ thống: Gia hạn thêm 30 giây!");
+                    }
+                } else {
+                    showAlert("Số dư không đủ", "Bạn không đủ tiền để thực hiện mức giá này!");
                 }
-
-                bidHistory.add(0, "Bạn đã đặt giá: $" + bidAmount);
-                bidAmountField.clear();
             } else {
                 showAlert("Giá thầu thấp", "Bạn phải đặt cao hơn $" + currentPrice);
             }
@@ -86,6 +99,8 @@ public class LiveBiddingController {
 
     public void setProduct(Product product) {
         this.currentProduct = product;
+        this.isDialogShown = false;
+        this.currentProduct = product;
         productNameLabel.setText(product.getName());
 
         double savedPrice = ProductDataManager.getInstance().getCurrentPrice(product.getId(), product.getPrice());
@@ -94,8 +109,18 @@ public class LiveBiddingController {
 
         this.timeLeft = ProductDataManager.getInstance().getTimeLeft(product.getId(), 30);
 
+        // CHỐNG LẶP: Clear sạch lịch sử trước khi nạp
         this.bidHistory = ProductDataManager.getInstance().getHistoryForProduct(product.getId());
+        this.bidHistory.clear();
         bidHistoryList.setItems(this.bidHistory);
+
+        // Hiển thị trạng thái giữ chỗ
+        double myHeldMoney = ProductDataManager.getInstance().getHeldMoney(product.getId());
+        if (myHeldMoney > 0) {
+            bidHistory.add(0, "ℹ️ Bạn đang dẫn đầu sàn này với: $" + myHeldMoney);
+        } else {
+            bidHistory.add(0, "ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
+        }
 
         if (timeLeft <= 0) {
             timerLabel.setText("HẾT GIỜ");
@@ -103,6 +128,7 @@ public class LiveBiddingController {
         }
     }
 
+    // ... (Giữ nguyên các hàm startCountdown, handleBack, switchScene từ code cũ của bạn) ...
     private void startCountdown() {
         if (timer != null) timer.cancel();
         timer = new Timer(true);
@@ -118,6 +144,9 @@ public class LiveBiddingController {
                     timeLeft = ProductDataManager.getInstance().getTimeLeft(currentProduct.getId(), 30);
 
                     if (timeLeft > 0) {
+                        // Reset cờ nếu thời gian được gia hạn (ví dụ bid ở giây cuối)
+                        isDialogShown = false;
+
                         int mins = timeLeft / 60;
                         int secs = timeLeft % 60;
                         timerLabel.setText(String.format("%02d:%02d", mins, secs));
@@ -126,12 +155,16 @@ public class LiveBiddingController {
                         timerLabel.setStyle("-fx-text-fill: #ff4d4d; -fx-font-weight: bold;");
                         bidAmountField.setDisable(true);
 
-                        ProductDataManager.getInstance().closeAuction(currentProduct.getId());
+                        // CHỈ HIỆN DIALOG NẾU CHƯA HIỆN
+                        if (!isDialogShown) {
+                            isDialogShown = true; // Đánh dấu đã hiện
 
-                        String winnerName = ProductDataManager.getInstance().getLeadingUser(currentProduct.getId(), "Không có ai");
-                        showWinnerDialog(winnerName);
+                            ProductDataManager.getInstance().closeAuction(currentProduct.getId());
+                            String winnerName = ProductDataManager.getInstance().getLeadingUser(currentProduct.getId(), "Không có ai");
 
-                        stopTimer();
+                            showWinnerDialog(winnerName);
+                            stopTimer(); // Dừng hẳn timer sau khi hiện xong
+                        }
                     }
                 });
             }
@@ -143,9 +176,13 @@ public class LiveBiddingController {
         alert.setTitle("Kết quả đấu giá");
         alert.setHeaderText("Phiên đấu giá đã kết thúc!");
         alert.setContentText("Người chiến thắng: " + winnerName + "\nSản phẩm: " + currentProduct.getName());
-        alert.show();
-    }
 
+        // Thêm một chút style cho chuyên nghiệp
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setStyle("-fx-font-family: 'Segoe UI';");
+
+        alert.showAndWait(); // Dùng showAndWait để block người dùng xem kết quả trước khi làm việc khác
+    }
     private void stopTimer() {
         if (timer != null) {
             timer.cancel();
@@ -165,9 +202,6 @@ public class LiveBiddingController {
             Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
             Stage stage = (Stage) productNameLabel.getScene().getWindow();
             Scene scene = new Scene(root, 1040, 660);
-            String css = getClass().getResource("/css/style.css").toExternalForm();
-            scene.getStylesheets().add(css);
-            root.requestFocus();
             stage.setTitle(title);
             stage.setScene(scene);
             stage.show();
@@ -178,20 +212,7 @@ public class LiveBiddingController {
 
     private void setupBackButton() {
         if (backButton != null) {
-            backButton.setFocusTraversable(false);
-            String style = "-fx-background-color: rgba(255, 255, 255, 0.05) !important;" +
-                    "-fx-background-insets: 0 !important;" +
-                    "-fx-background-radius: 6 !important;" +
-                    "-fx-border-color: rgba(255, 255, 255, 0.2) !important;" +
-                    "-fx-border-width: 1 !important;" +
-                    "-fx-border-radius: 6 !important;" +
-                    "-fx-text-fill: #afb9c7 !important;" +
-                    "-fx-font-weight: bold !important;" +
-                    "-fx-padding: 11 14 !important;" +
-                    "-fx-effect: null !important;";
-            backButton.setStyle(style);
-            backButton.setOnMouseEntered(e -> backButton.setStyle(style + "-fx-background-color: #2d6cdf !important; -fx-text-fill: white !important;"));
-            backButton.setOnMouseExited(e -> backButton.setStyle(style));
+            backButton.setStyle("-fx-background-color: #22304a; -fx-text-fill: #afb9c7; -fx-font-weight: bold; -fx-padding: 8 12; -fx-background-radius: 6;");
         }
     }
 

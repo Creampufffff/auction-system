@@ -4,6 +4,7 @@ import com.app.common.dto.AuctionListDTO;
 import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
 import com.auction.client.service.AuctionService;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -24,34 +25,53 @@ public class AuctionListController {
     @FXML private TableColumn<AuctionListDTO, Object> statusColumn;
     @FXML private Label messageLabel;
 
+    // [MỚI] Khai báo Label ví tiền
+    @FXML private Label accountBalanceLabel;
+
     private final AuctionService auctionService = new AuctionService();
 
     @FXML
     public void initialize() {
-        // Cấu hình các cột cho TableView
         idColumn.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         priceColumn.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("auctionStatus"));
 
         loadAuctions();
+
+        // Dùng cái này để chắc chắn UI đã sẵn sàng nhận data
+        Platform.runLater(() -> {
+            updateUIWithBalance();
+        });
     }
 
     private void loadAuctions() {
-        // Nếu danh sách dùng chung trống, lấy dữ liệu từ service
         if (ProductDataManager.getInstance().getServerAuctionList().isEmpty()) {
             ProductDataManager.getInstance().getServerAuctionList().addAll(auctionService.getActiveAuctions());
         }
-
         auctionTable.setItems(ProductDataManager.getInstance().getServerAuctionList());
-
-        // [MỚI] Ép TableView vẽ lại dữ liệu mới nhất (giá, trạng thái) từ Manager
         auctionTable.refresh();
+    }
+
+    // [MỚI] Hàm cập nhật tiền lên UI
+    private void updateUIWithBalance() {
+        if (accountBalanceLabel != null) {
+            double balance = ProductDataManager.getInstance().getUserBalance();
+            accountBalanceLabel.setText("Ví: $" + String.format("%.2f", balance));
+
+            // Tweak: Đổi màu nếu sắp hết tiền
+            if (balance < 100) {
+                accountBalanceLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;");
+            }
+        } else {
+            System.out.println("DEBUG: accountBalanceLabel vẫn đang bị null!");
+        }
     }
 
     @FXML
     private void handleCurrentAuctions(ActionEvent event) {
         loadAuctions();
+        updateUIWithBalance();
         if (messageLabel != null) {
             messageLabel.setText("Đã làm mới danh sách đấu giá.");
         }
@@ -72,14 +92,11 @@ public class AuctionListController {
     private void handleJoinBidding(ActionEvent event) {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-
-            // Kiểm tra kết thúc: Nếu Global Timer báo hết giờ, không cho vào phòng
             if (ProductDataManager.getInstance().isEnded(selected.getAuctionId())) {
                 if (messageLabel != null) {
                     messageLabel.setText("Phiên đấu giá '" + selected.getName() + "' đã kết thúc!");
                     messageLabel.setStyle("-fx-text-fill: #ff4d4d;");
                 }
-                // Refresh lại bảng để cập nhật trạng thái FINISHED nếu cần
                 auctionTable.refresh();
                 return;
             }
@@ -92,7 +109,6 @@ public class AuctionListController {
 
                 LiveBiddingController controller = loader.getController();
 
-                // Cập nhật Model Product với giá mới nhất từ Manager trước khi vào phòng
                 Product productModel = new Product(
                         selected.getAuctionId(),
                         selected.getName(),
@@ -117,7 +133,6 @@ public class AuctionListController {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                if (messageLabel != null) messageLabel.setText("Lỗi khởi tạo phòng đấu giá!");
             }
         } else {
             if (messageLabel != null) messageLabel.setText("Vui lòng chọn phiên để tham gia!");
@@ -136,7 +151,9 @@ public class AuctionListController {
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        if (messageLabel != null) messageLabel.setText("Tài khoản chưa sẵn sàng.");
+        if (messageLabel != null) {
+            messageLabel.setText("Số dư ví: $" + String.format("%.2f", ProductDataManager.getInstance().getUserBalance()));
+        }
     }
 
     private void switchScene(String fxmlPath, String title) {
@@ -144,16 +161,13 @@ public class AuctionListController {
             Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
             Stage stage = (Stage) auctionTable.getScene().getWindow();
             Scene scene = new Scene(root, 1040, 660);
-
             String css = getClass().getResource("/css/style.css").toExternalForm();
             scene.getStylesheets().add(css);
-
             stage.setTitle(title);
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            if (messageLabel != null) messageLabel.setText("Lỗi chuyển cảnh: " + fxmlPath);
         }
     }
 }

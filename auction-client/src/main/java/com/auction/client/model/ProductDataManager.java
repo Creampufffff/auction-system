@@ -20,7 +20,11 @@ public class ProductDataManager {
     private final Map<String, Double> currentPriceMap;
     private final Map<String, Integer> timeLeftMap;
 
-    // --- THÊM: Global Timer để chạy background ---
+    // --- [MỚI] LOGIC VÍ TIỀN & SESSION ---
+    private double userBalance = 5000.0;
+    private final Map<String, Double> userHeldMoneyMap = new HashMap<>();
+    private final Map<String, String> leadingUserMap = new HashMap<>();
+
     private Timer globalTimer;
 
     private ProductDataManager() {
@@ -29,7 +33,7 @@ public class ProductDataManager {
         historyMap = new HashMap<>();
         currentPriceMap = new HashMap<>();
         timeLeftMap = new HashMap<>();
-        startGlobalCountdown(); // Chạy ngay khi app khởi động
+        startGlobalCountdown();
     }
 
     public static ProductDataManager getInstance() {
@@ -39,13 +43,18 @@ public class ProductDataManager {
         return instance;
     }
 
-    // Logic này sẽ chạy xuyên suốt vòng đời của App
+    // --- [MỚI] HÀM TRỢ GIÚP VÍ TIỀN ---
+    public double getUserBalance() { return userBalance; }
+    public void deductBalance(double amount) { this.userBalance -= amount; }
+    public void refundBalance(double amount) { this.userBalance += amount; }
+    public double getHeldMoney(String auctionId) { return userHeldMoneyMap.getOrDefault(auctionId, 0.0); }
+    public void setHeldMoney(String auctionId, double amount) { userHeldMoneyMap.put(auctionId, amount); }
+
     private void startGlobalCountdown() {
         globalTimer = new Timer(true);
         globalTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                // Duyệt qua tất cả các sản phẩm đang có thời gian trong Map
                 for (String auctionId : timeLeftMap.keySet()) {
                     int currentTime = timeLeftMap.get(auctionId);
                     if (currentTime > 0) {
@@ -72,7 +81,6 @@ public class ProductDataManager {
     }
 
     public int getTimeLeft(String auctionId, int defaultTime) {
-        // Nếu chưa có trong map (lần đầu mở), nạp giá trị mặc định vào để Timer bắt đầu trừ
         if (!timeLeftMap.containsKey(auctionId)) {
             timeLeftMap.put(auctionId, defaultTime);
         }
@@ -103,18 +111,14 @@ public class ProductDataManager {
         return getTimeLeft(auctionId, 30) <= 0;
     }
 
-    // Hàm cập nhật trạng thái trong danh sách hiển thị
     public void closeAuction(String auctionId) {
         serverAuctionList.stream()
                 .filter(a -> a.getAuctionId().equals(auctionId))
                 .findFirst()
                 .ifPresent(a -> {
-                    // Giả sử Status là Enum của bạn có giá trị CLOSED hoặc FINISHED
-                    // Nếu là String thì bạn dùng a.setAuctionStatus("CLOSED");
                     a.setAuctionStatus(Status.FINISHED);
                 });
     }
-    private final Map<String, String> leadingUserMap = new HashMap<>();
 
     public String getLeadingUser(String auctionId, String defaultUser) {
         return leadingUserMap.getOrDefault(auctionId, defaultUser);
@@ -122,5 +126,13 @@ public class ProductDataManager {
 
     public void setLeadingUser(String auctionId, String userName) {
         leadingUserMap.put(auctionId, userName);
+    }
+    public void handleSomeoneElseLeading(String auctionId, double newPrice) {
+        double myHeld = getHeldMoney(auctionId);
+        if (myHeld > 0) {
+            refundBalance(myHeld); // Trả lại tiền vào ví vì mình không còn dẫn đầu
+            setHeldMoney(auctionId, 0.0); // Reset số dư đang giữ tại sàn này
+        }
+        setCurrentPrice(auctionId, newPrice);
     }
 }
