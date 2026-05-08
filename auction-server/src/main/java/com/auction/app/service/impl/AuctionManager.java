@@ -60,13 +60,22 @@ public class AuctionManager {
             List<Auction> activeAuctions = auctionService.getActiveAuctions();
 
             for (Auction auction : activeAuctions) {
-                LocalDateTime endTime = parseEndTime(auction.getItem().getEndDateString());
-                if (endTime != null && !now.isBefore(endTime)) {
-                    auctionService.endAuction(auction.getId());
+                try {
+                    if (auction.getItem() == null) {
+                        System.err.println("Cảnh báo auto-close: phiên đấu giá " + auction.getId() + " không có item");
+                        continue;
+                    }
+
+                    LocalDateTime endTime = parseEndTime(auction.getItem().getEndDateString());
+                    if (endTime != null && !now.isBefore(endTime)) {
+                        auctionService.endAuction(auction.getId());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Lỗi auto-close khi xử lý phiên " + auction.getId() + ": " + e.getMessage());
                 }
             }
         } catch (Exception e) {
-            System.err.println("Auto-close error: " + e.getMessage());
+            System.err.println("Lỗi auto-close chung: " + e.getMessage());
         }
     }
 

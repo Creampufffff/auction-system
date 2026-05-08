@@ -4,31 +4,12 @@ import com.app.common.entity.Auction;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * AuctionExtensionManager: Quản lý việc gia hạn phiên đấu giá
- * Mục đích: Ngăn chặn "sniping" (đặt giá lén lút ở phút cuối)
- *
- * Logic:
- * - Nếu có bid được đặt trong 5 phút cuối cùng của phiên
- * - Phiên sẽ được gia hạn thêm 5 phút
- * - Tối đa gia hạn 3 lần
- */
 public class AuctionExtensionManager {
     // ========== CẤU HÌNH THỜI GIAN ==========
     private static final int EXTENSION_THRESHOLD_SECONDS = 300;  // 5 phút - mốc phát hiện sniping
     private static final int EXTENSION_DURATION_SECONDS = 300;   // 5 phút - thời gian gia hạn
     private static final int MAX_EXTENSIONS = 3;                  // Tối đa gia hạn 3 lần
 
-    /**
-     * Kiểm tra xem phiên có được gia hạn không
-     *
-     * Điều kiện gia hạn:
-     *  1. Hiện tại < 5 phút trước hết giờ
-     *  2. Còn dưới 3 lần gia hạn
-     *
-     * @param auction Phiên cần kiểm tra
-     * @return true nếu phiên được gia hạn, false nếu không
-     */
     public static boolean checkAndExtend(Auction auction) {
         if (auction == null || auction.getItem() == null) {
             return false;

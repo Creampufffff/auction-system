@@ -22,13 +22,7 @@ public class AuctionSocketServer implements Subject<String> {
     // Danh sách observer đang lắng nghe sự kiện realtime từ server.
     private final Set<Observer<String>> observers = ConcurrentHashMap.newKeySet();
 
-    public AuctionSocketServer(
-            int port,
-            UserService userService,
-            ItemService itemService,
-            AuctionService auctionService,
-            BidService bidService
-    ) {
+    public AuctionSocketServer(int port, UserService userService, ItemService itemService, AuctionService auctionService, BidService bidService) {
         this.port = port;
         this.userService = userService;
         this.itemService = itemService;
@@ -43,14 +37,7 @@ public class AuctionSocketServer implements Subject<String> {
             while (true) {
                 // Mỗi client kết nối sẽ được xử lý trên một luồng riêng.
                 Socket clientSocket = serverSocket.accept();
-                ClientHandler handler = new ClientHandler(
-                        clientSocket,
-                        userService,
-                        itemService,
-                        auctionService,
-                        bidService,
-                        this
-                );
+                ClientHandler handler = new ClientHandler(clientSocket, userService, itemService, auctionService, bidService, this);
                 new Thread(handler).start();
             }
         }
