@@ -27,9 +27,7 @@ public class LiveBiddingController {
     private Timer timer;
     private int timeLeft = 30;
 
-    // KHÔNG khởi tạo trực tiếp ở đây nữa, sẽ khởi tạo trong setProduct
     private ObservableList<String> bidHistory;
-
     private static LiveBiddingController activeController;
 
     @FXML
@@ -43,7 +41,6 @@ public class LiveBiddingController {
     private void handlePlaceBid(ActionEvent event) {
         if (currentProduct == null) return;
 
-        // CHỐT CHẶN: Cấm bid khi hết giờ
         if (timeLeft <= 0) {
             showAlert("Thông báo", "Phiên đấu giá đã kết thúc!");
             bidAmountField.setDisable(true);
@@ -58,18 +55,25 @@ public class LiveBiddingController {
                 currentProduct.setPrice(bidAmount);
                 currentPriceLabel.setText("$" + String.format("%.2f", bidAmount));
 
-                // [MỚI] LƯU GIÁ VÀO MANAGER NGAY LẬP TỨC ĐỂ KHÔNG BỊ RESET
+                // 1. Lưu giá vào Manager để đồng bộ dữ liệu
                 ProductDataManager.getInstance().setCurrentPrice(currentProduct.getId(), bidAmount);
 
-                // Anti-Sniping
+                // [MỚI] 2. CẬP NHẬT GIÁ REAL-TIME CHO BẢNG DANH SÁCH BÊN NGOÀI
+                ProductDataManager.getInstance().getServerAuctionList().stream()
+                        .filter(a -> a.getAuctionId().equals(currentProduct.getId()))
+                        .findFirst()
+                        .ifPresent(a -> a.setCurrentPrice(bidAmount));
+
+                // 3. Cập nhật người dẫn đầu
+                ProductDataManager.getInstance().setLeadingUser(currentProduct.getId(), "dang_thang_uet");
+
+                // Anti-Sniping logic
                 if (timeLeft <= 30) {
                     timeLeft += 30;
-                    // [MỚI] Cập nhật lại thời gian vào manager khi được gia hạn
                     ProductDataManager.getInstance().setTimeLeft(currentProduct.getId(), timeLeft);
                     bidHistory.add(0, "⚠️ Hệ thống: Gia hạn thêm 30 giây!");
                 }
 
-                // LƯU TRỰC TIẾP VÀO LIST ĐÃ LIÊN KẾT VỚI DATAMANAGER
                 bidHistory.add(0, "Bạn đã đặt giá: $" + bidAmount);
                 bidAmountField.clear();
             } else {
@@ -80,22 +84,23 @@ public class LiveBiddingController {
         }
     }
 
-    // HÀM QUAN TRỌNG NHẤT ĐỂ LƯU TRỮ
     public void setProduct(Product product) {
         this.currentProduct = product;
         productNameLabel.setText(product.getName());
 
-        // 1. [MỚI] LẤY GIÁ ĐÃ LƯU (Nếu chưa có thì lấy giá gốc của sản phẩm)
         double savedPrice = ProductDataManager.getInstance().getCurrentPrice(product.getId(), product.getPrice());
         currentPriceLabel.setText("$" + String.format("%.2f", savedPrice));
-        this.currentProduct.setPrice(savedPrice); // Đồng bộ vào object
+        this.currentProduct.setPrice(savedPrice);
 
-        // 2. [MỚI] LẤY THỜI GIAN ĐÃ LƯU (Nếu chưa có thì mặc định 300s)
         this.timeLeft = ProductDataManager.getInstance().getTimeLeft(product.getId(), 30);
 
-        // 3. LẤY LỊCH SỬ ĐÃ LƯU
         this.bidHistory = ProductDataManager.getInstance().getHistoryForProduct(product.getId());
         bidHistoryList.setItems(this.bidHistory);
+
+        if (timeLeft <= 0) {
+            timerLabel.setText("HẾT GIỜ");
+            bidAmountField.setDisable(true);
+        }
     }
 
     private void startCountdown() {
@@ -110,7 +115,6 @@ public class LiveBiddingController {
                         return;
                     }
 
-                    // KHÔNG TỰ TRỪ NỮA, mà lấy dữ liệu từ "Bộ não" DataManager
                     timeLeft = ProductDataManager.getInstance().getTimeLeft(currentProduct.getId(), 30);
 
                     if (timeLeft > 0) {
@@ -119,12 +123,27 @@ public class LiveBiddingController {
                         timerLabel.setText(String.format("%02d:%02d", mins, secs));
                     } else {
                         timerLabel.setText("HẾT GIỜ");
+                        timerLabel.setStyle("-fx-text-fill: #ff4d4d; -fx-font-weight: bold;");
                         bidAmountField.setDisable(true);
+
+                        ProductDataManager.getInstance().closeAuction(currentProduct.getId());
+
+                        String winnerName = ProductDataManager.getInstance().getLeadingUser(currentProduct.getId(), "Không có ai");
+                        showWinnerDialog(winnerName);
+
                         stopTimer();
                     }
                 });
             }
         }, 0, 1000);
+    }
+
+    private void showWinnerDialog(String winnerName) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Kết quả đấu giá");
+        alert.setHeaderText("Phiên đấu giá đã kết thúc!");
+        alert.setContentText("Người chiến thắng: " + winnerName + "\nSản phẩm: " + currentProduct.getName());
+        alert.show();
     }
 
     private void stopTimer() {

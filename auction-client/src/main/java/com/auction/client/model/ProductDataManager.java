@@ -98,4 +98,29 @@ public class ProductDataManager {
 
     public AuctionListDTO getSelectedAuction() { return selectedAuction; }
     public void setSelectedAuction(AuctionListDTO auction) { this.selectedAuction = auction; }
+
+    public boolean isEnded(String auctionId) {
+        return getTimeLeft(auctionId, 30) <= 0;
+    }
+
+    // Hàm cập nhật trạng thái trong danh sách hiển thị
+    public void closeAuction(String auctionId) {
+        serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .ifPresent(a -> {
+                    // Giả sử Status là Enum của bạn có giá trị CLOSED hoặc FINISHED
+                    // Nếu là String thì bạn dùng a.setAuctionStatus("CLOSED");
+                    a.setAuctionStatus(Status.FINISHED);
+                });
+    }
+    private final Map<String, String> leadingUserMap = new HashMap<>();
+
+    public String getLeadingUser(String auctionId, String defaultUser) {
+        return leadingUserMap.getOrDefault(auctionId, defaultUser);
+    }
+
+    public void setLeadingUser(String auctionId, String userName) {
+        leadingUserMap.put(auctionId, userName);
+    }
 }

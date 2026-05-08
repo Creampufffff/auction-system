@@ -44,6 +44,9 @@ public class AuctionListController {
         }
 
         auctionTable.setItems(ProductDataManager.getInstance().getServerAuctionList());
+
+        // [MỚI] Ép TableView vẽ lại dữ liệu mới nhất (giá, trạng thái) từ Manager
+        auctionTable.refresh();
     }
 
     @FXML
@@ -65,25 +68,34 @@ public class AuctionListController {
         }
     }
 
-    // --- FIX HÀM THAM GIA ĐẤU GIÁ: CHUYỂN DỮ LIỆU SANG LIVE BIDDING ---
     @FXML
     private void handleJoinBidding(ActionEvent event) {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
+
+            // Kiểm tra kết thúc: Nếu Global Timer báo hết giờ, không cho vào phòng
+            if (ProductDataManager.getInstance().isEnded(selected.getAuctionId())) {
+                if (messageLabel != null) {
+                    messageLabel.setText("Phiên đấu giá '" + selected.getName() + "' đã kết thúc!");
+                    messageLabel.setStyle("-fx-text-fill: #ff4d4d;");
+                }
+                // Refresh lại bảng để cập nhật trạng thái FINISHED nếu cần
+                auctionTable.refresh();
+                return;
+            }
+
             ProductDataManager.getInstance().setSelectedAuction(selected);
 
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LiveBidding.fxml"));
                 Parent root = loader.load();
 
-                // Lấy controller của LiveBidding để truyền sản phẩm vào
                 LiveBiddingController controller = loader.getController();
 
-                // [MỚI] Chuyển đổi sang Model Product: Lấy giá cao nhất đã lưu thay vì giá mặc định
+                // Cập nhật Model Product với giá mới nhất từ Manager trước khi vào phòng
                 Product productModel = new Product(
                         selected.getAuctionId(),
                         selected.getName(),
-                        // Ưu tiên lấy giá từ Manager (giá đã bid), nếu chưa có thì lấy giá gốc từ DTO
                         ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
                         selected.getAuctionStatus().toString(),
                         "New",
@@ -96,7 +108,6 @@ public class AuctionListController {
                 Stage stage = (Stage) auctionTable.getScene().getWindow();
                 Scene scene = new Scene(root, 1040, 660);
 
-                // Nạp CSS để đảm bảo UI đồng nhất (nút Back, màu sắc...)
                 String css = getClass().getResource("/css/style.css").toExternalForm();
                 scene.getStylesheets().add(css);
 
@@ -120,7 +131,6 @@ public class AuctionListController {
 
     @FXML
     private void handleSidebarBidding(ActionEvent event) {
-        // Gọi lại logic JoinBidding để đảm bảo quy trình lấy dữ liệu và chuyển cảnh chuẩn
         handleJoinBidding(event);
     }
 
@@ -135,7 +145,6 @@ public class AuctionListController {
             Stage stage = (Stage) auctionTable.getScene().getWindow();
             Scene scene = new Scene(root, 1040, 660);
 
-            // Nạp CSS cho mọi màn hình để giữ UI chuẩn
             String css = getClass().getResource("/css/style.css").toExternalForm();
             scene.getStylesheets().add(css);
 
