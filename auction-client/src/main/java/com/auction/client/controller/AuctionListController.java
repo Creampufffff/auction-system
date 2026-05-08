@@ -79,13 +79,14 @@ public class AuctionListController {
                 // Lấy controller của LiveBidding để truyền sản phẩm vào
                 LiveBiddingController controller = loader.getController();
 
-                // Chuyển đổi từ DTO sang Model Product để có thể dùng setPrice()
+                // [MỚI] Chuyển đổi sang Model Product: Lấy giá cao nhất đã lưu thay vì giá mặc định
                 Product productModel = new Product(
                         selected.getAuctionId(),
                         selected.getName(),
-                        selected.getCurrentPrice(),
+                        // Ưu tiên lấy giá từ Manager (giá đã bid), nếu chưa có thì lấy giá gốc từ DTO
+                        ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
                         selected.getAuctionStatus().toString(),
-                        "New", // Mặc định hoặc lấy từ DTO nếu có
+                        "New",
                         "No description",
                         "No warranty"
                 );
@@ -95,7 +96,7 @@ public class AuctionListController {
                 Stage stage = (Stage) auctionTable.getScene().getWindow();
                 Scene scene = new Scene(root, 1040, 660);
 
-                // Nạp CSS để nút Quay lại không bị xám/trắng
+                // Nạp CSS để đảm bảo UI đồng nhất (nút Back, màu sắc...)
                 String css = getClass().getResource("/css/style.css").toExternalForm();
                 scene.getStylesheets().add(css);
 
@@ -119,7 +120,7 @@ public class AuctionListController {
 
     @FXML
     private void handleSidebarBidding(ActionEvent event) {
-        // Gọi lại logic JoinBidding để đảm bảo có dữ liệu
+        // Gọi lại logic JoinBidding để đảm bảo quy trình lấy dữ liệu và chuyển cảnh chuẩn
         handleJoinBidding(event);
     }
 
@@ -134,7 +135,7 @@ public class AuctionListController {
             Stage stage = (Stage) auctionTable.getScene().getWindow();
             Scene scene = new Scene(root, 1040, 660);
 
-            // Nạp CSS cho mọi màn hình được chuyển đến
+            // Nạp CSS cho mọi màn hình để giữ UI chuẩn
             String css = getClass().getResource("/css/style.css").toExternalForm();
             scene.getStylesheets().add(css);
 

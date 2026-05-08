@@ -13,7 +13,7 @@ public class MainApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         primaryStage = stage;
-        setRoot("/fxml/AuctionList.fxml", "UET Auction System");
+        setRoot("/fxml/Login.fxml", "UET Auction System");
         primaryStage.show();
     }
 
