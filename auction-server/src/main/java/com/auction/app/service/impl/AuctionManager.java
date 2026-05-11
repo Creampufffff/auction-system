@@ -35,19 +35,19 @@ public class AuctionManager {
         return AuctionManagerInstanceHolder.AuctionManagerInstance;
     }
 
-    public synchronized void startAutoClose(AuctionService auctionService) {
-        if (started) {
-            return;
-        }
-
-        scheduler.scheduleAtFixedRate(
-                () -> closeExpiredAuctions(auctionService),
-                0,
-                CHECK_INTERVAL_SECONDS,
-                TimeUnit.SECONDS
-        );
-        started = true;
-    }
+//    public synchronized void startAutoClose(AuctionService auctionService) {
+//        if (started) {
+//            return;
+//        }
+//
+//        scheduler.scheduleAtFixedRate(
+//                () -> closeExpiredAuctions(auctionService),
+//                0,
+//                CHECK_INTERVAL_SECONDS,
+//                TimeUnit.SECONDS
+//        );
+//        started = true;
+//    }
 
     public synchronized void stopAutoClose() {
         scheduler.shutdownNow();

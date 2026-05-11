@@ -10,7 +10,7 @@ public abstract class User extends BaseEntity {
         this.password = password;
         this.email = email;
         this.balance = 0;
-        System.out.println("Tai khoan da duoc tao."); // Sau nay luu log lai
+//        System.out.println("Tai khoan da duoc tao."); // Sau nay luu log lai
     }
     public String getUsername() {
         return username;

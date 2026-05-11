@@ -2,6 +2,7 @@ package com.auction.app.config;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.github.cdimascio.dotenv.Dotenv;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -11,6 +12,7 @@ public class DatabaseConfig {
     private static final String DEFAULT_JDBC_URL = "jdbc:mysql://localhost:3306/auction_system";
     private static final String DEFAULT_USERNAME = "root";
     private static final String DEFAULT_PASSWORD = "123456";
+    private static final Dotenv dotenv = Dotenv.load();
 
     static {
         HikariConfig config = new HikariConfig();
@@ -27,24 +29,24 @@ public class DatabaseConfig {
 
     private static String resolveJdbcUrl() {
         String directUrl = firstNonBlank(
-                System.getenv("AUCTION_DB_URL"),
-                System.getenv("DB_URL")
+                dotenv.get("AUCTION_DB_URL"),
+                dotenv.get("DB_URL")
         );
         if (directUrl != null) {
             return directUrl;
         }
 
         String host = firstNonBlank(
-                System.getenv("AUCTION_DB_HOST"),
-                System.getenv("DB_HOST")
+                dotenv.get("AUCTION_DB_HOST"),
+                dotenv.get("DB_HOST")
         );
         String port = firstNonBlank(
-                System.getenv("AUCTION_DB_PORT"),
-                System.getenv("DB_PORT")
+                dotenv.get("AUCTION_DB_PORT"),
+                dotenv.get("DB_PORT")
         );
         String name = firstNonBlank(
-                System.getenv("AUCTION_DB_NAME"),
-                System.getenv("DB_NAME")
+                dotenv.get("AUCTION_DB_NAME"),
+                dotenv.get("DB_NAME")
         );
 
         if (host == null || name == null) {
@@ -57,17 +59,17 @@ public class DatabaseConfig {
 
     private static String resolveDbUsername() {
         return firstNonBlank(
-                System.getenv("AUCTION_DB_USERNAME"),
-                System.getenv("DB_USER"),
-                System.getenv("DB_USERNAME"),
+                dotenv.get("AUCTION_DB_USERNAME"),
+                dotenv.get("DB_USER"),
+                dotenv.get("DB_USERNAME"),
                 DEFAULT_USERNAME
         );
     }
 
     private static String resolveDbPassword() {
         return firstNonBlank(
-                System.getenv("AUCTION_DB_PASSWORD"),
-                System.getenv("DB_PASSWORD"),
+                dotenv.get("AUCTION_DB_PASSWORD"),
+                dotenv.get("DB_PASSWORD"),
                 DEFAULT_PASSWORD
         );
     }

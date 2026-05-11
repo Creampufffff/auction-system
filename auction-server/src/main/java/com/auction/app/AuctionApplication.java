@@ -47,7 +47,7 @@ public class AuctionApplication {
         AuctionSocketServer server = new AuctionSocketServer(DEFAULT_PORT, userService, itemService, auctionService, bidService);
 
         AuctionManager auctionManager = AuctionManager.getInstance();
-        auctionManager.startAutoClose(auctionService);
+//        auctionManager.startAutoClose(auctionService);
 
         //dừng auto-close task để clean up tài nguyên
         Runtime.getRuntime().addShutdownHook(new Thread(auctionManager::stopAutoClose));
