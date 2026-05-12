@@ -143,7 +143,10 @@ public class ProductManagementController {
     private void handleDeleteProduct(ActionEvent event) {
         Product selected = myProductsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            productData.remove(selected);
+            // Gọi hàm xóa ở cả 2 danh sách trong Manager
+            ProductDataManager.getInstance().deleteProductAndAuction(selected.getId());
+
+            // UI sẽ tự cập nhật vì productData là ObservableList được quan sát bởi Manager
         }
     }
 

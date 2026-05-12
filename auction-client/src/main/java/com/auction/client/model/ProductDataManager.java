@@ -19,6 +19,7 @@ public class ProductDataManager {
     private final Map<String, ObservableList<String>> historyMap;
     private final Map<String, Double> currentPriceMap;
     private final Map<String, Integer> timeLeftMap;
+    private final Map<String, Boolean> dialogShownMap = new HashMap<>();
 
     // --- [MỚI] LOGIC VÍ TIỀN & SESSION ---
     private double userBalance = 5000.0;
@@ -78,6 +79,14 @@ public class ProductDataManager {
 
     public void setCurrentPrice(String auctionId, double price) {
         currentPriceMap.put(auctionId, price);
+        // TWEAK: Tìm và cập nhật giá trực tiếp vào danh sách trên bảng
+        serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .ifPresent(a -> a.setCurrentPrice(price));
+    }
+    public void removeAuction(String auctionId) {
+        serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
     }
 
     public int getTimeLeft(String auctionId, int defaultTime) {
@@ -102,6 +111,14 @@ public class ProductDataManager {
         if (serverAuctionList.stream().noneMatch(a -> a.getAuctionId().equals(p.getId()))) {
             serverAuctionList.add(dto);
         }
+    }
+
+    public boolean isWinnerDialogShown(String auctionId) {
+        return dialogShownMap.getOrDefault(auctionId, false);
+    }
+
+    public void setWinnerDialogShown(String auctionId, boolean shown) {
+        dialogShownMap.put(auctionId, shown);
     }
 
     public AuctionListDTO getSelectedAuction() { return selectedAuction; }
@@ -134,5 +151,11 @@ public class ProductDataManager {
             setHeldMoney(auctionId, 0.0); // Reset số dư đang giữ tại sàn này
         }
         setCurrentPrice(auctionId, newPrice);
+    }
+    public void deleteProductAndAuction(String auctionId) {
+        myProductList.removeIf(p -> p.getId().equals(auctionId));
+        serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
+        // Dọn dẹp luôn trạng thái dialog
+        dialogShownMap.remove(auctionId);
     }
 }

@@ -39,7 +39,8 @@ public class AuctionListController {
 
         loadAuctions();
 
-        // Dùng cái này để chắc chắn UI đã sẵn sàng nhận data
+        auctionTable.refresh();
+
         Platform.runLater(() -> {
             updateUIWithBalance();
         });
