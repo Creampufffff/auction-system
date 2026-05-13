@@ -3,14 +3,8 @@ package com.app.common.mapper;
 import com.app.common.dto.*;
 import com.app.common.entity.*;
 
-/**
- * AutoBidMapper - Chuyển đổi giữa AutoBid Entity và các DTO liên quan
- */
 public class AutoBidMapper {
 
-    /**
-     * Chuyển AutoBid Entity thành AutoBidDTO
-     */
     public static AutoBidDTO toDTO(AutoBid autoBid, String itemName) {
         if (autoBid == null) return null;
         
@@ -24,9 +18,6 @@ public class AutoBidMapper {
         );
     }
 
-    /**
-     * Chuyển SetAutoBidRequestDTO thành AutoBid Entity
-     */
     public static AutoBid toEntity(SetAutoBidRequestDTO dto) {
         if (dto == null) return null;
         

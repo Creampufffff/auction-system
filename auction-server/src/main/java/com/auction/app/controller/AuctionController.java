@@ -14,7 +14,6 @@ public class AuctionController {
         this.auctionService = auctionService;
     }
 
-    // ✅ Dùng DTO Request/Response
     public ApiResponseDTO createAuction(CreateAuctionRequestDTO request) {
         try {
             Auction auction = AuctionMapper.toEntity(request);
@@ -28,7 +27,6 @@ public class AuctionController {
         }
     }
 
-    // ✅ Dùng DTO Response
     public ApiResponseDTO startAuction(String auctionId) {
         try {
             auctionService.startAuction(auctionId);

@@ -1,8 +1,14 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class BidHistoryDTO implements Serializable {
+    // Getters and Setters
     private String bidId;
     private String auctionId;
     private String bidderUsername;
@@ -20,20 +26,5 @@ public class BidHistoryDTO implements Serializable {
         this.bidTime = bidTime;
     }
 
-    // Getters and Setters
-    public String getBidId() { return bidId; }
-    public void setBidId(String bidId) { this.bidId = bidId; }
-
-    public String getAuctionId() { return auctionId; }
-    public void setAuctionId(String auctionId) { this.auctionId = auctionId; }
-
-    public String getBidderUsername() { return bidderUsername; }
-    public void setBidderUsername(String bidderUsername) { this.bidderUsername = bidderUsername; }
-
-    public double getBidAmount() { return bidAmount; }
-    public void setBidAmount(double bidAmount) { this.bidAmount = bidAmount; }
-
-    public String getBidTime() { return bidTime; }
-    public void setBidTime(String bidTime) { this.bidTime = bidTime; }
 }
 

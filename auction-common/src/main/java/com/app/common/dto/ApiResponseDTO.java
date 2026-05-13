@@ -1,8 +1,14 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class ApiResponseDTO implements Serializable {
+    // Getters and Setters
     private boolean success;
     private String message;
 
@@ -13,11 +19,5 @@ public class ApiResponseDTO implements Serializable {
         this.message = message;
     }
 
-    // Getters and Setters
-    public boolean isSuccess() { return success; }
-    public void setSuccess(boolean success) { this.success = success; }
-
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
 }
 

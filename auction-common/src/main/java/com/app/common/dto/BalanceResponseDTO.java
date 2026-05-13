@@ -1,8 +1,14 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class BalanceResponseDTO implements Serializable {
+    // Getters and Setters
     private String userId;
     private double balance;
     private String message;
@@ -15,14 +21,5 @@ public class BalanceResponseDTO implements Serializable {
         this.message = message;
     }
 
-    // Getters and Setters
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-
-    public double getBalance() { return balance; }
-    public void setBalance(double balance) { this.balance = balance; }
-
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
 }
 

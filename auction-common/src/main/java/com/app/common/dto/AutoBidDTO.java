@@ -1,8 +1,14 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class AutoBidDTO implements Serializable {
+    // Getters and Setters
     private String autoBidId;
     private String auctionId;
     private String itemName;
@@ -22,23 +28,5 @@ public class AutoBidDTO implements Serializable {
         this.isActive = isActive;
     }
 
-    // Getters and Setters
-    public String getAutoBidId() { return autoBidId; }
-    public void setAutoBidId(String autoBidId) { this.autoBidId = autoBidId; }
-
-    public String getAuctionId() { return auctionId; }
-    public void setAuctionId(String auctionId) { this.auctionId = auctionId; }
-
-    public String getItemName() { return itemName; }
-    public void setItemName(String itemName) { this.itemName = itemName; }
-
-    public String getBidderId() { return bidderId; }
-    public void setBidderId(String bidderId) { this.bidderId = bidderId; }
-
-    public double getMaxAutoAmount() { return maxAutoAmount; }
-    public void setMaxAutoAmount(double maxAutoAmount) { this.maxAutoAmount = maxAutoAmount; }
-
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
 }
 

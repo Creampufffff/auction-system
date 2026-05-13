@@ -97,39 +97,23 @@ public class ClientHandler implements Runnable {
             String payload = parts.length > 1 ? parts[1].trim() : "";
 
             // Router command dạng text nhận từ socket.
-            switch (command) {
-                case "HELP":
-                    return help();
-                case "QUIT":
-                case "EXIT":
-                    return "OK|BYE";
-                case "LOGIN":
-                    return login(payload);
-                case "REGISTER_BIDDER":
-                    return registerBidder(payload);
-                case "REGISTER_SELLER":
-                    return registerSeller(payload);
-                case "DEPOSIT":
-                    return deposit(payload);
-                case "GET_BALANCE":
-                    return getBalance(payload);
-                case "LIST_AUCTIONS":
-                    return listAuctions();
-                case "GET_AUCTION":
-                    return getAuction(payload);
-                case "PLACE_BID":
-                    return placeBid(payload);
-                case "CREATE_ART_AUCTION":
-                    return createArtAuction(payload);
-                case "START_AUCTION":
-                    return startAuction(payload);
-                case "END_AUCTION":
-                    return endAuction(payload);
-                default:
-                    return "ERR|UNKNOWN_COMMAND";
-            }
+            return switch (command) {
+                case "HELP" -> help();
+                case "QUIT", "EXIT" -> "OK|BYE";
+                case "LOGIN" -> login(payload);
+                case "REGISTER_BIDDER" -> registerBidder(payload);
+                case "REGISTER_SELLER" -> registerSeller(payload);
+                case "DEPOSIT" -> deposit(payload);
+                case "GET_BALANCE" -> getBalance(payload);
+                case "LIST_AUCTIONS" -> listAuctions();
+                case "GET_AUCTION" -> getAuction(payload);
+                case "PLACE_BID" -> placeBid(payload);
+                case "CREATE_ART_AUCTION" -> createArtAuction(payload);
+                case "START_AUCTION" -> startAuction(payload);
+                case "END_AUCTION" -> endAuction(payload);
+                default -> "ERR|UNKNOWN_COMMAND";
+            };
         } catch (Exception e) {
-            // Chuẩn hóa response lỗi để client parse ổn định theo dạng ERR|CODE|MESSAGE.
             return toErrorResponse(e);
         }
     }
@@ -156,7 +140,6 @@ public class ClientHandler implements Runnable {
 
     private String deposit(String payload) {
         String[] args = splitBySpace(payload, 2);
-        // Nạp tiền qua service để tái sử dụng toàn bộ validation nghiệp vụ.
         userService.deposit(args[0], Double.parseDouble(args[1]));
         return "OK|DEPOSIT|" + args[0] + "|" + userService.getBalance(args[0]);
     }

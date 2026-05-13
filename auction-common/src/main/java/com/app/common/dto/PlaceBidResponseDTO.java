@@ -1,7 +1,12 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class PlaceBidResponseDTO implements Serializable {
     private boolean success;
     private String message;
@@ -20,43 +25,4 @@ public class PlaceBidResponseDTO implements Serializable {
         this.bidAmount = bidAmount;
     }
 
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getBidId() {
-        return bidId;
-    }
-
-    public void setBidId(String bidId) {
-        this.bidId = bidId;
-    }
-
-    public String getAuctionId() {
-        return auctionId;
-    }
-
-    public void setAuctionId(String auctionId) {
-        this.auctionId = auctionId;
-    }
-
-    public double getBidAmount() {
-        return bidAmount;
-    }
-
-    public void setBidAmount(double bidAmount) {
-        this.bidAmount = bidAmount;
-    }
 }
