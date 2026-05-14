@@ -6,7 +6,7 @@
     <packaging>pom</packaging>
   <modules>
     <module>auction-common</module>
-    <module>auction-server</module>
+<!--    <module>auction-server</module>-->
     <module>auction-client</module>
   </modules>
   <dependencies>
