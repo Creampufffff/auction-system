@@ -35,7 +35,7 @@ public class ItemDAOImpl implements ItemDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi khi tìm item " + id + ": " + e.getMessage());
+            System.err.println("Error finding item " + id + ": " + e.getMessage());
         }
 
         return null;

@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class AuctionExtensionManager {
-    // ========== CẤU HÌNH THỜI GIAN ==========
-    private static final int EXTENSION_THRESHOLD_SECONDS = 300;  // 5 phút - mốc phát hiện sniping
-    private static final int EXTENSION_DURATION_SECONDS = 300;   // 5 phút - thời gian gia hạn
-    private static final int MAX_EXTENSIONS = 3;                  // Tối đa gia hạn 3 lần
+    // ========== TIME CONFIGURATION ==========
+    private static final int EXTENSION_THRESHOLD_SECONDS = 300;  // 5 minutes - sniping detection threshold
+    private static final int EXTENSION_DURATION_SECONDS = 300;   // 5 minutes - extension duration
+    private static final int MAX_EXTENSIONS = 3;                  // Maximum 3 extensions
 
     public static boolean checkAndExtend(Auction auction) {
         if (auction == null || auction.getItem() == null) {
@@ -38,12 +38,12 @@ public class AuctionExtensionManager {
                     String newEndDateString = newEndTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                     auction.getItem().setEndDateString(newEndDateString);
 
-                    System.out.println("⏱️  Phiên được gia hạn thêm 5 phút (lần " + (extensionCount + 1) + "/3)");
+                    System.out.println("⏱️  Auction extended by 5 minutes (extension " + (extensionCount + 1) + "/3)");
                     return true;
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ Lỗi kiểm tra gia hạn phiên: " + e.getMessage());
+            System.err.println("❌ Error checking auction extension: " + e.getMessage());
         }
 
         return false;
@@ -98,7 +98,7 @@ public class AuctionExtensionManager {
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Không thể parse thời gian: " + dateTimeString, e);
+            throw new IllegalArgumentException("Failed to parse datetime: " + dateTimeString, e);
         }
     }
 

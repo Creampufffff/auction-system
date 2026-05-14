@@ -17,9 +17,9 @@ public class UserController {
         try {
             User user = UserMapper.toEntity(request);
             userService.register(user);
-            return new RegisterResponseDTO(true, "Đăng ký thành công", user.getId());
+            return new RegisterResponseDTO(true, "Registration successful", user.getId());
         } catch (Exception e) {
-            return new RegisterResponseDTO(false, "Lỗi đăng ký: " + e.getMessage(), null);
+            return new RegisterResponseDTO(false, "Error registering: " + e.getMessage(), null);
         }
     }
 
@@ -42,7 +42,7 @@ public class UserController {
     public BalanceResponseDTO getBalance(String userId) {
         User user = userService.getById(userId);
         if (user == null) {
-            return new BalanceResponseDTO(userId, 0, "Người dùng không tồn tại");
+            return new BalanceResponseDTO(userId, 0, "User does not exist");
         }
         return UserMapper.toBalanceResponse(user);
     }
@@ -51,12 +51,12 @@ public class UserController {
     public ApiResponseDTO deposit(DepositRequestDTO request) {
         try {
             if (request.getAmount() <= 0) {
-                return new ApiResponseDTO(false, "Số tiền phải lớn hơn 0");
+                return new ApiResponseDTO(false, "Amount must be greater than 0");
             }
             userService.deposit(request.getUserId(), request.getAmount());
-            return new ApiResponseDTO(true, "Nạp tiền thành công");
+            return new ApiResponseDTO(true, "Deposit successful");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi nạp tiền: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error depositing: " + e.getMessage());
         }
     }
 
@@ -64,12 +64,12 @@ public class UserController {
     public ApiResponseDTO withdraw(WithdrawRequestDTO request) {
         try {
             if (request.getAmount() <= 0) {
-                return new ApiResponseDTO(false, "Số tiền phải lớn hơn 0");
+                return new ApiResponseDTO(false, "Amount must be greater than 0");
             }
             userService.withdraw(request.getUserId(), request.getAmount());
-            return new ApiResponseDTO(true, "Rút tiền thành công");
+            return new ApiResponseDTO(true, "Withdrawal successful");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi rút tiền: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error withdrawing: " + e.getMessage());
         }
     }
 
@@ -77,9 +77,9 @@ public class UserController {
     public ApiResponseDTO deleteUser(String userId) {
         try {
             userService.deleteUser(userId);
-            return new ApiResponseDTO(true, "Xóa người dùng thành công");
+            return new ApiResponseDTO(true, "User deleted successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi xóa người dùng: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error deleting user: " + e.getMessage());
         }
     }
 }

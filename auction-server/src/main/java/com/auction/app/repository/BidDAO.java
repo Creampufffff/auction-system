@@ -5,15 +5,15 @@ import com.app.common.entity.BidTransaction;
 import java.util.List;
 
 public interface BidDAO extends BaseDAO<BidTransaction> {
-    // Lấy toàn bộ lịch sử đặt giá của một phiên để vẽ biểu đồ
+    // Get full bid history of an auction (for charting)
     List<BidTransaction> findByAuctionId(String auctionId);
 
-    // Lấy giá cao nhất mà một người dùng đã đặt trong một phiên
+    // Get the maximum bid amount a bidder placed in an auction
     double getMaxBidByBidder(String auctionId, String bidderId);
 
-    // Lấy giá cao nhất của phiên đấu giá
+    // Get the highest bid of an auction
     BidTransaction getMaxBidByAuctionId(String auctionId);
 
-    // Đặt giá trong một transaction để tránh lost update khi nhiều client bid cùng lúc
+    // Place a bid inside a transaction to avoid lost updates when many clients bid concurrently
     boolean placeBidSafely(BidTransaction bid);
 }

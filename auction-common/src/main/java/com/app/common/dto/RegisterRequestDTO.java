@@ -11,6 +11,7 @@ public class RegisterRequestDTO implements Serializable {
     private String username;
     private String password;
     private String email;
+    private String role;
 
     public RegisterRequestDTO() {
     }
@@ -19,6 +20,13 @@ public class RegisterRequestDTO implements Serializable {
         this.username = username;
         this.password = password;
         this.email = email;
+    }
+
+    public RegisterRequestDTO(String username, String password, String email, String role) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.role = role;
     }
 
 }

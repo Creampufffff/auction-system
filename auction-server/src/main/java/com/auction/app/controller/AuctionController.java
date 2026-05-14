@@ -18,21 +18,21 @@ public class AuctionController {
         try {
             Auction auction = AuctionMapper.toEntity(request);
             if (auction == null) {
-                return new ApiResponseDTO(false, "Loại sản phẩm không hợp lệ");
+                return new ApiResponseDTO(false, "Invalid item type");
             }
             auctionService.saveAuction(auction);
-            return new ApiResponseDTO(true, "Tạo phiên đấu giá thành công. ID: " + auction.getId());
+            return new ApiResponseDTO(true, "Auction created successfully. ID: " + auction.getId());
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi tạo phiên đấu giá: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error creating auction: " + e.getMessage());
         }
     }
 
     public ApiResponseDTO startAuction(String auctionId) {
         try {
             auctionService.startAuction(auctionId);
-            return new ApiResponseDTO(true, "Bắt đầu phiên đấu giá thành công");
+            return new ApiResponseDTO(true, "Auction started successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi bắt đầu phiên đấu giá: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error starting auction: " + e.getMessage());
         }
     }
 
@@ -40,9 +40,9 @@ public class AuctionController {
     public ApiResponseDTO endAuction(String auctionId) {
         try {
             auctionService.endAuction(auctionId);
-            return new ApiResponseDTO(true, "Kết thúc phiên đấu giá thành công");
+            return new ApiResponseDTO(true, "Auction ended successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi kết thúc phiên đấu giá: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error ending auction: " + e.getMessage());
         }
     }
 

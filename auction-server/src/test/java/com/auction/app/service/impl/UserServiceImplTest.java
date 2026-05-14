@@ -25,7 +25,7 @@ class UserServiceImplTest {
                 IllegalArgumentException.class,
                 () -> service.register(new Bidder("alice", "other", "alice2@example.com"))
         );
-        assertEquals("Tên đăng nhập đã tồn tại", exception.getMessage());
+        assertEquals("Username already exists", exception.getMessage());
     }
 
     @Test

@@ -4,16 +4,12 @@ import com.app.common.dto.LoginRequestDTO;
 import com.app.common.dto.LoginResponseDTO;
 import com.app.common.dto.RegisterRequestDTO;
 import com.app.common.dto.RegisterResponseDTO;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class AuthService {
-    private static final String SERVER_HOST = "127.0.0.1";
-    private static final int SERVER_PORT = 5000;
+    private static final ObjectMapper MAPPER = SocketClientService.mapper();
 
     public LoginResponseDTO login(String username, String password) {
         LoginRequestDTO request = new LoginRequestDTO();
@@ -24,11 +20,10 @@ public class AuthService {
 
     public LoginResponseDTO login(LoginRequestDTO request) {
         if (isInvalidLoginRequest(request)) {
-            return null;
+            return createFailedLoginResponse();
         }
 
-        String command = "LOGIN " + request.getUsername() + " " + request.getPassword();
-        String response = sendCommand(command);
+        String response = sendEnvelope("LOGIN", request);
         return parseLoginResponse(response);
     }
 
@@ -42,14 +37,30 @@ public class AuthService {
 
     public RegisterResponseDTO register(RegisterRequestDTO request) {
         if (isInvalidRegisterRequest(request)) {
-            return createRegisterResponse(false, "Thong tin dang ky khong hop le.", null);
+            return createRegisterResponse(false, "Thông tin đăng ký không hợp lệ.", null);
         }
 
-        String command = "REGISTER_BIDDER "
-                + request.getUsername() + " "
-                + request.getPassword() + " "
-                + request.getEmail();
-        String response = sendCommand(command);
+        String response = sendEnvelope("REGISTER_BIDDER", request);
+        return parseRegisterResponse(response);
+    }
+
+    public RegisterResponseDTO registerSeller(String username, String password, String email) {
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setUsername(username);
+        request.setPassword(password);
+        request.setEmail(email);
+        if (isInvalidRegisterRequest(request)) {
+            return createRegisterResponse(false, "Thông tin đăng ký không hợp lệ.", null);
+        }
+
+        // Use legacy text protocol to register seller because server JSON handler creates Bidder by default
+        String payload = String.format("REGISTER_SELLER %s %s %s", username, password, email);
+        String response;
+        try {
+            response = SocketClientService.sendText(payload);
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể gửi yêu cầu đăng ký tới server.", e);
+        }
         return parseRegisterResponse(response);
     }
 
@@ -70,60 +81,79 @@ public class AuthService {
         return value == null || value.isBlank();
     }
 
-    private String sendCommand(String command) {
-        try (
-                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
-        ) {
-            reader.readLine(); // OK|CONNECTED|Type HELP for commands
-
-            writer.println(command);
-            return reader.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+    private String sendEnvelope(String type, Object payload) {
+        try {
+            ObjectNode envelope = MAPPER.createObjectNode();
+            envelope.put("type", type);
+            envelope.set("payload", MAPPER.valueToTree(payload));
+            return SocketClientService.sendJson(MAPPER.writeValueAsString(envelope));
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể gửi yêu cầu xác thực đến server.", e);
         }
     }
 
     private LoginResponseDTO parseLoginResponse(String response) {
-        if (response == null || !response.startsWith("OK|LOGIN|")) {
-            return null;
+        if (response == null || response.isBlank()) {
+            return createFailedLoginResponse();
         }
 
-        String[] parts = response.split("\\|");
-        if (parts.length < 5) {
-            return null;
+        if (response.startsWith("{")) {
+            try {
+                JsonNode root = MAPPER.readTree(response);
+                JsonNode payload = root.path("payload");
+                if (payload.isMissingNode() || payload.isNull()) {
+                    return createFailedLoginResponse();
+                }
+                LoginResponseDTO dto = MAPPER.treeToValue(payload, LoginResponseDTO.class);
+                return dto == null ? createFailedLoginResponse() : dto;
+            } catch (Exception e) {
+                return createFailedLoginResponse();
+            }
         }
 
-        double balance = parts.length >= 6 ? Double.parseDouble(parts[5]) : 0.0;
-        return createLoginResponse(parts[2], parts[3], parts[4], balance);
+        if (response.startsWith("ERR|")) {
+            return createFailedLoginResponse();
+        }
+
+        return createFailedLoginResponse();
     }
 
     private RegisterResponseDTO parseRegisterResponse(String response) {
         if (response == null || response.isBlank()) {
-            return createRegisterResponse(false, "Server khong phan hoi.", null);
+            return createRegisterResponse(false, "Server không phản hồi.", null);
         }
 
-        if (response.startsWith("OK|REGISTER_BIDDER|")) {
-            String[] parts = response.split("\\|");
-            String userId = parts.length >= 3 ? parts[2] : null;
-            return createRegisterResponse(true, "Dang ky thanh cong.", userId);
+        if (response.startsWith("{")) {
+            try {
+                JsonNode root = MAPPER.readTree(response);
+                JsonNode payload = root.path("payload");
+                if (payload.isMissingNode() || payload.isNull()) {
+                    return createRegisterResponse(false, "Đăng ký thất bại.", null);
+                }
+                RegisterResponseDTO dto = MAPPER.treeToValue(payload, RegisterResponseDTO.class);
+                return dto == null ? createRegisterResponse(false, "Đăng ký thất bại.", null) : dto;
+            } catch (Exception e) {
+                return createRegisterResponse(false, "Đăng ký thất bại.", null);
+            }
         }
 
         if (response.startsWith("ERR|")) {
-            return createRegisterResponse(false, response.substring(4), null);
+            return createRegisterResponse(false, extractErrorMessage(response), null);
         }
 
-        return createRegisterResponse(false, "Phan hoi dang ky khong hop le.", null);
+        // Support legacy OK|REGISTER_BIDDER|id and OK|REGISTER_SELLER|id responses
+        if (response.startsWith("OK|REGISTER_BIDDER|") || response.startsWith("OK|REGISTER_SELLER|")) {
+            String[] parts = response.split("\\|", 3);
+            String id = parts.length >= 3 ? parts[2] : null;
+            return createRegisterResponse(true, "Đăng ký thành công", id);
+        }
+
+        return createRegisterResponse(false, "Phản hồi đăng ký không hợp lệ.", null);
     }
 
-    private LoginResponseDTO createLoginResponse(String userId, String username, String role, double balance) {
+    private LoginResponseDTO createFailedLoginResponse() {
         LoginResponseDTO response = new LoginResponseDTO();
-        response.setUserId(userId);
-        response.setUsername(username);
-        response.setRole(role);
-        response.setBalance(balance);
+        response.setSuccess(false);
         return response;
     }
 
@@ -133,5 +163,16 @@ public class AuthService {
         response.setMessage(message);
         response.setUserId(userId);
         return response;
+    }
+
+    private String extractErrorMessage(String response) {
+        String[] parts = response.split("\\|", 3);
+        if (parts.length >= 3) {
+            return parts[2];
+        }
+        if (parts.length >= 2) {
+            return parts[1];
+        }
+        return "Yêu cầu thất bại.";
     }
 }

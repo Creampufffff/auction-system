@@ -19,6 +19,12 @@ public class UserMapper {
     public static User toEntity(RegisterRequestDTO dto) {
         if (dto == null) return null;
 
+        if ("SELLER".equalsIgnoreCase(dto.getRole())) {
+            return new Seller(dto.getUsername(), dto.getPassword(), dto.getEmail());
+        }
+        if ("ADMIN".equalsIgnoreCase(dto.getRole())) {
+            return new Admin(dto.getUsername(), dto.getPassword(), dto.getEmail());
+        }
         return new Bidder(dto.getUsername(), dto.getPassword(), dto.getEmail());
     }
 

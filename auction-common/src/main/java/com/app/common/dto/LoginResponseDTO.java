@@ -12,6 +12,7 @@ public class LoginResponseDTO implements Serializable {
     private String username;
     private String role;
     private double balance;
+    private boolean isSuccess = true;
 
     public LoginResponseDTO() {
     }
@@ -23,4 +24,7 @@ public class LoginResponseDTO implements Serializable {
         this.balance = balance;
     }
 
+    public boolean isSuccess() {
+        return this.isSuccess;
+    }
 }

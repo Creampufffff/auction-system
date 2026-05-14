@@ -2,7 +2,6 @@ package com.auction.client.model;
 
 import com.app.common.dto.AuctionListDTO;
 import com.app.common.enums.Status;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import java.util.HashMap;
@@ -46,6 +45,7 @@ public class ProductDataManager {
 
     // --- [MỚI] HÀM TRỢ GIÚP VÍ TIỀN ---
     public double getUserBalance() { return userBalance; }
+    public void setUserBalance(double balance) { this.userBalance = balance; }
     public void deductBalance(double amount) { this.userBalance -= amount; }
     public void refundBalance(double amount) { this.userBalance += amount; }
     public double getHeldMoney(String auctionId) { return userHeldMoneyMap.getOrDefault(auctionId, 0.0); }

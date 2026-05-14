@@ -13,8 +13,8 @@ import com.auction.app.service.BidService;
 import java.util.List;
 
 public class BidServiceImpl implements BidService {
-    private final BidDAO bidDAO;        // DAO để truy cập database
-    private final UserDAO userDAO;      // DAO để kiểm tra user
+    private final BidDAO bidDAO;        // DAO to access database
+    private final UserDAO userDAO;      // DAO to check users
 
     public BidServiceImpl(BidDAO bidDAO, AuctionDAO auctionDAO) {
         this(bidDAO, auctionDAO, new UserDAOImpl());
@@ -28,38 +28,38 @@ public class BidServiceImpl implements BidService {
     @Override
     public void placeBid(BidTransaction bid) {
         if (bid == null) {
-            throw new InvalidBidException("Bid không thể null");
+            throw new InvalidBidException("Bid cannot be null");
         }
 
         if (bid.getAuction() == null || bid.getAuction().getId() == null || bid.getAuction().getId().isBlank()) {
-            throw new InvalidBidException("ID phiên đấu giá không được để trống");
+            throw new InvalidBidException("Auction ID cannot be empty");
         }
 
         if (bid.getBidder() == null || bid.getBidder().getId() == null || bid.getBidder().getId().isBlank()) {
-            throw new InvalidBidException("ID người đặt giá không được để trống");
+            throw new InvalidBidException("Bidder ID cannot be empty");
         }
 
         if (bid.getBidAmount() <= 0) {
-            throw new InvalidBidException("Số tiền đấu giá phải lớn hơn 0");
+            throw new InvalidBidException("Bid amount must be greater than 0");
         }
 
         User bidder = userDAO.findById(bid.getBidder().getId());
         if (bidder == null) {
-            throw new InvalidBidException("Không tìm thấy người dùng");
+            throw new InvalidBidException("User not found");
         }
 
         if (bidder.getBalance() < bid.getBidAmount()) {
-            throw new InsufficientBalanceException("Tài khoản không đủ tiền để đặt giá này");
+            throw new InsufficientBalanceException("Insufficient funds to place this bid");
         }
 
         if (!bidDAO.placeBidSafely(bid)) {
-            throw new IllegalStateException("Không thể lưu bid vào database");
+            throw new IllegalStateException("Failed to save bid to database");
         }
     }
 
     @Override
     public BidTransaction getBidById(String bidId) {
-        validateId(bidId, "ID bid");
+        validateId(bidId, "Bid ID");
         return bidDAO.findById(bidId);
     }
 
@@ -70,7 +70,7 @@ public class BidServiceImpl implements BidService {
 
     @Override
     public List<BidTransaction> getBidByAuctionId(String auctionId) {
-        validateId(auctionId, "ID phiên");
+        validateId(auctionId, "Auction ID");
         // Trả về danh sách bid sắp xếp từ cao đến thấp
         return bidDAO.findByAuctionId(auctionId);
     }
@@ -79,14 +79,14 @@ public class BidServiceImpl implements BidService {
     public void deleteBid(String bidId) {
         validateId(bidId, "ID bid");
         if (!bidDAO.delete(bidId)) {
-            throw new IllegalArgumentException("Không tìm thấy bid để xóa");
+            throw new IllegalArgumentException("Bid not found to delete");
         }
     }
 
-    //Kiểm tra ID không null và không rỗng
+    // Check ID is not null or empty
     private void validateId(String id, String fieldName) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống");
+            throw new IllegalArgumentException(fieldName + " cannot be empty");
         }
     }
 }

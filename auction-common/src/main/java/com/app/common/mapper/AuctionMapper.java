@@ -13,15 +13,22 @@ public class AuctionMapper {
         Item item = auction.getItem();
         if (item == null) return null;
         
+        double currentPrice = item.getHighestCurrentPrice() > 0
+            ? item.getHighestCurrentPrice()
+            : item.getStartPrice();
+        String warranty = item instanceof Electronics
+            ? String.valueOf(((Electronics) item).getWarrantyMonths())
+            : null;
+
         return new AuctionListDTO(
             auction.getId(),
             item.getId(),
             item.getName(),
-            item.getHighestCurrentPrice(),
+            currentPrice,
             auction.getAuctionStatus(),
-            item.getClass().getSimpleName(),
+            null,
             item.getDescription(),
-            String.valueOf(item.getId())
+            warranty
         );
     }
 

@@ -33,11 +33,11 @@ public class AuctionServiceImpl implements AuctionService {
     @Override
     public void saveAuction(Auction auction) {
         if (auction == null) {
-            throw new IllegalArgumentException("Auction không thể null!");
+            throw new IllegalArgumentException("Auction cannot be null!");
         }
 
         if (auction.getItem() == null) {
-            throw new IllegalArgumentException("Item của Auction không thể null");
+            throw new IllegalArgumentException("Auction item cannot be null");
         }
 
         if (auction.getAuctionStatus() == null) {
@@ -45,7 +45,7 @@ public class AuctionServiceImpl implements AuctionService {
         }
 
         if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Không thể lưu phiên đấu giá");
+            throw new IllegalStateException("Failed to save auction");
         }
     }
 
@@ -56,17 +56,17 @@ public class AuctionServiceImpl implements AuctionService {
         Auction auction = getAuctionById(auctionId);
 
         if (auction == null) {
-            throw new AuctionNotFoundException("Không tìm thấy phiên đấu giá");
+            throw new AuctionNotFoundException("Auction not found");
         }
 
         if (auction.getAuctionStatus() != Status.OPEN) {
-            throw new AuctionClosedException("Chỉ có thể bắt đầu phiên ở trạng thái OPEN");
+            throw new AuctionClosedException("Can only start auction when status is OPEN");
         }
 
         auction.setAuctionStatus(Status.RUNNING);
 
         if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Không thể bắt đầu phiên đấu giá");
+            throw new IllegalStateException("Failed to start auction");
         }
     }
 
@@ -77,19 +77,15 @@ public class AuctionServiceImpl implements AuctionService {
         Auction auction = getAuctionById(auctionId);
 
         if (auction == null) {
-            throw new AuctionNotFoundException("Không tìm thấy phiên đấu giá");
+            throw new AuctionNotFoundException("Auction not found");
         }
 
         if (auction.getAuctionStatus() == Status.FINISHED) {
             return;
         }
 
-        settleWinningBid(auction);
-
-        auction.setAuctionStatus(Status.FINISHED);
-
-        if (!auctionDAO.save(auction)) {
-            throw new IllegalStateException("Không thể kết thúc phiên đấu giá");
+        if (!auctionDAO.settleAndFinishAuction(auctionId)) {
+            throw new IllegalStateException("Failed to end auction");
         }
     }
 
@@ -111,7 +107,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     private void validateId(String id) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("ID phiên không được để trống");
+            throw new IllegalArgumentException("Auction ID cannot be empty");
         }
     }
 
@@ -125,7 +121,7 @@ public class AuctionServiceImpl implements AuctionService {
 
         User winner = userDAO.findById(highestBid.getBidder().getId());
         if (winner == null) {
-            throw new IllegalStateException("Không tìm thấy người thắng");
+            throw new IllegalStateException("Winner not found");
         }
 
         winner.withdraw(highestBid.getBidAmount());
@@ -133,16 +129,16 @@ public class AuctionServiceImpl implements AuctionService {
         String sellerId = auction.getItem().getSellerId();
         User seller = userDAO.findById(sellerId);
         if (seller == null) {
-            throw new IllegalStateException("Không tìm thấy người bán");
+            throw new IllegalStateException("Seller not found");
         }
 
         seller.deposit(highestBid.getBidAmount());
 
         if (!userDAO.save(winner)) {
-            throw new IllegalStateException("Không thể cập nhật tài khoản người thắng");
+            throw new IllegalStateException("Failed to update winner's account");
         }
         if (!userDAO.save(seller)) {
-            throw new IllegalStateException("Không thể cập nhật tài khoản người bán");
+            throw new IllegalStateException("Failed to update seller's account");
         }
     }
 }

@@ -12,7 +12,7 @@ public class DatabaseConfig {
     private static final String DEFAULT_JDBC_URL = "jdbc:mysql://localhost:3306/auction_system";
     private static final String DEFAULT_USERNAME = "root";
     private static final String DEFAULT_PASSWORD = "123456";
-    private static final Dotenv dotenv = Dotenv.load();
+    private static final Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 
     static {
         HikariConfig config = new HikariConfig();

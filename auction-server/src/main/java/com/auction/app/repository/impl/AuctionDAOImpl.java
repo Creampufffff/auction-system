@@ -29,7 +29,28 @@ public class AuctionDAOImpl implements AuctionDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Không tải được đấu giá ", e);
+            throw new IllegalStateException("Failed to load auctions", e);
+        }
+
+        return auctions;
+    }
+
+    @Override
+    public List<Auction> findRunningAuctions() {
+        String sql = "SELECT id, item_id, status FROM auctions WHERE status = ? ORDER BY id";
+        List<Auction> auctions = new ArrayList<>();
+
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, Status.RUNNING.name());
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapAuction(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load running auctions", e);
         }
 
         return auctions;
@@ -55,7 +76,96 @@ public class AuctionDAOImpl implements AuctionDAO {
 
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new IllegalStateException("Không cập nhập được giá cho phieen: " + auctionId, e);
+            throw new IllegalStateException("Failed to update price for auction: " + auctionId, e);
+        }
+    }
+
+    @Override
+    public boolean settleAndFinishAuction(String auctionId) {
+        String lockAuctionSql = """
+                SELECT a.status, i.seller_id
+                FROM auctions a
+                JOIN items i ON i.id = a.item_id
+                WHERE a.id = ?
+                FOR UPDATE
+                """;
+        String highestBidSql = """
+                SELECT bidder_id, bid_amount
+                FROM bid_transactions
+                WHERE auction_id = ?
+                ORDER BY bid_amount DESC, created_at DESC
+                LIMIT 1
+                """;
+        String lockUserSql = "SELECT balance FROM users WHERE id = ? FOR UPDATE";
+        String updateBalanceSql = "UPDATE users SET balance = ? WHERE id = ?";
+        String finishAuctionSql = "UPDATE auctions SET status = ? WHERE id = ?";
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                String sellerId;
+                try (PreparedStatement statement = connection.prepareStatement(lockAuctionSql)) {
+                    statement.setString(1, auctionId);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (!resultSet.next()) {
+                            throw new IllegalArgumentException("Auction not found");
+                        }
+
+                        String status = resultSet.getString("status");
+                        if (Status.FINISHED.name().equals(status)) {
+                            connection.commit();
+                            return true;
+                        }
+                        if (Status.CANCELED.name().equals(status)) {
+                            throw new IllegalStateException("Cannot finish canceled auction");
+                        }
+                        sellerId = resultSet.getString("seller_id");
+                    }
+                }
+
+                String bidderId = null;
+                double amount = 0;
+                try (PreparedStatement statement = connection.prepareStatement(highestBidSql)) {
+                    statement.setString(1, auctionId);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (resultSet.next()) {
+                            bidderId = resultSet.getString("bidder_id");
+                            amount = resultSet.getDouble("bid_amount");
+                        }
+                    }
+                }
+
+                if (bidderId != null) {
+                    double bidderBalance = lockUserBalance(connection, lockUserSql, bidderId, "Winner not found");
+                    double sellerBalance = lockUserBalance(connection, lockUserSql, sellerId, "Seller not found");
+
+                    if (bidderBalance < amount) {
+                        throw new IllegalStateException("Winner has insufficient balance");
+                    }
+
+                    updateUserBalance(connection, updateBalanceSql, bidderId, bidderBalance - amount);
+                    updateUserBalance(connection, updateBalanceSql, sellerId, sellerBalance + amount);
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(finishAuctionSql)) {
+                    statement.setString(1, Status.FINISHED.name());
+                    statement.setString(2, auctionId);
+                    if (statement.executeUpdate() == 0) {
+                        throw new IllegalStateException("Failed to finish auction");
+                    }
+                }
+
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to settle auction: " + auctionId, e);
         }
     }
 
@@ -73,7 +183,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Không thể tìm được phiên đấu " + id, e);
+            throw new IllegalStateException("Failed to find auction " + id, e);
         }
 
         return null;
@@ -91,7 +201,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 auctions.add(mapAuction(resultSet));
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Không load được đáu giá", e);
+            throw new IllegalStateException("Failed to load auctions", e);
         }
 
         return auctions;
@@ -126,7 +236,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Không thể lưu đấu giá: " + entity.getId(), e);
+            throw new IllegalStateException("Failed to save auction: " + entity.getId(), e);
         }
     }
 
@@ -139,7 +249,7 @@ public class AuctionDAOImpl implements AuctionDAO {
             statement.setString(1, id);
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new IllegalStateException("Không xóa được phiên đấu: " + id, e);
+            throw new IllegalStateException("Failed to delete auction: " + id, e);
         }
     }
 
@@ -149,5 +259,27 @@ public class AuctionDAOImpl implements AuctionDAO {
         auction.setId(resultSet.getString("id"));
         auction.setAuctionStatus(Status.valueOf(resultSet.getString("status")));
         return auction;
+    }
+
+    private double lockUserBalance(Connection connection, String sql, String userId, String notFoundMessage) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException(notFoundMessage);
+                }
+                return resultSet.getDouble("balance");
+            }
+        }
+    }
+
+    private void updateUserBalance(Connection connection, String sql, String userId, double balance) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDouble(1, balance);
+            statement.setString(2, userId);
+            if (statement.executeUpdate() == 0) {
+                throw new IllegalStateException("Failed to update user balance");
+            }
+        }
     }
 }

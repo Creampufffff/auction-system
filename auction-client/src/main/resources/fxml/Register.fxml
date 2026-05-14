@@ -55,6 +55,10 @@
                 </VBox>
             </HBox>
 
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <CheckBox fx:id="isSellerCheck" text="Đăng ký làm người bán (Seller)" />
+            </HBox>
+
             <Label fx:id="messageLabel" wrapText="true" style="-fx-font-size: 13px;"/>
 
             <Button text="Tạo tài khoản ngay" onAction="#handleRegister" maxWidth="Infinity"

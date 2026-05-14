@@ -15,18 +15,18 @@ import java.util.PriorityQueue;
 import java.util.Comparator;
 
 public class AutoBidServiceImpl implements AutoBidService {
-    private final List<AutoBid> autoBids = new ArrayList<>();  // Danh sách tất cả AutoBids
+    private final List<AutoBid> autoBids = new ArrayList<>();  // List of all AutoBids
     private final AuctionDAO auctionDAO;
     private final BidDAO bidDAO;
     
-    // PriorityQueue sắp xếp AutoBids theo giá tối đa (cao nhất có ưu tiên)
+    // PriorityQueue sorts AutoBids by max auto amount (highest amount has priority)
     private final PriorityQueue<AutoBid> autoBidQueue;
 
     public AutoBidServiceImpl(AuctionDAO auctionDAO, BidDAO bidDAO) {
         this.auctionDAO = auctionDAO;
         this.bidDAO = bidDAO;
         
-        // Tạo PriorityQueue sắp xếp giảm dần (maxAutoAmount cao nhất đầu tiên)
+        // Create a PriorityQueue sorted in descending order (highest maxAutoAmount first)
         this.autoBidQueue = new PriorityQueue<>(
                 Comparator.comparingDouble(AutoBid::getMaxAutoAmount).reversed()
         );
@@ -34,32 +34,32 @@ public class AutoBidServiceImpl implements AutoBidService {
 
     @Override
     public void createAutoBid(AutoBid autoBid) {
-        // ========== BƯỚC 1: Validate AutoBid ==========
+        // ========== STEP 1: Validate AutoBid ==========
         if (autoBid == null) {
-            throw new InvalidBidException("AutoBid không thể null");
+            throw new InvalidBidException("AutoBid cannot be null");
         }
         
         if (autoBid.getAuctionId() == null || autoBid.getAuctionId().isBlank()) {
-            throw new InvalidBidException("ID phiên không được để trống");
+            throw new InvalidBidException("Auction ID cannot be empty");
         }
         
         if (autoBid.getBidderId() == null || autoBid.getBidderId().isBlank()) {
-            throw new InvalidBidException("ID người dùng không được để trống");
+            throw new InvalidBidException("Bidder ID cannot be empty");
         }
         
         if (autoBid.getMaxAutoAmount() <= 0) {
-            throw new InvalidBidException("Giá tối đa phải lớn hơn 0");
+            throw new InvalidBidException("Max auto amount must be greater than 0");
         }
 
-        // ========== BƯỚC 2: Kiểm tra phiên tồn tại ==========
+        // ========== STEP 2: Check auction exists ==========
         Auction auction = auctionDAO.findById(autoBid.getAuctionId());
         if (auction == null) {
-            throw new InvalidBidException("Không tìm thấy phiên đấu giá");
+            throw new InvalidBidException("Auction not found");
         }
 
-        // ========== BƯỚC 3: Lưu AutoBid ==========
-        autoBids.add(autoBid);       // Lưu vào danh sách
-        autoBidQueue.offer(autoBid); // Thêm vào PriorityQueue
+        // ========== STEP 3: Save AutoBid ==========
+        autoBids.add(autoBid);       // Save into list
+        autoBidQueue.offer(autoBid); // Add into PriorityQueue
     }
 
     @Override
@@ -74,14 +74,14 @@ public class AutoBidServiceImpl implements AutoBidService {
     public List<AutoBid> getAutoBiddsByAuctionId(String auctionId) {
         List<AutoBid> result = new ArrayList<>();
         
-        // Lấy tất cả AutoBid hoạt động của phiên này
+        // Get all active AutoBids for this auction
         for (AutoBid ab : autoBids) {
             if (ab.getAuctionId().equals(auctionId) && ab.isActive()) {
                 result.add(ab);
             }
         }
         
-        // Sắp xếp theo giá tối đa (cao nhất đầu tiên)
+        // Sort by max auto amount (highest first)
         result.sort(Comparator.comparingDouble(AutoBid::getMaxAutoAmount).reversed());
         return result;
     }
@@ -90,7 +90,7 @@ public class AutoBidServiceImpl implements AutoBidService {
     public List<AutoBid> getActiveBidsByBidderId(String bidderId) {
         List<AutoBid> result = new ArrayList<>();
         
-        // Lấy tất cả AutoBid hoạt động của người dùng này
+        // Get all active AutoBids for this bidder
         for (AutoBid ab : autoBids) {
             if (ab.getBidderId().equals(bidderId) && ab.isActive()) {
                 result.add(ab);
@@ -104,18 +104,18 @@ public class AutoBidServiceImpl implements AutoBidService {
     public void cancelAutoBid(String autoBidId) {
         AutoBid autoBid = getAutoBidById(autoBidId);
         if (autoBid != null) {
-            autoBid.setActive(false);  // Đánh dấu là không hoạt động
-            autoBidQueue.remove(autoBid);  // Xóa khỏi queue
+            autoBid.setActive(false);  // Mark as inactive
+            autoBidQueue.remove(autoBid);  // Remove from queue
         }
     }
 
     @Override
     public void processAutoBidsForAuction(String auctionId) {
-        // Lấy tất cả AutoBid hoạt động của phiên
+        // Get all active AutoBids for the auction
         List<AutoBid> activeAutoBids = getAutoBiddsByAuctionId(auctionId);
 
         if (activeAutoBids.isEmpty()) {
-            return;  // Không có AutoBid nào
+            return;  // No AutoBids
         }
 
         // Lấy thông tin phiên và vật phẩm
@@ -128,21 +128,21 @@ public class AutoBidServiceImpl implements AutoBidService {
         BidTransaction currentHighest = bidDAO.getMaxBidByAuctionId(auctionId);
         double currentPrice = currentHighest != null
                 ? currentHighest.getBidAmount()
-                : auction.getItem().getStartPrice();  // Nếu chưa có bid, lấy giá khởi điểm
+                : auction.getItem().getStartPrice();  // If no bids yet, use start price
 
         double minIncrement = auction.getItem().getMinIncreasement();
 
-        // ========== BƯỚC 2: Xử lý AutoBids theo thứ tự ưu tiên ==========
-        // Duyệt qua AutoBids từ cao đến thấp (PriorityQueue)
+        // ========== STEP 2: Process AutoBids by priority ==========
+        // Iterate AutoBids from highest to lowest (PriorityQueue)
         for (AutoBid autoBid : activeAutoBids) {
             if (!autoBid.isActive()) {
-                continue;  // Bỏ qua nếu đã bị hủy
+                continue;  // Skip if canceled
             }
 
             // Giá bid tiếp theo = giá hiện tại + mức tăng tối thiểu
             double nextBidAmount = currentPrice + minIncrement;
 
-            // ========== BƯỚC 3: Kiểm tra AutoBid có đủ tiền không ==========
+            // ========== STEP 3: Check if AutoBid has sufficient funds ==========
             if (autoBid.getMaxAutoAmount() >= nextBidAmount) {
                 try {
                     // Tạo đối tượng Bidder tạm để thực hiện bid
@@ -152,17 +152,17 @@ public class AutoBidServiceImpl implements AutoBidService {
                     // Tạo BidTransaction
                     BidTransaction autoBidTransaction = new BidTransaction(bidder, auction, nextBidAmount);
                     
-                    // Lưu bid vào database (với transaction và lock)
+                    // Save bid into database (with transaction and lock)
                     bidDAO.placeBidSafely(autoBidTransaction);
 
-                    // Cập nhật giá hiện tại cho AutoBid tiếp theo
+                    // Update current price for next AutoBid
                     currentPrice = nextBidAmount;
                 } catch (Exception e) {
-                    System.err.println("❌ AutoBid thất bại cho ID: " + autoBid.getId() + " - " + e.getMessage());
-                    autoBid.setActive(false);  // Đánh dấu AutoBid này là failed
+                    System.err.println("❌ AutoBid failed for ID: " + autoBid.getId() + " - " + e.getMessage());
+                    autoBid.setActive(false);  // Mark this AutoBid as failed
                 }
             } else {
-                // AutoBid này không đủ tiền để bid tiếp => hủy lệnh
+                // This AutoBid doesn't have enough funds to continue => cancel
                 autoBid.setActive(false);
             }
         }

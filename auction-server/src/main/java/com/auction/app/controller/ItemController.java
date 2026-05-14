@@ -17,9 +17,9 @@ public class ItemController {
     public ApiResponseDTO createItem(Item item) {
         try {
             itemService.saveItem(item);
-            return new ApiResponseDTO(true, "Tạo sản phẩm thành công. ID: " + item.getId());
+            return new ApiResponseDTO(true, "Item created successfully. ID: " + item.getId());
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi tạo sản phẩm: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error creating item: " + e.getMessage());
         }
     }
 
@@ -35,9 +35,9 @@ public class ItemController {
     public ApiResponseDTO deleteItem(String itemId) {
         try {
             itemService.deleteItem(itemId);
-            return new ApiResponseDTO(true, "Xóa sản phẩm thành công");
+            return new ApiResponseDTO(true, "Item deleted successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi xóa sản phẩm: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error deleting item: " + e.getMessage());
         }
     }
 }

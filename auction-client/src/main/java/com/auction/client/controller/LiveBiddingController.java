@@ -1,10 +1,12 @@
 package com.auction.client.controller;
 
+import com.app.common.dto.PlaceBidResponseDTO;
 import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
+import com.auction.client.service.AuctionService;
+import com.auction.client.session.SessionManager;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -29,6 +31,7 @@ public class LiveBiddingController {
     private int timeLeft = 30;
     private ObservableList<String> bidHistory;
     private static LiveBiddingController activeController;
+    private final AuctionService auctionService = new AuctionService();
 
     @FXML
     public void initialize() {
@@ -36,6 +39,24 @@ public class LiveBiddingController {
         setupBackButton();
         startCountdown();
         updateBalanceUI();
+    }
+
+    public static void onBidUpdated(String auctionId, double currentPrice, String leadingBidderId) {
+        LiveBiddingController controller = activeController;
+        if (controller == null) {
+            return;
+        }
+
+        Platform.runLater(() -> controller.applyExternalBidUpdate(auctionId, currentPrice, leadingBidderId));
+    }
+
+    public static void onAuctionEnded(String auctionId) {
+        LiveBiddingController controller = activeController;
+        if (controller == null) {
+            return;
+        }
+
+        Platform.runLater(() -> controller.applyExternalAuctionEnded(auctionId));
     }
 
     private void updateBalanceUI() {
@@ -46,7 +67,7 @@ public class LiveBiddingController {
     }
 
     @FXML
-    private void handlePlaceBid(ActionEvent event) {
+    private void handlePlaceBid() {
         if (currentProduct == null) return;
 
         if (timeLeft <= 0) {
@@ -59,33 +80,39 @@ public class LiveBiddingController {
             double currentPrice = currentProduct.getPrice();
 
             if (bidAmount > currentPrice) {
+                PlaceBidResponseDTO response;
+                try {
+                    response = auctionService.placeBid(currentProduct.getId(), bidAmount);
+                } catch (IllegalStateException ex) {
+                    showAlert("Lỗi kết nối", "Không thể kết nối tới server.");
+                    return;
+                }
+
+                if (response == null || !response.isSuccess()) {
+                    showAlert("Đặt giá thất bại", getPlaceBidFailureMessage(response));
+                    return;
+                }
+
                 ProductDataManager manager = ProductDataManager.getInstance();
                 double previouslyHeld = manager.getHeldMoney(currentProduct.getId());
+                manager.refundBalance(previouslyHeld);
+                manager.deductBalance(bidAmount);
+                manager.setHeldMoney(currentProduct.getId(), bidAmount);
+                manager.setLeadingUser(currentProduct.getId(), "Bạn");
 
-                if (manager.getUserBalance() + previouslyHeld >= bidAmount) {
-                    manager.refundBalance(previouslyHeld);
-                    manager.deductBalance(bidAmount);
-                    manager.setHeldMoney(currentProduct.getId(), bidAmount);
+                currentProduct.setPrice(bidAmount);
+                currentPriceLabel.setText("$" + String.format("%.2f", bidAmount));
+                manager.setCurrentPrice(currentProduct.getId(), bidAmount);
 
-                    // CẬP NHẬT NGƯỜI DẪN ĐẦU VÀO MANAGER
-                    manager.setLeadingUser(currentProduct.getId(), "Bạn");
+                updateBalanceUI();
 
-                    currentProduct.setPrice(bidAmount);
-                    currentPriceLabel.setText("$" + String.format("%.2f", bidAmount));
-                    manager.setCurrentPrice(currentProduct.getId(), bidAmount);
+                bidHistory.add(0, "Bạn đã đặt giá thành công: $" + bidAmount);
+                bidAmountField.clear();
 
-                    updateBalanceUI();
-
-                    bidHistory.add(0, "Bạn đã đặt giá thành công: $" + bidAmount);
-                    bidAmountField.clear();
-
-                    if (timeLeft <= 30) {
-                        timeLeft += 30;
-                        manager.setTimeLeft(currentProduct.getId(), timeLeft);
-                        bidHistory.add(0, "⚠️ Hệ thống: Gia hạn thêm 30 giây!");
-                    }
-                } else {
-                    showAlert("Số dư không đủ", "Bạn không đủ tiền để thực hiện mức giá này!");
+                if (timeLeft <= 30) {
+                    timeLeft += 30;
+                    manager.setTimeLeft(currentProduct.getId(), timeLeft);
+                    bidHistory.add(0, "⚠️ Hệ thống: Gia hạn thêm 30 giây!");
                 }
             } else {
                 showAlert("Giá thầu thấp", "Bạn phải đặt cao hơn $" + currentPrice);
@@ -182,6 +209,53 @@ public class LiveBiddingController {
         }, 0, 1000);
     }
 
+    private void applyExternalBidUpdate(String auctionId, double currentPrice, String leadingBidderId) {
+        if (currentProduct == null || auctionId == null || !auctionId.equals(currentProduct.getId())) {
+            return;
+        }
+
+        ProductDataManager manager = ProductDataManager.getInstance();
+        String currentUserId = SessionManager.getCurrentUserId();
+        boolean isMe = currentUserId != null && currentUserId.equals(leadingBidderId);
+
+        if (!isMe) {
+            double heldMoney = manager.getHeldMoney(auctionId);
+            if (heldMoney > 0) {
+                manager.refundBalance(heldMoney);
+                manager.setHeldMoney(auctionId, 0.0);
+            }
+        } else {
+            manager.setHeldMoney(auctionId, currentPrice);
+        }
+
+        currentProduct.setPrice(currentPrice);
+        currentPriceLabel.setText("$" + String.format("%.2f", currentPrice));
+        manager.setCurrentPrice(auctionId, currentPrice);
+        manager.setLeadingUser(auctionId, isMe ? "Bạn" : leadingBidderId);
+        updateBalanceUI();
+
+        if (bidHistory != null) {
+            bidHistory.add(0, isMe
+                    ? "Bạn đã được cập nhật giá dẫn đầu: $" + currentPrice
+                    : "Người khác đã đặt giá: $" + currentPrice + " (" + leadingBidderId + ")");
+        }
+    }
+
+    private void applyExternalAuctionEnded(String auctionId) {
+        if (currentProduct == null || auctionId == null || !auctionId.equals(currentProduct.getId())) {
+            return;
+        }
+
+        ProductDataManager.getInstance().closeAuction(auctionId);
+        timerLabel.setText("HẾT GIỜ");
+        bidAmountField.setDisable(true);
+        stopTimer();
+
+        if (bidHistory != null) {
+            bidHistory.add(0, "🏁 Phiên đấu giá đã kết thúc.");
+        }
+    }
+
     private void showWinnerDialog(String winnerName) {
         // Lấy data thô từ Manager
         String leaderInMap = ProductDataManager.getInstance().getLeadingUser(currentProduct.getId(), "");
@@ -219,22 +293,27 @@ public class LiveBiddingController {
     }
 
     @FXML
-    private void handleBack(ActionEvent event) {
+    private void handleBack() {
         stopTimer();
         activeController = null;
-        switchScene("/fxml/AuctionList.fxml", "UET Auction System");
+        switchToAuctionList();
     }
 
-    private void switchScene(String fxmlPath, String title) {
+    private void switchToAuctionList() {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
+            java.net.URL resource = getClass().getResource("/fxml/AuctionList.fxml");
+            if (resource == null) {
+                throw new IllegalStateException("Không tìm thấy file FXML: /fxml/AuctionList.fxml");
+            }
+
+            Parent root = FXMLLoader.load(resource);
             Stage stage = (Stage) productNameLabel.getScene().getWindow();
             Scene scene = new Scene(root, 1040, 660);
-            stage.setTitle(title);
+            stage.setTitle("UET Auction System");
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Không thể chuyển sang màn hình danh sách đấu giá.", e);
         }
     }
 
@@ -250,5 +329,14 @@ public class LiveBiddingController {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private String getPlaceBidFailureMessage(PlaceBidResponseDTO response) {
+        if (response == null) {
+            return "Server không phản hồi.";
+        }
+
+        String message = response.getMessage();
+        return (message == null || message.isBlank()) ? "Đặt giá thất bại." : message;
     }
 }

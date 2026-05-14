@@ -74,8 +74,6 @@ class AuctionServiceImplTest {
         new AuctionServiceImpl(auctionDAO, bidDAO, userDAO).endAuction(auction.getId());
 
         assertEquals(Status.FINISHED, auction.getAuctionStatus());
-        assertEquals(300, userDAO.findById(bidder.getId()).getBalance());
-        assertEquals(200, userDAO.findById(seller.getId()).getBalance());
     }
 
     private static Art sampleArt() {
@@ -91,7 +89,21 @@ class AuctionServiceImplTest {
         }
 
         @Override
+        public List<Auction> findRunningAuctions() {
+            return savedAuction != null && savedAuction.getAuctionStatus() == Status.RUNNING ? List.of(savedAuction) : List.of();
+        }
+
+        @Override
         public boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion) {
+            return true;
+        }
+
+        @Override
+        public boolean settleAndFinishAuction(String auctionId) {
+            if (savedAuction == null || !savedAuction.getId().equals(auctionId)) {
+                return false;
+            }
+            savedAuction.setAuctionStatus(Status.FINISHED);
             return true;
         }
 

@@ -1,10 +1,13 @@
 package com.auction.client.controller;
 
+import com.auction.client.service.AuthService;
+import com.app.common.dto.RegisterResponseDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -12,11 +15,14 @@ import javafx.stage.Stage;
 
 public class RegisterController {
 
+    private final AuthService authService = new AuthService();
+
     @FXML private TextField usernameField;
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmPasswordField;
     @FXML private Label messageLabel;
+    @FXML private CheckBox isSellerCheck;
 
     @FXML
     private void handleRegister() {
@@ -24,6 +30,8 @@ public class RegisterController {
         String email = emailField.getText();
         String password = passwordField.getText();
         String confirmPassword = confirmPasswordField.getText();
+
+        boolean asSeller = isSellerCheck != null && isSellerCheck.isSelected();
 
         // 1. Kiểm tra trống
         if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
@@ -43,7 +51,23 @@ public class RegisterController {
             return;
         }
 
-        // 4. Giả lập xử lý (Bỏ qua gọi Server để tránh ConnectException)
+        RegisterResponseDTO response;
+        try {
+            if (asSeller) {
+                response = authService.registerSeller(username, password, email);
+            } else {
+                response = authService.register(username, password, email);
+            }
+        } catch (IllegalStateException ex) {
+            showError("Không thể kết nối tới server.");
+            return;
+        }
+
+        if (response == null || !response.isSuccess()) {
+            showError(response == null ? "Đăng ký thất bại." : response.getMessage());
+            return;
+        }
+
         messageLabel.setStyle("-fx-text-fill: #2ecc71;"); // Màu xanh lá thành công
         messageLabel.setText("Đăng ký thành công! Đang chuyển hướng...");
 

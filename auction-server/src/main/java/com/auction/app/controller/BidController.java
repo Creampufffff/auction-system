@@ -31,11 +31,11 @@ public class BidController {
             Auction auction = auctionService.getAuctionById(request.getAuctionId());
 
             if (bidder == null || auction == null) {
-                return new PlaceBidResponseDTO(false, "Người dùng hoặc phiên đấu giá không tồn tại", null, null, 0);
+                return new PlaceBidResponseDTO(false, "User or auction does not exist", null, null, 0);
             }
 
             if (request.getBidAmount() <= 0) {
-                return new PlaceBidResponseDTO(false, "Giá đặt phải lớn hơn 0", null, null, 0);
+                return new PlaceBidResponseDTO(false, "Bid amount must be greater than 0", null, null, 0);
             }
 
             BidTransaction bid = BidMapper.toEntity(request, bidder, auction);
@@ -43,13 +43,13 @@ public class BidController {
 
             return new PlaceBidResponseDTO(
                 true,
-                "Đặt giá thành công",
+                "Bid placed successfully",
                 bid.getId(),
                 auction.getId(),
                 request.getBidAmount()
             );
         } catch (Exception e) {
-            return new PlaceBidResponseDTO(false, "Lỗi đặt giá: " + e.getMessage(), null, null, 0);
+            return new PlaceBidResponseDTO(false, "Error placing bid: " + e.getMessage(), null, null, 0);
         }
     }
 
@@ -75,9 +75,9 @@ public class BidController {
     public ApiResponseDTO deleteBid(String bidId) {
         try {
             bidService.deleteBid(bidId);
-            return new ApiResponseDTO(true, "Xóa đặt giá thành công");
+            return new ApiResponseDTO(true, "Bid deleted successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi xóa đặt giá: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error deleting bid: " + e.getMessage());
         }
     }
 }

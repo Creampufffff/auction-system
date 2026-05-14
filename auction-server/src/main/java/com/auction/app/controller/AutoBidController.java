@@ -23,15 +23,15 @@ public class AutoBidController {
     public ApiResponseDTO setAutoBid(SetAutoBidRequestDTO request) {
         try {
             if (request.getMaxAutoAmount() <= 0) {
-                return new ApiResponseDTO(false, "Số tiền auto-bid phải lớn hơn 0");
+                return new ApiResponseDTO(false, "Auto-bid amount must be greater than 0");
             }
 
             AutoBid autoBid = AutoBidMapper.toEntity(request);
             autoBidService.createAutoBid(autoBid);
 
-            return new ApiResponseDTO(true, "Thiết lập auto-bid thành công. ID: " + autoBid.getId());
+            return new ApiResponseDTO(true, "Auto-bid set successfully. ID: " + autoBid.getId());
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi thiết lập auto-bid: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error setting auto-bid: " + e.getMessage());
         }
     }
 
@@ -85,9 +85,9 @@ public class AutoBidController {
     public ApiResponseDTO cancelAutoBid(String autoBidId) {
         try {
             autoBidService.cancelAutoBid(autoBidId);
-            return new ApiResponseDTO(true, "Hủy auto-bid thành công");
+            return new ApiResponseDTO(true, "Auto-bid canceled successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi hủy auto-bid: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error canceling auto-bid: " + e.getMessage());
         }
     }
 
@@ -95,9 +95,9 @@ public class AutoBidController {
     public ApiResponseDTO processAutoBids(String auctionId) {
         try {
             autoBidService.processAutoBidsForAuction(auctionId);
-            return new ApiResponseDTO(true, "Xử lý auto-bid thành công");
+            return new ApiResponseDTO(true, "Auto-bid processed successfully");
         } catch (Exception e) {
-            return new ApiResponseDTO(false, "Lỗi xử lý auto-bid: " + e.getMessage());
+            return new ApiResponseDTO(false, "Error processing auto-bid: " + e.getMessage());
         }
     }
 }
