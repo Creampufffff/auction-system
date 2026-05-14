@@ -3,14 +3,8 @@ package com.app.common.mapper;
 import com.app.common.dto.*;
 import com.app.common.entity.*;
 
-/**
- * ItemMapper - Chuyển đổi giữa Item Entity và các DTO liên quan
- */
 public class ItemMapper {
 
-    /**
-     * Tạo Item từ CreateAuctionRequestDTO dựa trên itemType
-     */
     public static Item createItem(CreateAuctionRequestDTO dto) {
         if (dto == null) return null;
 
@@ -25,7 +19,7 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                "Unknown Author" // Có thể extend DTO để lấy author
+                "Unknown Author"
             );
 
         } else if ("ELECTRONICS".equalsIgnoreCase(itemType)) {
@@ -36,7 +30,7 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                12 // Default warranty months
+                12
             );
 
         } else if ("VEHICLE".equalsIgnoreCase(itemType)) {
@@ -47,7 +41,7 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                "Unknown Brand" // Có thể extend DTO để lấy brand
+                "Unknown Brand"
             );
         }
 
@@ -58,5 +52,4 @@ public class ItemMapper {
         return item;
     }
 }
-
 

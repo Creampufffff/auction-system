@@ -5,14 +5,8 @@ import com.app.common.entity.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * AuctionMapper - Chuyển đổi giữa Auction Entity và các DTO liên quan
- */
 public class AuctionMapper {
 
-    /**
-     * Chuyển Auction Entity thành AuctionListDTO
-     */
     public static AuctionListDTO toListDTO(Auction auction) {
         if (auction == null) return null;
         
@@ -25,15 +19,12 @@ public class AuctionMapper {
             item.getName(),
             item.getHighestCurrentPrice(),
             auction.getAuctionStatus(),
-            item.getClass().getSimpleName(), // "Art", "Electronics", "Vehicle"
+            item.getClass().getSimpleName(),
             item.getDescription(),
-            String.valueOf(item.getId()) // Có thể thay bằng warranty info nếu cần
+            String.valueOf(item.getId())
         );
     }
 
-    /**
-     * Chuyển một list Auction thành list AuctionListDTO
-     */
     public static List<AuctionListDTO> toListDTOs(List<Auction> auctions) {
         List<AuctionListDTO> dtos = new ArrayList<>();
         if (auctions != null) {
@@ -47,10 +38,6 @@ public class AuctionMapper {
         return dtos;
     }
 
-    /**
-     * Chuyển CreateAuctionRequestDTO thành Auction Entity
-     * (Yêu cầu tạo Item theo itemType)
-     */
     public static Auction toEntity(CreateAuctionRequestDTO dto) {
         if (dto == null) return null;
         
@@ -63,9 +50,6 @@ public class AuctionMapper {
         return auction;
     }
 
-    /**
-     * Chuyển BidTransaction Entity thành BidHistoryDTO
-     */
     public static BidHistoryDTO toBidHistoryDTO(BidTransaction bid) {
         if (bid == null) return null;
         
@@ -77,13 +61,10 @@ public class AuctionMapper {
             bid.getAuction().getId(),
             bidderUsername,
             bid.getBidAmount(),
-            bid.getId() // Có thể thay bằng timestamp nếu có
+            bid.getId()
         );
     }
 
-    /**
-     * Chuyển List BidTransaction thành List BidHistoryDTO
-     */
     public static List<BidHistoryDTO> toBidHistoryDTOs(List<BidTransaction> bidTransactions) {
         List<BidHistoryDTO> dtos = new ArrayList<>();
         if (bidTransactions != null) {
@@ -97,5 +78,4 @@ public class AuctionMapper {
         return dtos;
     }
 }
-
 

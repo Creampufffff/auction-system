@@ -19,7 +19,7 @@ public class AuctionSocketServer implements Subject<String> {
     private final ItemService itemService;
     private final AuctionService auctionService;
     private final BidService bidService;
-    // Danh sách observer đang lắng nghe sự kiện realtime từ server.
+
     private final Set<Observer<String>> observers = ConcurrentHashMap.newKeySet();
 
     public AuctionSocketServer(int port, UserService userService, ItemService itemService, AuctionService auctionService, BidService bidService) {
@@ -55,7 +55,6 @@ public class AuctionSocketServer implements Subject<String> {
 
     @Override
     public void notifyObservers(String event) {
-        // Phát sự kiện theo kiểu best-effort: 1 client lỗi không làm ngắt các client còn lại.
         observers.forEach(observer -> observer.onEvent(event));
     }
 

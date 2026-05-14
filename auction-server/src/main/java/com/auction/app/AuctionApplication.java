@@ -21,11 +21,6 @@ import com.auction.app.socket.AuctionSocketServer;
 
 import java.io.IOException;
 
-/*
-Khởi tạo tất cả dependencies (DAOs, Services)
-Tạo Socket Server để lắng nghe kết nối từ clients
-Khởi động auto-close task cho các phiên đấu giá hết hạn
- */
 public class AuctionApplication {
     private static final int DEFAULT_PORT = 5000;
     private static final String PORT_ENV = "AUCTION_SERVER_PORT";
@@ -38,7 +33,6 @@ public class AuctionApplication {
         AuctionDAO auctionDAO = new AuctionDAOImpl();
         BidDAO bidDAO = new BidDAOImpl();
 
-        // Các Service
         UserService userService = new UserServiceImpl(userDAO);
         ItemService itemService = new ItemServiceImpl(itemDAO);
         AuctionService auctionService = new AuctionServiceImpl(auctionDAO, bidDAO, userDAO);
@@ -47,9 +41,7 @@ public class AuctionApplication {
         AuctionSocketServer server = new AuctionSocketServer(DEFAULT_PORT, userService, itemService, auctionService, bidService);
 
         AuctionManager auctionManager = AuctionManager.getInstance();
-//        auctionManager.startAutoClose(auctionService);
 
-        //dừng auto-close task để clean up tài nguyên
         Runtime.getRuntime().addShutdownHook(new Thread(auctionManager::stopAutoClose));
 
         System.out.println("Khởi động Auction Server...");
