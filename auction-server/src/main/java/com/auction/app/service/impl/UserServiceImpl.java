@@ -17,50 +17,50 @@ public class UserServiceImpl implements UserService {
     @Override
     public void register(User user) {
         if (user == null) {
-            throw new IllegalArgumentException("Người dùng không được null");
+            throw new IllegalArgumentException("User cannot be null");
         }
 
         if (user.getUsername() == null || user.getUsername().isBlank()) {
-            throw new IllegalArgumentException("Tên đăng nhập không được để trống");
+            throw new IllegalArgumentException("Username cannot be empty");
         }
 
         if (user.getPassword() == null || user.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Mật khẩu không được để trống");
+            throw new IllegalArgumentException("Password cannot be empty");
         }
 
         if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email không được để trống");
+            throw new IllegalArgumentException("Email cannot be empty");
         }
 
         User existingUser = userDAO.findByUsername(user.getUsername());
 
         if (existingUser != null) {
-            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
+            throw new IllegalArgumentException("Username already exists");
         }
 
         if (!userDAO.save(user)) {
-            throw new IllegalStateException("Không thể lưu người dùng");
+            throw new IllegalStateException("Failed to save user");
         }
     }
 
     @Override
     public User login(String username, String password) {
         if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("Tên đăng nhập không được để trống");
+            throw new IllegalArgumentException("Username cannot be empty");
         }
 
         if (password == null || password.isBlank()) {
-            throw new IllegalArgumentException("Mật khẩu không được để trống");
+            throw new IllegalArgumentException("Password cannot be empty");
         }
 
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
-            throw new UserAuthException("Không tìm thấy người dùng");
+            throw new UserAuthException("User not found");
         }
 
         if (!user.getPassword().equals(password)) {
-            throw new UserAuthException("Mật khẩu không đúng");
+            throw new UserAuthException("Incorrect password");
         }
 
         return user;
@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(String userId) {
         validateId(userId);
         if (!userDAO.delete(userId)) {
-            throw new IllegalArgumentException("Không tìm thấy người dùng");
+            throw new IllegalArgumentException("User not found");
         }
     }
 
@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService {
         User user = getRequiredUser(userId);
         user.deposit(amount);
         if (!userDAO.save(user)) {
-            throw new IllegalStateException("Không thể cập nhật số dư");
+            throw new IllegalStateException("Failed to update balance");
         }
     }
 
@@ -105,13 +105,13 @@ public class UserServiceImpl implements UserService {
         User user = getRequiredUser(userId);
         user.withdraw(amount);
         if (!userDAO.save(user)) {
-            throw new IllegalStateException("Không thể cập nhật số dư");
+            throw new IllegalStateException("Failed to update balance");
         }
     }
 
     private void validateId(String userId) {
         if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("UserId không được để trống");
+            throw new IllegalArgumentException("User ID cannot be empty");
         }
     }
 
@@ -119,7 +119,7 @@ public class UserServiceImpl implements UserService {
         validateId(userId);
         User user = userDAO.findById(userId);
         if (user == null) {
-            throw new IllegalArgumentException("Không tìm thấy người dùng");
+            throw new IllegalArgumentException("User not found");
         }
         return user;
     }

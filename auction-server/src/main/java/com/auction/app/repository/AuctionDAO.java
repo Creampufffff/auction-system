@@ -8,5 +8,9 @@ import java.util.List;
 public interface AuctionDAO extends BaseDAO<Auction> {
     List<Auction> findActiveAuctions();
 
+    List<Auction> findRunningAuctions();
+
     boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion);
+
+    boolean settleAndFinishAuction(String auctionId);
 }

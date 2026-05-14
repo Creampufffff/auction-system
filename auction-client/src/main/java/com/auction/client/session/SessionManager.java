@@ -1,8 +1,12 @@
 package com.auction.client.session;
 
 import com.app.common.dto.LoginResponseDTO;
+import lombok.Getter;
+import lombok.Setter;
 
 public class SessionManager {
+    @Setter
+    @Getter
     private static LoginResponseDTO currentUser;
 
     private SessionManager() {
@@ -10,10 +14,6 @@ public class SessionManager {
 
     public static boolean isLoggedIn() {
         return currentUser != null;
-    }
-
-    public static void setCurrentUser(LoginResponseDTO user) {
-        currentUser = user;
     }
 
     public static void clear() {

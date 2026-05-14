@@ -1,7 +1,9 @@
 package com.auction.client.controller;
 
 import com.app.common.dto.LoginResponseDTO;
+import com.auction.client.model.ProductDataManager;
 import com.auction.client.service.AuthService;
+import com.auction.client.service.SocketClientService;
 import com.auction.client.session.SessionManager;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -16,12 +18,12 @@ import javafx.stage.Stage;
 
 public class LoginController {
 
+    private final AuthService authService = new AuthService();
+
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
     @FXML private Button loginButton;
     @FXML private Label messageLabel;
-
-    private final AuthService authService = new AuthService();
 
     @FXML
     private void handleLogin(ActionEvent event) {
@@ -34,15 +36,29 @@ public class LoginController {
             return;
         }
 
-        LoginResponseDTO response = authService.login(username, password);
-        if (response != null) {
-            SessionManager.setCurrentUser(response);
-            messageLabel.setStyle("-fx-text-fill: #2ecc71;");
-            messageLabel.setText("Đăng nhập thành công! Đang vào hệ thống...");
-            switchScene("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1040, 660);
-        } else {
-            showError("Sai tên đăng nhập hoặc mật khẩu.");
+        LoginResponseDTO response;
+        try {
+            // Open an authenticated session socket and login on that same connection
+            response = SocketClientService.openSessionAndLogin(username, password);
+        } catch (IllegalStateException ex) {
+            showError("Không thể kết nối tới server.");
+            return;
         }
+
+        if (response == null || !response.isSuccess()) {
+            showError("Sai tên đăng nhập hoặc mật khẩu.");
+            return;
+        }
+
+        SessionManager.setCurrentUser(response);
+        ProductDataManager.getInstance().setUserBalance(response.getBalance());
+
+
+        messageLabel.setStyle("-fx-text-fill: #2ecc71;");
+        messageLabel.setText("Đăng nhập thành công! Đang vào hệ thống...");
+
+        // Chuyển sang Dashboard (Kích thước chuẩn cho bảng đấu giá)
+        switchScene("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1040, 660);
     }
 
     @FXML

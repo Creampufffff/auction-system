@@ -1,11 +1,17 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class RegisterRequestDTO implements Serializable {
     private String username;
     private String password;
     private String email;
+    private String role;
 
     public RegisterRequestDTO() {
     }
@@ -16,28 +22,12 @@ public class RegisterRequestDTO implements Serializable {
         this.email = email;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
+    public RegisterRequestDTO(String username, String password, String email, String role) {
         this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
         this.email = email;
+        this.role = role;
     }
+
 }
 

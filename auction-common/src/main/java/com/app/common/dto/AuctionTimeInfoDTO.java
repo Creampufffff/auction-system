@@ -1,9 +1,5 @@
 package com.app.common.dto;
 
-/**
- * AuctionTimeInfoDTO: Provides time information for an auction
- * Helps clients know how much time remains before closing
- */
 public class AuctionTimeInfoDTO {
     private String auctionId;
     private String endDateTime;
@@ -43,9 +39,9 @@ public class AuctionTimeInfoDTO {
     public String getStatus() {
         if (secondsRemaining < 0) {
             return "ENDED";
-        } else if (secondsRemaining < 300) {  // Less than 5 minutes
+        } else if (secondsRemaining < 300) {
             return "ENDING_SOON";
-        } else if (secondsRemaining < 3600) {  // Less than 1 hour
+        } else if (secondsRemaining < 3600) {
             return "ACTIVE";
         } else {
             return "PLENTY_OF_TIME";

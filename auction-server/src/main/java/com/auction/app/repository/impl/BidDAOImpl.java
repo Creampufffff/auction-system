@@ -35,7 +35,7 @@ public class BidDAOImpl implements BidDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Không thể tải phiên đấu: " + auctionId, e);
+            throw new IllegalStateException("Failed to load bids for auction: " + auctionId, e);
         }
 
         return bids;
@@ -152,7 +152,7 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public boolean placeBidSafely(BidTransaction bid) {
-        // Khóa bản ghi auction để serialize các lệnh bid đồng thời.
+        // Lock auction record to serialize concurrent bid operations.
         String lockAuctionSql = """
                 SELECT a.status,
                        i.start_price,
@@ -163,7 +163,7 @@ public class BidDAOImpl implements BidDAO {
                 WHERE a.id = ?
                 FOR UPDATE
                 """;
-        String bidderSql = "SELECT role FROM users WHERE id = ?";
+        String bidderSql = "SELECT role, balance FROM users WHERE id = ? FOR UPDATE";
         String maxBidSql = "SELECT MAX(bid_amount) AS max_bid FROM bid_transactions WHERE auction_id = ?";
         String insertBidSql = """
                 INSERT INTO bid_transactions (id, auction_id, bidder_id, bid_amount)
@@ -184,7 +184,7 @@ public class BidDAOImpl implements BidDAO {
             try {
                 // Toàn bộ các bước kiểm tra + ghi bid + cập nhật giá phải cùng 1 transaction.
                 LockedAuction lockedAuction = lockAuction(connection, lockAuctionSql, bid.getAuction().getId());
-                validateBidder(connection, bidderSql, bid.getBidder().getId());
+                validateBidder(connection, bidderSql, bid.getBidder().getId(), bid.getBidAmount());
                 validateBidAmount(connection, maxBidSql, bid, lockedAuction);
                 insertBid(connection, insertBidSql, bid);
                 updateAuctionPrice(connection, updateAuctionSql, bid);
@@ -251,13 +251,16 @@ public class BidDAOImpl implements BidDAO {
         }
     }
 
-    private void validateBidder(Connection connection, String sql, String bidderId) throws SQLException {
+    private void validateBidder(Connection connection, String sql, String bidderId, double bidAmount) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, bidderId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next() || !"BIDDER".equals(resultSet.getString("role"))) {
                     throw new IllegalArgumentException("Bidder not found");
+                }
+                if (resultSet.getDouble("balance") < bidAmount) {
+                    throw new IllegalArgumentException("Insufficient funds to place this bid");
                 }
             }
         }

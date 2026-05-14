@@ -51,6 +51,14 @@ public class ProductDetailController {
     private void handleJoinAuction(ActionEvent event) {
         switchScene("/fxml/LiveBidding.fxml", "Đấu giá trực tiếp");
     }
+    @FXML
+    private void handleDeleteProduct(ActionEvent event) {
+        AuctionListDTO selected = ProductDataManager.getInstance().getSelectedAuction();
+        if (selected != null) {
+            ProductDataManager.getInstance().deleteProductAndAuction(selected.getAuctionId());
+            handleBack(event); // Quay lại màn hình danh sách, lúc này sản phẩm đã biến mất
+        }
+    }
 
     private void switchScene(String fxmlPath, String title) {
         try {

@@ -35,7 +35,7 @@ public class ItemDAOImpl implements ItemDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Cannot find item by id: " + id, e);
+            System.err.println("Error finding item " + id + ": " + e.getMessage());
         }
 
         return null;

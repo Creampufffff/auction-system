@@ -18,7 +18,7 @@ public class ItemServiceImpl implements ItemService {
     public void deleteItem(String id) {
         validateId(id);
         if (!itemDAO.delete(id)) {
-            throw new IllegalArgumentException("Không tìm thấy item với id: " + id);
+            throw new IllegalArgumentException("Item not found with id: " + id);
         }
     }
 
@@ -36,37 +36,37 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public void saveItem(Item item) {
         if (item == null) {
-            throw new IllegalArgumentException("Vật phẩm không thể null");
+            throw new IllegalArgumentException("Item cannot be null");
         }
 
         if (item.getName() == null || item.getName().isBlank()) {
-            throw new IllegalArgumentException("Tên vật phẩm không thể để trống");
+            throw new IllegalArgumentException("Item name cannot be empty");
         }
 
         if (item.getStartDateString() == null || item.getStartDateString().isBlank()) {
-            throw new IllegalArgumentException("Ngày không thể trống");
+            throw new IllegalArgumentException("Start date cannot be empty");
         }
 
         if (item.getEndDateString() == null || item.getEndDateString().isBlank()) {
-            throw new IllegalArgumentException("Ngày không thể trống");
+            throw new IllegalArgumentException("End date cannot be empty");
         }
 
         if (item.getStartPrice() < 0) {
-            throw new IllegalArgumentException("Giá bắt đầu không thể nhỏ hơn 0");
+            throw new IllegalArgumentException("Start price cannot be less than 0");
         }
 
         if (item.getMinIncreasement() <= 0) {
-            throw new IllegalArgumentException("Độ tăng nhỏ nhất phải lớn hơn 0");
+            throw new IllegalArgumentException("Minimum increment must be greater than 0");
         }
 
         if (!itemDAO.save(item)) {
-            throw new IllegalStateException("Không lưu vật phẩm được");
+            throw new IllegalStateException("Failed to save item");
         }
     }
 
     private void validateId(String id) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("ID vật phẩm không thể trống");
+            throw new IllegalArgumentException("Item ID cannot be empty");
         }
     }
 }

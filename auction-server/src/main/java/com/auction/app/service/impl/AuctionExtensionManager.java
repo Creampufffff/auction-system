@@ -4,31 +4,12 @@ import com.app.common.entity.Auction;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * AuctionExtensionManager: Quản lý việc gia hạn phiên đấu giá
- * Mục đích: Ngăn chặn "sniping" (đặt giá lén lút ở phút cuối)
- *
- * Logic:
- * - Nếu có bid được đặt trong 5 phút cuối cùng của phiên
- * - Phiên sẽ được gia hạn thêm 5 phút
- * - Tối đa gia hạn 3 lần
- */
 public class AuctionExtensionManager {
-    // ========== CẤU HÌNH THỜI GIAN ==========
-    private static final int EXTENSION_THRESHOLD_SECONDS = 300;  // 5 phút - mốc phát hiện sniping
-    private static final int EXTENSION_DURATION_SECONDS = 300;   // 5 phút - thời gian gia hạn
-    private static final int MAX_EXTENSIONS = 3;                  // Tối đa gia hạn 3 lần
+    // ========== TIME CONFIGURATION ==========
+    private static final int EXTENSION_THRESHOLD_SECONDS = 300;  // 5 minutes - sniping detection threshold
+    private static final int EXTENSION_DURATION_SECONDS = 300;   // 5 minutes - extension duration
+    private static final int MAX_EXTENSIONS = 3;                  // Maximum 3 extensions
 
-    /**
-     * Kiểm tra xem phiên có được gia hạn không
-     *
-     * Điều kiện gia hạn:
-     *  1. Hiện tại < 5 phút trước hết giờ
-     *  2. Còn dưới 3 lần gia hạn
-     *
-     * @param auction Phiên cần kiểm tra
-     * @return true nếu phiên được gia hạn, false nếu không
-     */
     public static boolean checkAndExtend(Auction auction) {
         if (auction == null || auction.getItem() == null) {
             return false;
@@ -57,12 +38,12 @@ public class AuctionExtensionManager {
                     String newEndDateString = newEndTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                     auction.getItem().setEndDateString(newEndDateString);
 
-                    System.out.println("⏱️  Phiên được gia hạn thêm 5 phút (lần " + (extensionCount + 1) + "/3)");
+                    System.out.println("⏱️  Auction extended by 5 minutes (extension " + (extensionCount + 1) + "/3)");
                     return true;
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ Lỗi kiểm tra gia hạn phiên: " + e.getMessage());
+            System.err.println("❌ Error checking auction extension: " + e.getMessage());
         }
 
         return false;
@@ -117,7 +98,7 @@ public class AuctionExtensionManager {
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Không thể parse thời gian: " + dateTimeString, e);
+            throw new IllegalArgumentException("Failed to parse datetime: " + dateTimeString, e);
         }
     }
 

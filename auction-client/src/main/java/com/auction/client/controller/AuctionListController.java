@@ -1,11 +1,11 @@
 package com.auction.client.controller;
 
 import com.app.common.dto.AuctionListDTO;
+import com.app.common.enums.Status;
 import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
 import com.auction.client.service.AuctionService;
-import com.auction.client.service.SocketEventListener;
-import javafx.event.ActionEvent;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,6 +15,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import java.net.URL;
 
 public class AuctionListController {
 
@@ -25,39 +26,64 @@ public class AuctionListController {
     @FXML private TableColumn<AuctionListDTO, Object> statusColumn;
     @FXML private Label messageLabel;
 
+    // [MỚI] Khai báo Label ví tiền
+    @FXML private Label accountBalanceLabel;
+
     private final AuctionService auctionService = new AuctionService();
 
     @FXML
     public void initialize() {
-        // Cấu hình các cột cho TableView
         idColumn.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         priceColumn.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("auctionStatus"));
 
-        SocketEventListener.ensureStarted();
         loadAuctions();
+
+        auctionTable.refresh();
+
+        Platform.runLater(this::updateUIWithBalance);
     }
 
     private void loadAuctions() {
-        // Nếu danh sách dùng chung trống, lấy dữ liệu từ service
-        if (ProductDataManager.getInstance().getServerAuctionList().isEmpty()) {
-            ProductDataManager.getInstance().getServerAuctionList().addAll(auctionService.getActiveAuctions());
+        try {
+            ProductDataManager.getInstance().getServerAuctionList().setAll(auctionService.getActiveAuctions());
+        } catch (IllegalStateException ex) {
+            if (messageLabel != null) {
+                messageLabel.setText("Không thể tải danh sách đấu giá.");
+            }
+            return;
         }
-
         auctionTable.setItems(ProductDataManager.getInstance().getServerAuctionList());
+        auctionTable.refresh();
+    }
+
+    // [MỚI] Hàm cập nhật tiền lên UI
+    private void updateUIWithBalance() {
+        if (accountBalanceLabel != null) {
+            double balance = ProductDataManager.getInstance().getUserBalance();
+            accountBalanceLabel.setText("Ví: $" + String.format("%.2f", balance));
+
+            // Tweak: Đổi màu nếu sắp hết tiền
+            if (balance < 100) {
+                accountBalanceLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;");
+            }
+        } else {
+            System.out.println("DEBUG: accountBalanceLabel vẫn đang bị null!");
+        }
     }
 
     @FXML
-    private void handleCurrentAuctions(ActionEvent event) {
+    private void handleCurrentAuctions() {
         loadAuctions();
+        updateUIWithBalance();
         if (messageLabel != null) {
             messageLabel.setText("Đã làm mới danh sách đấu giá.");
         }
     }
 
     @FXML
-    private void handleViewDetail(ActionEvent event) {
+    private void handleViewDetail() {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             ProductDataManager.getInstance().setSelectedAuction(selected);
@@ -67,27 +93,46 @@ public class AuctionListController {
         }
     }
 
-    // --- FIX HÀM THAM GIA ĐẤU GIÁ: CHUYỂN DỮ LIỆU SANG LIVE BIDDING ---
     @FXML
-    private void handleJoinBidding(ActionEvent event) {
+    private void handleJoinBidding() {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
+            if (selected.getAuctionStatus() != Status.RUNNING) {
+                if (messageLabel != null) {
+                    messageLabel.setText("Phiên đấu giá chưa bắt đầu. Vui lòng đợi trạng thái RUNNING.");
+                    messageLabel.setStyle("-fx-text-fill: #ff9800;");
+                }
+                return;
+            }
+
+            if (ProductDataManager.getInstance().isEnded(selected.getAuctionId())) {
+                if (messageLabel != null) {
+                    messageLabel.setText("Phiên đấu giá '" + selected.getName() + "' đã kết thúc!");
+                    messageLabel.setStyle("-fx-text-fill: #ff4d4d;");
+                }
+                auctionTable.refresh();
+                return;
+            }
+
             ProductDataManager.getInstance().setSelectedAuction(selected);
 
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LiveBidding.fxml"));
+                URL fxmlUrl = getClass().getResource("/fxml/LiveBidding.fxml");
+                if (fxmlUrl == null) {
+                    throw new IllegalStateException("Không tìm thấy file FXML: /fxml/LiveBidding.fxml");
+                }
+
+                FXMLLoader loader = new FXMLLoader(fxmlUrl);
                 Parent root = loader.load();
 
-                // Lấy controller của LiveBidding để truyền sản phẩm vào
                 LiveBiddingController controller = loader.getController();
 
-                // Chuyển đổi từ DTO sang Model Product để có thể dùng setPrice()
                 Product productModel = new Product(
                         selected.getAuctionId(),
                         selected.getName(),
-                        selected.getCurrentPrice(),
+                        ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
                         selected.getAuctionStatus().toString(),
-                        "New", // Mặc định hoặc lấy từ DTO nếu có
+                        "New",
                         "No description",
                         "No warranty"
                 );
@@ -97,8 +142,7 @@ public class AuctionListController {
                 Stage stage = (Stage) auctionTable.getScene().getWindow();
                 Scene scene = new Scene(root, 1040, 660);
 
-                // Nạp CSS để nút Quay lại không bị xám/trắng
-                String css = getClass().getResource("/css/style.css").toExternalForm();
+                    String css = requireStylesheet();
                 scene.getStylesheets().add(css);
 
                 stage.setTitle("Đấu giá trực tiếp");
@@ -106,8 +150,7 @@ public class AuctionListController {
                 stage.show();
 
             } catch (Exception e) {
-                e.printStackTrace();
-                if (messageLabel != null) messageLabel.setText("Lỗi khởi tạo phòng đấu giá!");
+                throw new IllegalStateException("Không thể mở màn hình đấu giá trực tiếp.", e);
             }
         } else {
             if (messageLabel != null) messageLabel.setText("Vui lòng chọn phiên để tham gia!");
@@ -115,37 +158,47 @@ public class AuctionListController {
     }
 
     @FXML
-    private void handleSidebarProducts(ActionEvent event) {
+    private void handleSidebarProducts() {
         switchScene("/fxml/ProductManagement.fxml", "Quản lý sản phẩm");
     }
 
     @FXML
-    private void handleSidebarBidding(ActionEvent event) {
-        // Gọi lại logic JoinBidding để đảm bảo có dữ liệu
-        handleJoinBidding(event);
+    private void handleSidebarBidding() {
+        handleJoinBidding();
     }
 
     @FXML
-    private void handleSidebarAccount(ActionEvent event) {
-        if (messageLabel != null) messageLabel.setText("Tài khoản chưa sẵn sàng.");
+    private void handleSidebarAccount() {
+        if (messageLabel != null) {
+            messageLabel.setText("Số dư ví: $" + String.format("%.2f", ProductDataManager.getInstance().getUserBalance()));
+        }
     }
 
     private void switchScene(String fxmlPath, String title) {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
+            URL fxmlUrl = getClass().getResource(fxmlPath);
+            if (fxmlUrl == null) {
+                throw new IllegalStateException("Không tìm thấy file FXML: " + fxmlPath);
+            }
+
+            Parent root = FXMLLoader.load(fxmlUrl);
             Stage stage = (Stage) auctionTable.getScene().getWindow();
             Scene scene = new Scene(root, 1040, 660);
-
-            // Nạp CSS cho mọi màn hình được chuyển đến
-            String css = getClass().getResource("/css/style.css").toExternalForm();
-            scene.getStylesheets().add(css);
-
+            scene.getStylesheets().add(requireStylesheet());
             stage.setTitle(title);
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
-            e.printStackTrace();
-            if (messageLabel != null) messageLabel.setText("Lỗi chuyển cảnh: " + fxmlPath);
+            throw new IllegalStateException("Không thể chuyển sang màn hình: " + title, e);
         }
+    }
+
+    private String requireStylesheet() {
+        String path = "/css/style.css";
+        URL cssUrl = getClass().getResource(path);
+        if (cssUrl == null) {
+            throw new IllegalStateException("Không tìm thấy stylesheet: " + path);
+        }
+        return cssUrl.toExternalForm();
     }
 }

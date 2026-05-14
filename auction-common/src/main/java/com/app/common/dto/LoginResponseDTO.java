@@ -1,12 +1,18 @@
 package com.app.common.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
+@Getter
 public class LoginResponseDTO implements Serializable {
     private String userId;
     private String username;
     private String role;
     private double balance;
+    private boolean isSuccess = true;
 
     public LoginResponseDTO() {
     }
@@ -18,35 +24,7 @@ public class LoginResponseDTO implements Serializable {
         this.balance = balance;
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public double getBalance() {
-        return balance;
-    }
-
-    public void setBalance(double balance) {
-        this.balance = balance;
+    public boolean isSuccess() {
+        return this.isSuccess;
     }
 }
