@@ -198,3 +198,79 @@
     -fx-font-weight: bold;
     -fx-font-size: 14px;
 }
+
+/* ============================================================
+   SECTION 3: LIVE GRAPH STYLING (CẬP NHẬT THEO EDITED-IMAGE)
+   ============================================================ */
+
+/* Tổng thể biểu đồ */
+.chart {
+    -fx-padding: 15px;
+    -fx-background-color: transparent;
+}
+
+/* Tùy chỉnh nền biểu đồ tối màu giống ảnh edited-image.png */
+.chart-plot-background {
+    -fx-background-color: #1a1a1a; /* Màu nền tối chuyên nghiệp */
+    -fx-background-radius: 8px;
+}
+
+/* Đường kẻ biểu đồ (Series Line) - Màu xanh đậm Blue Chip */
+.chart-series-line {
+    -fx-stroke: #1565c0;
+    -fx-stroke-width: 3.5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(21, 101, 192, 0.4), 10, 0, 0, 4);
+}
+
+/* Tùy chỉnh các điểm nút (Symbols) dạng chấm tròn đậm */
+.chart-line-symbol {
+    -fx-background-color: #1565c0, #1565c0;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 12px;
+    -fx-padding: 6px;
+}
+
+/* Các đường lưới nét đứt tinh tế trên nền tối */
+.chart-vertical-grid-lines, .chart-horizontal-grid-lines {
+    -fx-stroke: #333333;
+    -fx-stroke-dash-array: 2 5;
+}
+
+/* Tùy chỉnh các trục (Axes) */
+.axis {
+    -fx-tick-label-fill: #8e8e8e; /* Màu xám sáng để nổi bật trên nền tối */
+    -fx-font-size: 11px;
+    -fx-tick-length: 7;
+}
+
+/* Nhãn trục (Price / Time elapsed) */
+.axis-label {
+    -fx-text-fill: #afb9c7;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+/* Loại bỏ viền trắng mặc định của trục */
+.axis:bottom {
+    -fx-border-color: #333333 transparent transparent transparent;
+}
+
+.axis:left {
+    -fx-border-color: transparent #333333 transparent transparent;
+}
+
+/* Chú thích (Legend) ở dưới */
+.chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 15 0 0 0;
+}
+
+.chart-legend-item {
+    -fx-text-fill: #afb9c7;
+    -fx-font-size: 12px;
+}
+
+/* Màu sắc của biểu tượng trong Legend */
+.chart-legend-item-symbol {
+    -fx-background-radius: 10px;
+}

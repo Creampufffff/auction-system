@@ -3,12 +3,15 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.auction.client.controller.LiveBiddingController"
       prefWidth="1040" prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
 
+    <!-- Sidebar bên trái -->
     <VBox prefWidth="240" spacing="22" style="-fx-background-color: #172033;">
         <padding><Insets top="28" right="18" bottom="24" left="18"/></padding>
 
@@ -33,9 +36,11 @@
         </VBox>
     </VBox>
 
+    <!-- Nội dung chính bên phải -->
     <VBox spacing="20" HBox.hgrow="ALWAYS">
         <padding><Insets top="28" right="34" bottom="28" left="34"/></padding>
 
+        <!-- Header: Tên sản phẩm & Timer -->
         <HBox alignment="CENTER_LEFT">
             <VBox spacing="4">
                 <Label fx:id="productNameLabel" text="Đang tải..." style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
@@ -52,7 +57,8 @@
         </HBox>
 
         <HBox spacing="20" VBox.vgrow="ALWAYS">
-            <VBox spacing="20" prefWidth="380">
+            <!-- Cột trái: Giá hiện tại & Ô nhập giá -->
+            <VBox spacing="20" prefWidth="320">
                 <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 25;">
                     <VBox spacing="10" style="-fx-background-color: #172033; -fx-background-radius: 8; -fx-padding: 20;">
                         <Label text="GIÁ HIỆN TẠI" style="-fx-text-fill: #8fb2ff; -fx-font-size: 12px;"/>
@@ -72,9 +78,26 @@
                 </VBox>
             </VBox>
 
-            <VBox spacing="15" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
-                <Label text="LỊCH SỬ ĐẤU GIÁ" style="-fx-font-weight: bold; -fx-text-fill: #172033;"/>
-                <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS" style="-fx-background-radius: 8;"/>
+            <!-- Cột giữa & phải: Biểu đồ & Lịch sử -->
+            <VBox spacing="20" HBox.hgrow="ALWAYS">
+                <!-- Live Graph Section -->
+                <VBox spacing="10" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 15;" VBox.vgrow="ALWAYS">
+                    <Label text="BIẾN ĐỘNG GIÁ TRỰC TUYẾN" style="-fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                    <LineChart fx:id="priceGraph" createSymbols="true" animated="true" VBox.vgrow="ALWAYS" style="-fx-padding: 0;">
+                        <xAxis>
+                            <NumberAxis fx:id="xAxis" side="BOTTOM" label="Thời gian (s)" />
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis fx:id="yAxis" side="LEFT" label="Giá ($)" />
+                        </yAxis>
+                    </LineChart>
+                </VBox>
+
+                <!-- History Section -->
+                <VBox spacing="10" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 15;" prefHeight="200">
+                    <Label text="LỊCH SỬ ĐẤU GIÁ" style="-fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                    <ListView fx:id="bidHistoryList" VBox.vgrow="ALWAYS" style="-fx-background-radius: 8; -fx-border-color: transparent;"/>
+                </VBox>
             </VBox>
         </HBox>
     </VBox>

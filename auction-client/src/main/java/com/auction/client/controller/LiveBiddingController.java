@@ -9,6 +9,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.chart.LineChart; // MỚI
+import javafx.scene.chart.NumberAxis; // MỚI
+import javafx.scene.chart.XYChart; // MỚI
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.util.Timer;
@@ -24,6 +27,12 @@ public class LiveBiddingController {
     @FXML private ListView<String> bidHistoryList;
     @FXML private Button backButton;
 
+    // --- [MỚI] LIVE GRAPH COMPONENTS ---
+    @FXML private LineChart<Number, Number> priceGraph;
+    @FXML private NumberAxis xAxis;
+    @FXML private NumberAxis yAxis;
+    private XYChart.Series<Number, Number> priceSeries;
+
     private Product currentProduct;
     private Timer timer;
     private int timeLeft = 30;
@@ -34,8 +43,48 @@ public class LiveBiddingController {
     public void initialize() {
         activeController = this;
         setupBackButton();
+        setupGraph(); // Khởi tạo cấu hình biểu đồ
         startCountdown();
         updateBalanceUI();
+    }
+
+    // --- [MỚI] THIẾT LẬP BIỂU ĐỒ ---
+// Tìm đến hàm setupGraph() trong LiveBiddingController và cập nhật đoạn xAxis:
+
+    private void setupGraph() {
+        if (priceGraph != null) {
+            priceSeries = new XYChart.Series<>();
+            priceSeries.setName("Biến động giá");
+            priceGraph.getData().add(priceSeries);
+            priceGraph.setAnimated(true);
+            priceGraph.setCreateSymbols(true);
+
+            if (xAxis != null) {
+                xAxis.setLabel("Time elapsed"); // Đổi nhãn theo ảnh edited-image.png
+                xAxis.setAutoRanging(true);
+
+                // --- PHẦN QUAN TRỌNG: Định dạng số giây thành MM:SS ---
+                xAxis.setTickLabelFormatter(new javafx.util.StringConverter<Number>() {
+                    @Override
+                    public String toString(Number object) {
+                        int totalSeconds = object.intValue();
+                        if (totalSeconds < 0) totalSeconds = 0; // Chặn giá trị âm ngay tại đây
+
+                        int minutes = totalSeconds / 60;
+                        int seconds = totalSeconds % 60;
+                        return String.format("%d:%02d", minutes, seconds);
+                    }
+
+                    @Override
+                    public Number fromString(String string) { return 0; }
+                });
+            }
+
+            if (yAxis != null) {
+                yAxis.setLabel("Price"); // Đổi nhãn cho giống ảnh mẫu
+                yAxis.setForceZeroInRange(false);
+            }
+        }
     }
 
     private void updateBalanceUI() {
@@ -98,6 +147,11 @@ public class LiveBiddingController {
     public void setProduct(Product product) {
         stopTimer();
         this.currentProduct = product;
+
+        // --- [MỚI] KẾT NỐI DỮ LIỆU BIỂU ĐỒ ---
+        if (priceSeries != null) {
+            priceSeries.setData(ProductDataManager.getInstance().getPriceGraphData(product.getId()));
+        }
 
         boolean alreadyShown = ProductDataManager.getInstance().isWinnerDialogShown(product.getId());
 
