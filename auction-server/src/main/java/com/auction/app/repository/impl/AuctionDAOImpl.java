@@ -96,8 +96,10 @@ public class AuctionDAOImpl implements AuctionDAO {
                 ORDER BY bid_amount DESC, created_at DESC
                 LIMIT 1
                 """;
-        String lockUserSql = "SELECT balance FROM users WHERE id = ? FOR UPDATE";
-        String updateBalanceSql = "UPDATE users SET balance = ? WHERE id = ?";
+        String lockBidderSql = "SELECT balance FROM bidder WHERE id = ? FOR UPDATE";
+        String lockSellerSql = "SELECT balance FROM seller WHERE id = ? FOR UPDATE";
+        String updateBidderBalanceSql = "UPDATE bidder SET balance = ? WHERE id = ?";
+        String updateSellerBalanceSql = "UPDATE seller SET balance = ? WHERE id = ?";
         String finishAuctionSql = "UPDATE auctions SET status = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
@@ -137,15 +139,15 @@ public class AuctionDAOImpl implements AuctionDAO {
                 }
 
                 if (bidderId != null) {
-                    double bidderBalance = lockUserBalance(connection, lockUserSql, bidderId, "Winner not found");
-                    double sellerBalance = lockUserBalance(connection, lockUserSql, sellerId, "Seller not found");
+                    double bidderBalance = lockUserBalance(connection, lockBidderSql, bidderId, "Winner not found");
+                    double sellerBalance = lockUserBalance(connection, lockSellerSql, sellerId, "Seller not found");
 
                     if (bidderBalance < amount) {
                         throw new IllegalStateException("Winner has insufficient balance");
                     }
 
-                    updateUserBalance(connection, updateBalanceSql, bidderId, bidderBalance - amount);
-                    updateUserBalance(connection, updateBalanceSql, sellerId, sellerBalance + amount);
+                    updateUserBalance(connection, updateBidderBalanceSql, bidderId, bidderBalance - amount);
+                    updateUserBalance(connection, updateSellerBalanceSql, sellerId, sellerBalance + amount);
                 }
 
                 try (PreparedStatement statement = connection.prepareStatement(finishAuctionSql)) {

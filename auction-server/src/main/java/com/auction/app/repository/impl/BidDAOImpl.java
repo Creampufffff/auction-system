@@ -163,7 +163,7 @@ public class BidDAOImpl implements BidDAO {
                 WHERE a.id = ?
                 FOR UPDATE
                 """;
-        String bidderSql = "SELECT role, balance FROM users WHERE id = ? FOR UPDATE";
+        String bidderSql = "SELECT balance FROM bidder WHERE id = ? FOR UPDATE";
         String maxBidSql = "SELECT MAX(bid_amount) AS max_bid FROM bid_transactions WHERE auction_id = ?";
         String insertBidSql = """
                 INSERT INTO bid_transactions (id, auction_id, bidder_id, bid_amount)
@@ -256,7 +256,7 @@ public class BidDAOImpl implements BidDAO {
             statement.setString(1, bidderId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next() || !"BIDDER".equals(resultSet.getString("role"))) {
+                if (!resultSet.next()) {
                     throw new IllegalArgumentException("Bidder not found");
                 }
                 if (resultSet.getDouble("balance") < bidAmount) {

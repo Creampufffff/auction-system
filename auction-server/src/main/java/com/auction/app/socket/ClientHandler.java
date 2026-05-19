@@ -18,27 +18,7 @@ import com.auction.app.service.BidService;
 import com.auction.app.service.ItemService;
 import com.auction.app.service.UserService;
 import com.auction.app.socket.observer.SocketClientObserver;
-import com.auction.app.controller.AuctionController;
-import com.auction.app.controller.AutoBidController;
-import com.auction.app.controller.BidController;
-import com.auction.app.controller.UserController;
-import com.auction.app.controller.ItemController;
 
-import com.app.common.dto.PlaceBidRequestDTO;
-import com.app.common.dto.PlaceBidResponseDTO;
-import com.app.common.dto.AuctionListDTO;
-import com.app.common.dto.LoginRequestDTO;
-import com.app.common.dto.LoginResponseDTO;
-import com.app.common.dto.RegisterRequestDTO;
-import com.app.common.dto.RegisterResponseDTO;
-import com.app.common.dto.DepositRequestDTO;
-import com.app.common.dto.BalanceResponseDTO;
-import com.app.common.dto.CreateAuctionRequestDTO;
-import com.app.common.dto.SetAutoBidRequestDTO;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.auction.app.service.AutoBidService;
 
 import java.io.BufferedReader;
@@ -57,15 +37,8 @@ public class ClientHandler implements Runnable {
     private final AutoBidService autoBidService;
     private final AuctionSocketServer socketServer;
     private final ItemFactory artItemFactory;
-    // Controllers for delegating to DTO-based handlers
-    private final BidController bidController;
-    private final AuctionController auctionController;
-    private final UserController userController;
-    private final ItemController itemController;
-    private final AutoBidController autoBidController;
     private User currentUser;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ClientHandler(
             Socket socket,
@@ -95,23 +68,15 @@ public class ClientHandler implements Runnable {
         this.autoBidService = autoBidService;
         this.socketServer = socketServer;
         this.artItemFactory = new ArtItemFactory();
-        // Initialize controllers that operate on DTOs
-        this.bidController = new BidController(bidService, auctionService, userService);
-        this.auctionController = new AuctionController(auctionService);
-        this.userController = new UserController(userService);
-        this.itemController = new ItemController(itemService);
-        this.autoBidController = autoBidService == null ? null : new AutoBidController(autoBidService, auctionService);
     }
 
     @Override
     public void run() {
-        PrintWriter writer = null;
         SocketClientObserver clientObserver = null;
         try (
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter socketWriter = new PrintWriter(socket.getOutputStream(), true)
+                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            writer = socketWriter;
             // Mỗi client socket đóng vai trò một Observer của luồng sự kiện realtime.
             clientObserver = new SocketClientObserver(writer);
             socketServer.registerObserver(clientObserver);
@@ -141,17 +106,7 @@ public class ClientHandler implements Runnable {
         if (request == null || request.isBlank()) {
             return "ERR|EMPTY_REQUEST";
         }
-        // If input looks like JSON, handle as JSON envelope and use DTOs
-        String trimmed = request.trim();
-        if (trimmed.startsWith("{")) {
-            try {
-                return handleJson(trimmed);
-            } catch (Exception e) {
-                return toErrorResponse(e);
-            }
-        }
 
-        // Fallback: legacy text protocol
         try {
             String[] parts = request.split(" ", 2);
             String command = parts[0].toUpperCase();
@@ -181,191 +136,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    // Handle JSON envelope messages and delegate to DTO-based controllers
-    private String handleJson(String jsonString) throws Exception {
-        JsonNode root = objectMapper.readTree(jsonString);
-        String type = root.path("type").asText(null);
-        String requestId = root.path("requestId").asText(null);
-        JsonNode payload = root.path("payload");
-
-        if (type == null) {
-            throw new IllegalArgumentException("Missing message type");
-        }
-
-        switch (type.toUpperCase()) {
-            case "PLACE_BID": {
-                PlaceBidRequestDTO req = objectMapper.treeToValue(payload, PlaceBidRequestDTO.class);
-                Bidder bidder = requireCurrentBidder();
-                req.setBidderId(bidder.getId());
-                PlaceBidResponseDTO resp = bidController.placeBid(req);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                // Broadcast event (both legacy text and JSON) so mixed clients can receive updates
-                if (resp.isSuccess()) {
-                    processAutoBids(req.getAuctionId());
-                    socketServer.broadcast("EVENT|BID_UPDATED|" + req.getAuctionId() + "|" + req.getBidAmount() + "|" + bidder.getId());
-                }
-                ObjectNode event = objectMapper.createObjectNode();
-                event.put("type", "EVENT_BID_UPDATED");
-                ObjectNode evPayload = objectMapper.createObjectNode();
-                evPayload.put("auctionId", req.getAuctionId());
-                evPayload.put("currentPrice", req.getBidAmount());
-                evPayload.put("leadingBidderId", bidder.getId());
-                event.set("payload", evPayload);
-                if (resp.isSuccess()) {
-                    socketServer.broadcast(objectMapper.writeValueAsString(event));
-                }
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "LIST_AUCTIONS": {
-                // No payload expected
-                java.util.List<AuctionListDTO> list = auctionController.getActiveAuctions();
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", true);
-                envelope.set("payload", objectMapper.valueToTree(list));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "GET_AUCTION": {
-                String auctionId = payload.path("auctionId").asText(null);
-                if (auctionId == null) throw new IllegalArgumentException("auctionId is required");
-                com.app.common.dto.AuctionListDTO dto = auctionController.getAuction(auctionId);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", dto != null);
-                envelope.set("payload", objectMapper.valueToTree(dto));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "LOGIN": {
-                LoginRequestDTO req = objectMapper.treeToValue(payload, LoginRequestDTO.class);
-                LoginResponseDTO resp = userController.login(req);
-                if (resp != null && resp.isSuccess()) {
-                    currentUser = userService.getById(resp.getUserId());
-                }
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp != null && resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "REGISTER_BIDDER":
-            case "REGISTER": {
-                RegisterRequestDTO req = objectMapper.treeToValue(payload, RegisterRequestDTO.class);
-                RegisterResponseDTO resp = userController.register(req);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp != null && resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "REGISTER_SELLER": {
-                RegisterRequestDTO req = objectMapper.treeToValue(payload, RegisterRequestDTO.class);
-                req.setRole("SELLER");
-                RegisterResponseDTO resp = userController.register(req);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp != null && resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "CREATE_AUCTION": {
-                Seller seller = requireCurrentSeller();
-                CreateAuctionRequestDTO req = objectMapper.treeToValue(payload, CreateAuctionRequestDTO.class);
-                req.setSellerId(seller.getId());
-                com.app.common.dto.ApiResponseDTO resp = auctionController.createAuction(req);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "START_AUCTION": {
-                requireCurrentSeller();
-                String auctionId = payload.path("auctionId").asText(null);
-                if (auctionId == null) throw new IllegalArgumentException("auctionId is required");
-                com.app.common.dto.ApiResponseDTO resp = auctionController.startAuction(auctionId);
-                if (resp.isSuccess()) {
-                    socketServer.broadcast("EVENT|AUCTION_STARTED|" + auctionId);
-                }
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "END_AUCTION": {
-                requireCurrentSeller();
-                String auctionId = payload.path("auctionId").asText(null);
-                if (auctionId == null) throw new IllegalArgumentException("auctionId is required");
-                com.app.common.dto.ApiResponseDTO resp = auctionController.endAuction(auctionId);
-                if (resp.isSuccess()) {
-                    socketServer.broadcast("EVENT|AUCTION_ENDED|" + auctionId);
-                }
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "SET_AUTO_BID": {
-                Bidder bidder = requireCurrentBidder();
-                SetAutoBidRequestDTO req = objectMapper.treeToValue(payload, SetAutoBidRequestDTO.class);
-                req.setBidderId(bidder.getId());
-                com.app.common.dto.ApiResponseDTO resp = requireAutoBidController().setAutoBid(req);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "CANCEL_AUTO_BID": {
-                String autoBidId = payload.path("autoBidId").asText(null);
-                if (autoBidId == null) throw new IllegalArgumentException("autoBidId is required");
-                com.app.common.dto.ApiResponseDTO resp = requireAutoBidController().cancelAutoBid(autoBidId);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "DEPOSIT": {
-                DepositRequestDTO req = objectMapper.treeToValue(payload, DepositRequestDTO.class);
-                req.setUserId(requireCurrentUser().getId());
-                com.app.common.dto.ApiResponseDTO resp = userController.deposit(req);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp.isSuccess());
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            case "GET_BALANCE": {
-                String userId = requireCurrentUser().getId();
-                BalanceResponseDTO resp = userController.getBalance(userId);
-                ObjectNode envelope = objectMapper.createObjectNode();
-                envelope.put("type", "RESPONSE");
-                if (requestId != null) envelope.put("requestId", requestId);
-                envelope.put("success", resp != null);
-                envelope.set("payload", objectMapper.valueToTree(resp));
-                return objectMapper.writeValueAsString(envelope);
-            }
-            default:
-                throw new IllegalArgumentException("Unknown JSON command: " + type);
-        }
-    }
 
     private String login(String payload) {
         String[] args = splitBySpace(payload, 2);
@@ -454,20 +224,14 @@ public class ClientHandler implements Runnable {
     private String setAutoBid(String payload) {
         String[] args = splitBySpace(payload, 2);
         Bidder bidder = requireCurrentBidder();
-        SetAutoBidRequestDTO request = new SetAutoBidRequestDTO(args[0], bidder.getId(), Double.parseDouble(args[1]));
-        com.app.common.dto.ApiResponseDTO response = requireAutoBidController().setAutoBid(request);
-        if (!response.isSuccess()) {
-            return "ERR|AUTO_BID_FAILED|" + response.getMessage();
-        }
-        return "OK|AUTO_BID_SET|" + response.getMessage();
+        com.app.common.entity.AutoBid autoBid = new com.app.common.entity.AutoBid(args[0], bidder.getId(), Double.parseDouble(args[1]));
+        autoBidService.createAutoBid(autoBid);
+        return "OK|AUTO_BID_SET|" + autoBid.getId();
     }
 
     private String cancelAutoBid(String payload) {
         String autoBidId = requirePayload(payload, "Auto bid id");
-        com.app.common.dto.ApiResponseDTO response = requireAutoBidController().cancelAutoBid(autoBidId);
-        if (!response.isSuccess()) {
-            return "ERR|AUTO_BID_CANCEL_FAILED|" + response.getMessage();
-        }
+        autoBidService.cancelAutoBid(autoBidId);
         return "OK|AUTO_BID_CANCELED|" + autoBidId;
     }
 
@@ -539,14 +303,6 @@ public class ClientHandler implements Runnable {
         return args;
     }
 
-    private String[] splitByPipe(String payload, int expectedLength) {
-        String[] args = requirePayload(payload, "Payload").split("\\|", -1);
-        if (args.length != expectedLength) {
-            throw new IllegalArgumentException("Requires exactly " + expectedLength + " parameters separated by '|'");
-        }
-        return args;
-    }
-
     private String requirePayload(String payload, String fieldName) {
         if (payload == null || payload.isBlank()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty");
@@ -585,12 +341,6 @@ public class ClientHandler implements Runnable {
         return (Seller) user;
     }
 
-    private AutoBidController requireAutoBidController() {
-        if (autoBidController == null) {
-            throw new IllegalStateException("Auto-bid service is not available");
-        }
-        return autoBidController;
-    }
 
     private void processAutoBids(String auctionId) {
         if (autoBidService != null) {
