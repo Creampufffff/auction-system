@@ -121,11 +121,9 @@ public class ProductManagementController {
         Optional<Product> result = dialog.showAndWait();
         result.ifPresent(newProduct -> {
             // If current user is a Seller, try creating auction on server
-            boolean createdOnServer = false;
-            String serverAuctionId = null;
             try {
                 if (com.auction.client.session.SessionManager.hasRole("Seller")) {
-                    // Build pipe-separated payload (server expects 8 parts)
+                    // Build pipe-separated payload (server expects 7 parts)
                     String name = escapePipe(newProduct.getName());
                     String desc = escapePipe(newProduct.getDescription());
                     // Server requires non-empty startDate/endDate; use localdate format
@@ -134,34 +132,29 @@ public class ProductManagementController {
                     String startPrice = String.valueOf(newProduct.getPrice());
                     String minIncrement = "1";
                     String author = com.auction.client.session.SessionManager.getCurrentUsername();
-                    // Server requires non-empty sellerId; but will be overridden by server (requireCurrentSeller)
-                    String sellerId = "temp"; // will be replaced by server anyway
 
-                    String payload = String.join("|", name, desc, startDate, endDate, startPrice, minIncrement, author, sellerId);
+                    String payload = String.join("|", name, desc, startDate, endDate, startPrice, minIncrement, author);
                     String command = "CREATE_ART_AUCTION " + payload;
                     
                     // Send command on authenticated session socket and wait for response
                     String resp = com.auction.client.service.SocketClientService.sendSessionCommand(command);
                     
                     // Check for error response
-                    if (resp != null && resp.startsWith("ERR|")) {
+                    if (resp.startsWith("ERR|")) {
                         String errorMsg = resp.substring(4); // skip "ERR|"
                         throw new Exception("Server error: " + errorMsg);
                     }
 
-                    if (resp != null && resp.startsWith("OK|CREATE_ART_AUCTION|")) {
+                    if (resp.startsWith("OK|CREATE_ART_AUCTION|")) {
                         String[] parts = resp.split("\\|", 4);
                         if (parts.length >= 3) {
-                            serverAuctionId = parts[2];
-                            newProduct.setId(serverAuctionId);
-                            createdOnServer = true;
+                            newProduct.setId(parts[2]);
                         }
                     } else {
                         throw new Exception("Unexpected server response: " + resp);
                     }
                 }
             } catch (Exception e) {
-                createdOnServer = false;
                 // Log detailed error for troubleshooting
                 System.err.println("❌ Failed to create auction on server: " + e.getMessage());
                 e.printStackTrace();
@@ -177,7 +170,7 @@ public class ProductManagementController {
                 alert.showAndWait();
             }
 
-            // Add to local lists regardless; if createdOnServer true, id already updated
+            // Add to local lists regardless; if created on server, id already updated
             productData.add(newProduct);
             ProductDataManager.getInstance().pushToGlobalAuction(newProduct);
         });

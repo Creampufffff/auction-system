@@ -57,8 +57,11 @@ public final class SocketClientService {
         ) {
             // Consume server welcome line (same behavior as sendJson)
             reader.readLine();
+            logTextCommand("sendText", requestText);
             writer.println(requestText);
-            return reader.readLine();
+            String response = reader.readLine();
+            logTextResponse("sendText", response);
+            return response;
         } catch (IOException e) {
             throw new IllegalStateException("Không thể kết nối tới server socket.", e);
         }
@@ -162,8 +165,10 @@ public final class SocketClientService {
 
             // send legacy text login
             String loginCmd = String.format("LOGIN %s %s", username, password);
+            logTextCommand("openSessionAndLogin", loginCmd);
             w.println(loginCmd);
             String resp = r.readLine();
+            logTextResponse("openSessionAndLogin", resp);
 
             if (resp == null) {
                 try { sock.close(); } catch (Exception ignored) {}
@@ -259,6 +264,7 @@ public final class SocketClientService {
 
     public static void sendSessionText(String command) {
         if (sessionWriter == null) throw new IllegalStateException("No authenticated session");
+        logTextCommand("sendSessionText", command);
         sessionWriter.println(command);
     }
 
@@ -271,7 +277,7 @@ public final class SocketClientService {
     public static String sendSessionCommand(String command) throws Exception {
         if (sessionWriter == null) throw new IllegalStateException("No authenticated session");
 
-        System.out.println("[SocketClientService] sendSessionCommand -> " + command);
+        logTextCommand("sendSessionCommand", command);
         sessionWriter.println(command);
 
         // Wait for response from session socket (read by listener thread)
@@ -279,7 +285,7 @@ public final class SocketClientService {
         if (response == null) {
             throw new IOException("Server did not respond within 10 seconds");
         }
-        System.out.println("[SocketClientService] sendSessionCommand response <- " + response);
+        logTextResponse("sendSessionCommand", response);
         return response;
     }
 
@@ -356,11 +362,19 @@ public final class SocketClientService {
         }
     }
 
+    private static void logTextCommand(String source, String command) {
+        System.out.println("[SocketClientService] " + source + " -> " + command);
+    }
+
+    private static void logTextResponse(String source, String response) {
+        System.out.println("[SocketClientService] " + source + " <- " + response);
+    }
+
     public static void main(String[] args) throws IOException {
         BufferedReader userIn = new BufferedReader(new InputStreamReader(System.in));
         String userInput;
         while ((userInput = userIn.readLine()) != null) {
-            System.out.println(sendJson(userInput));
+            System.out.println(sendText(userInput));
         }
     }
 }

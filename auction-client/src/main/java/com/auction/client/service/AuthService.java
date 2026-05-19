@@ -4,13 +4,8 @@ import com.app.common.dto.LoginRequestDTO;
 import com.app.common.dto.LoginResponseDTO;
 import com.app.common.dto.RegisterRequestDTO;
 import com.app.common.dto.RegisterResponseDTO;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class AuthService {
-    private static final ObjectMapper MAPPER = SocketClientService.mapper();
-
     public LoginResponseDTO login(String username, String password) {
         LoginRequestDTO request = new LoginRequestDTO();
         request.setUsername(username);
@@ -23,7 +18,7 @@ public class AuthService {
             return createFailedLoginResponse();
         }
 
-        String response = sendEnvelope("LOGIN", request);
+        String response = sendCommand(String.format("LOGIN %s %s", request.getUsername(), request.getPassword()));
         return parseLoginResponse(response);
     }
 
@@ -40,7 +35,12 @@ public class AuthService {
             return createRegisterResponse(false, "Thông tin đăng ký không hợp lệ.", null);
         }
 
-        String response = sendEnvelope("REGISTER_BIDDER", request);
+        String response = sendCommand(String.format(
+                "REGISTER_BIDDER %s %s %s",
+                request.getUsername(),
+                request.getPassword(),
+                request.getEmail()
+        ));
         return parseRegisterResponse(response);
     }
 
@@ -57,7 +57,7 @@ public class AuthService {
         String payload = String.format("REGISTER_SELLER %s %s %s", username, password, email);
         String response;
         try {
-            response = SocketClientService.sendText(payload);
+            response = sendCommand(payload);
         } catch (Exception e) {
             throw new IllegalStateException("Không thể gửi yêu cầu đăng ký tới server.", e);
         }
@@ -81,12 +81,9 @@ public class AuthService {
         return value == null || value.isBlank();
     }
 
-    private String sendEnvelope(String type, Object payload) {
+    private String sendCommand(String command) {
         try {
-            ObjectNode envelope = MAPPER.createObjectNode();
-            envelope.put("type", type);
-            envelope.set("payload", MAPPER.valueToTree(payload));
-            return SocketClientService.sendJson(MAPPER.writeValueAsString(envelope));
+            return SocketClientService.sendText(command);
         } catch (Exception e) {
             throw new IllegalStateException("Không thể gửi yêu cầu xác thực đến server.", e);
         }
@@ -97,18 +94,17 @@ public class AuthService {
             return createFailedLoginResponse();
         }
 
-        if (response.startsWith("{")) {
-            try {
-                JsonNode root = MAPPER.readTree(response);
-                JsonNode payload = root.path("payload");
-                if (payload.isMissingNode() || payload.isNull()) {
-                    return createFailedLoginResponse();
-                }
-                LoginResponseDTO dto = MAPPER.treeToValue(payload, LoginResponseDTO.class);
-                return dto == null ? createFailedLoginResponse() : dto;
-            } catch (Exception e) {
-                return createFailedLoginResponse();
+        if (response.startsWith("OK|LOGIN|")) {
+            String[] parts = response.split("\\|", 5);
+            if (parts.length >= 5) {
+                LoginResponseDTO dto = new LoginResponseDTO();
+                dto.setUserId(parts[2]);
+                dto.setUsername(parts[3]);
+                dto.setRole(parts[4]);
+                dto.setSuccess(true);
+                return dto;
             }
+            return createFailedLoginResponse();
         }
 
         if (response.startsWith("ERR|")) {
@@ -123,29 +119,14 @@ public class AuthService {
             return createRegisterResponse(false, "Server không phản hồi.", null);
         }
 
-        if (response.startsWith("{")) {
-            try {
-                JsonNode root = MAPPER.readTree(response);
-                JsonNode payload = root.path("payload");
-                if (payload.isMissingNode() || payload.isNull()) {
-                    return createRegisterResponse(false, "Đăng ký thất bại.", null);
-                }
-                RegisterResponseDTO dto = MAPPER.treeToValue(payload, RegisterResponseDTO.class);
-                return dto == null ? createRegisterResponse(false, "Đăng ký thất bại.", null) : dto;
-            } catch (Exception e) {
-                return createRegisterResponse(false, "Đăng ký thất bại.", null);
-            }
-        }
-
-        if (response.startsWith("ERR|")) {
-            return createRegisterResponse(false, extractErrorMessage(response), null);
-        }
-
-        // Support legacy OK|REGISTER_BIDDER|id and OK|REGISTER_SELLER|id responses
         if (response.startsWith("OK|REGISTER_BIDDER|") || response.startsWith("OK|REGISTER_SELLER|")) {
             String[] parts = response.split("\\|", 3);
             String id = parts.length >= 3 ? parts[2] : null;
             return createRegisterResponse(true, "Đăng ký thành công", id);
+        }
+
+        if (response.startsWith("ERR|")) {
+            return createRegisterResponse(false, extractErrorMessage(response), null);
         }
 
         return createRegisterResponse(false, "Phản hồi đăng ký không hợp lệ.", null);
