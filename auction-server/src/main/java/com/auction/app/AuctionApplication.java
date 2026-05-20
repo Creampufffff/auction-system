@@ -20,6 +20,10 @@ import com.auction.app.service.impl.AuctionManager;
 import com.auction.app.service.impl.BidServiceImpl;
 import com.auction.app.service.impl.ItemServiceImpl;
 import com.auction.app.service.impl.UserServiceImpl;
+import com.auction.app.controller.AuctionController;
+import com.auction.app.controller.AutoBidController;
+import com.auction.app.controller.BidController;
+import com.auction.app.controller.UserController;
 import com.auction.app.socket.AuctionSocketServer;
 
 import java.io.IOException;
@@ -42,7 +46,14 @@ public class AuctionApplication {
         BidService bidService = new BidServiceImpl(bidDAO, auctionDAO, userDAO);
         AutoBidService autoBidService = new AutoBidServiceImpl(auctionDAO, bidDAO);
 
-        AuctionSocketServer server = new AuctionSocketServer(port, userService, itemService, auctionService, bidService, autoBidService);
+        // Create controllers
+        UserController userController = new UserController(userService);
+        AuctionController auctionController = new AuctionController(auctionService);
+        BidController bidController = new BidController(bidService, auctionService, userService);
+        AutoBidController autoBidController = new AutoBidController(autoBidService, auctionService);
+
+        AuctionSocketServer server = new AuctionSocketServer(port, userService, auctionService, 
+                userController, auctionController, bidController, autoBidController);
 
         AuctionManager auctionManager = AuctionManager.getInstance();
         auctionManager.startAutoClose(auctionService, server);

@@ -1,9 +1,7 @@
 package com.auction.app.socket;
 
-import com.app.common.entity.Auction;
-import com.app.common.entity.BidTransaction;
+import com.app.common.dto.*;
 import com.app.common.entity.Bidder;
-import com.app.common.entity.Item;
 import com.app.common.entity.Seller;
 import com.app.common.entity.User;
 import com.app.common.exception.AuctionClosedException;
@@ -11,15 +9,13 @@ import com.app.common.exception.AuctionNotFoundException;
 import com.app.common.exception.InsufficientBalanceException;
 import com.app.common.exception.InvalidBidException;
 import com.app.common.exception.UserAuthException;
-import com.auction.app.factory.ArtItemFactory;
-import com.auction.app.factory.ItemFactory;
+import com.auction.app.controller.AuctionController;
+import com.auction.app.controller.AutoBidController;
+import com.auction.app.controller.BidController;
+import com.auction.app.controller.UserController;
 import com.auction.app.service.AuctionService;
-import com.auction.app.service.BidService;
-import com.auction.app.service.ItemService;
 import com.auction.app.service.UserService;
 import com.auction.app.socket.observer.SocketClientObserver;
-
-import com.auction.app.service.AutoBidService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,44 +26,34 @@ import java.util.List;
 
 public class ClientHandler implements Runnable {
     private final Socket socket;
-    private final UserService userService;
-    private final ItemService itemService;
-    private final AuctionService auctionService;
-    private final BidService bidService;
-    private final AutoBidService autoBidService;
+    private final UserController userController;
+    private final AuctionController auctionController;
+    private final BidController bidController;
+    private final AutoBidController autoBidController;
     private final AuctionSocketServer socketServer;
-    private final ItemFactory artItemFactory;
+    private final UserService userService;
+    private final AuctionService auctionService;
     private User currentUser;
 
 
     public ClientHandler(
             Socket socket,
             UserService userService,
-            ItemService itemService,
             AuctionService auctionService,
-            BidService bidService,
-            AuctionSocketServer socketServer
-    ) {
-        this(socket, userService, itemService, auctionService, bidService, null, socketServer);
-    }
-
-    public ClientHandler(
-            Socket socket,
-            UserService userService,
-            ItemService itemService,
-            AuctionService auctionService,
-            BidService bidService,
-            AutoBidService autoBidService,
+            UserController userController,
+            AuctionController auctionController,
+            BidController bidController,
+            AutoBidController autoBidController,
             AuctionSocketServer socketServer
     ) {
         this.socket = socket;
         this.userService = userService;
-        this.itemService = itemService;
         this.auctionService = auctionService;
-        this.bidService = bidService;
-        this.autoBidService = autoBidService;
+        this.userController = userController;
+        this.auctionController = auctionController;
+        this.bidController = bidController;
+        this.autoBidController = autoBidController;
         this.socketServer = socketServer;
-        this.artItemFactory = new ArtItemFactory();
     }
 
     @Override
@@ -139,23 +125,48 @@ public class ClientHandler implements Runnable {
 
     private String login(String payload) {
         String[] args = splitBySpace(payload, 2);
-        User user = userService.login(args[0], args[1]);
-        currentUser = user;
-        return "OK|LOGIN|" + user.getId() + "|" + user.getUsername() + "|" + user.getClass().getSimpleName();
+        LoginRequestDTO request = new LoginRequestDTO();
+        request.setUsername(args[0]);
+        request.setPassword(args[1]);
+
+        LoginResponseDTO response = userController.login(request);
+        if (response == null || !response.isSuccess()) {
+            return "ERR|LOGIN_FAILED|Invalid credentials";
+        }
+
+        // Store current user from userService to maintain session
+        currentUser = userService.getById(response.getUserId());
+        return "OK|LOGIN|" + response.getUserId() + "|" + response.getUsername() + "|" + response.getRole();
     }
 
     private String registerBidder(String payload) {
         String[] args = splitBySpace(payload, 3);
-        Bidder bidder = new Bidder(args[0], args[1], args[2]);
-        userService.register(bidder);
-        return "OK|REGISTER_BIDDER|" + bidder.getId();
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setUsername(args[0]);
+        request.setPassword(args[1]);
+        request.setEmail(args[2]);
+        request.setRole("BIDDER");
+
+        RegisterResponseDTO response = userController.register(request);
+        if (!response.isSuccess()) {
+            return "ERR|REGISTRATION_FAILED|" + response.getMessage();
+        }
+        return "OK|REGISTER_BIDDER|" + response.getUserId();
     }
 
     private String registerSeller(String payload) {
         String[] args = splitBySpace(payload, 3);
-        Seller seller = new Seller(args[0], args[1], args[2]);
-        userService.register(seller);
-        return "OK|REGISTER_SELLER|" + seller.getId();
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setUsername(args[0]);
+        request.setPassword(args[1]);
+        request.setEmail(args[2]);
+        request.setRole("SELLER");
+
+        RegisterResponseDTO response = userController.register(request);
+        if (!response.isSuccess()) {
+            return "ERR|REGISTRATION_FAILED|" + response.getMessage();
+        }
+        return "OK|REGISTER_SELLER|" + response.getUserId();
     }
 
     private String deposit(String payload) {
@@ -165,38 +176,51 @@ public class ClientHandler implements Runnable {
         }
         User user = requireCurrentUser();
         String amount = args.length == 1 ? args[0] : args[1];
-        userService.deposit(user.getId(), Double.parseDouble(amount));
-        return "OK|DEPOSIT|" + user.getId() + "|" + userService.getBalance(user.getId());
+
+        DepositRequestDTO request = new DepositRequestDTO(user.getId(), Double.parseDouble(amount));
+        ApiResponseDTO response = userController.deposit(request);
+
+        if (!response.isSuccess()) {
+            return "ERR|DEPOSIT_FAILED|" + response.getMessage();
+        }
+
+        // Get updated balance
+        BalanceResponseDTO balanceResponse = userController.getBalance(user.getId());
+        return "OK|DEPOSIT|" + user.getId() + "|" + balanceResponse.getBalance();
     }
 
     private String getBalance(String payload) {
         String userId = requireCurrentUser().getId();
-        return "OK|BALANCE|" + userId + "|" + userService.getBalance(userId);
+        BalanceResponseDTO response = userController.getBalance(userId);
+        if (response == null) {
+            return "ERR|BALANCE_ERROR|User not found";
+        }
+        return "OK|BALANCE|" + userId + "|" + response.getBalance();
     }
 
     private String listAuctions() {
-        List<Auction> auctions = auctionService.getActiveAuctions();
+        List<AuctionListDTO> auctions = auctionController.getActiveAuctions();
 
         if (auctions.isEmpty()) {
             return "OK|AUCTIONS|EMPTY";
         }
 
         StringBuilder response = new StringBuilder("OK|AUCTIONS");
-        for (Auction auction : auctions) {
-            response.append("|").append(formatAuction(auction));
+        for (AuctionListDTO auction : auctions) {
+            response.append("|").append(formatAuctionDTO(auction));
         }
         return response.toString();
     }
 
     private String getAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
-        Auction auction = auctionService.getAuctionById(auctionId);
+        AuctionListDTO auction = auctionController.getAuction(auctionId);
 
         if (auction == null) {
             return "ERR|AUCTION_NOT_FOUND";
         }
 
-        return "OK|AUCTION|" + formatAuction(auction);
+        return "OK|AUCTION|" + formatAuctionDTO(auction);
     }
 
     private String placeBid(String payload) {
@@ -208,53 +232,84 @@ public class ClientHandler implements Runnable {
         Bidder bidder = requireCurrentBidder();
         double bidAmount = Double.parseDouble(args.length == 2 ? args[1] : args[2]);
 
-        Auction auction = auctionService.getAuctionById(auctionId);
-        if (auction == null) {
-            return "ERR|AUCTION_NOT_FOUND";
+        PlaceBidRequestDTO request = new PlaceBidRequestDTO(auctionId, bidder.getId(), bidAmount);
+        PlaceBidResponseDTO response = bidController.placeBid(request);
+
+        if (!response.isSuccess()) {
+            return "ERR|BID_FAILED|" + response.getMessage();
         }
 
-        BidTransaction bid = new BidTransaction(bidder, auction, bidAmount);
-        bidService.placeBid(bid);
         processAutoBids(auctionId);
         // Phát realtime sự kiện bid mới cho toàn bộ client.
         socketServer.broadcast("EVENT|BID_UPDATED|" + auctionId + "|" + bidAmount + "|" + bidder.getId());
-        return "OK|BID_PLACED|" + bid.getId() + "|" + auctionId + "|" + bidAmount;
+        return "OK|BID_PLACED|" + response.getBidId() + "|" + auctionId + "|" + bidAmount;
     }
 
     private String setAutoBid(String payload) {
         String[] args = splitBySpace(payload, 2);
         Bidder bidder = requireCurrentBidder();
-        com.app.common.entity.AutoBid autoBid = new com.app.common.entity.AutoBid(args[0], bidder.getId(), Double.parseDouble(args[1]));
-        autoBidService.createAutoBid(autoBid);
-        return "OK|AUTO_BID_SET|" + autoBid.getId();
+
+        SetAutoBidRequestDTO request = new SetAutoBidRequestDTO(args[0], bidder.getId(), Double.parseDouble(args[1]));
+        ApiResponseDTO response = autoBidController.setAutoBid(request);
+
+        if (!response.isSuccess()) {
+            return "ERR|AUTO_BID_ERROR|" + response.getMessage();
+        }
+
+        return "OK|AUTO_BID_SET|" + response.getMessage().split("ID: ")[1];
     }
 
     private String cancelAutoBid(String payload) {
         String autoBidId = requirePayload(payload, "Auto bid id");
-        autoBidService.cancelAutoBid(autoBidId);
+        ApiResponseDTO response = autoBidController.cancelAutoBid(autoBidId);
+
+        if (!response.isSuccess()) {
+            return "ERR|AUTO_BID_ERROR|" + response.getMessage();
+        }
+
         return "OK|AUTO_BID_CANCELED|" + autoBidId;
     }
 
     private String createArtAuction(String payload) {
         String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
-        if (rawArgs.length != 7 && rawArgs.length != 8) {
+        if (rawArgs.length < 7 || rawArgs.length > 8) {
             throw new IllegalArgumentException("Requires name|description|startDate|endDate|startPrice|minIncrement|author");
         }
-        // Tạo item thông qua Factory Method để tách logic khởi tạo khỏi command handler.
+
         Seller seller = requireCurrentSeller();
-        String[] args = new String[8];
-        System.arraycopy(rawArgs, 0, args, 0, 7);
-        args[7] = seller.getId();
-        Item item = artItemFactory.create(args);
-        Auction auction = new Auction(item);
-        auctionService.saveAuction(auction);
-        return "OK|CREATE_ART_AUCTION|" + auction.getId() + "|" + item.getId();
+
+        CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
+            rawArgs[0],                              // itemName
+            rawArgs[1],                              // description
+            rawArgs.length > 7 ? rawArgs[2] : "",   // condition
+            "",                                      // warranty
+            Double.parseDouble(rawArgs[5]),          // startPrice
+            Double.parseDouble(rawArgs[6]),          // minIncrement
+            rawArgs[3],                              // startDateTime
+            rawArgs[4],                              // endDateTime
+            seller.getId(),                          // sellerId
+            "ART"                                    // itemType
+        );
+
+        ApiResponseDTO response = auctionController.createAuction(request);
+        if (!response.isSuccess()) {
+            return "ERR|CREATE_AUCTION_FAILED|" + response.getMessage();
+        }
+
+        // Extract ID from message (format: "Auction created successfully. ID: {id}")
+        String auctionId = response.getMessage().split("ID: ")[1];
+        return "OK|CREATE_ART_AUCTION|" + auctionId + "|Item created";
     }
 
     private String startAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
         requireCurrentSeller();
-        auctionService.startAuction(auctionId);
+
+        ApiResponseDTO response = auctionController.startAuction(auctionId);
+        if (!response.isSuccess()) {
+            return "ERR|START_AUCTION_FAILED|" + response.getMessage();
+        }
+
         socketServer.broadcast("EVENT|AUCTION_STARTED|" + auctionId);
         return "OK|START_AUCTION|" + auctionId;
     }
@@ -262,18 +317,21 @@ public class ClientHandler implements Runnable {
     private String endAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
         requireCurrentSeller();
-        auctionService.endAuction(auctionId);
+
+        ApiResponseDTO response = auctionController.endAuction(auctionId);
+        if (!response.isSuccess()) {
+            return "ERR|END_AUCTION_FAILED|" + response.getMessage();
+        }
+
         socketServer.broadcast("EVENT|AUCTION_ENDED|" + auctionId);
         return "OK|END_AUCTION|" + auctionId;
     }
 
-    private String formatAuction(Auction auction) {
-        Item item = auction.getItem();
-        double currentPrice = item.getHighestCurrentPrice() > 0 ? item.getHighestCurrentPrice() : item.getStartPrice();
-        return auction.getId()
-                + "," + item.getId()
-                + "," + item.getName()
-                + "," + currentPrice
+    private String formatAuctionDTO(AuctionListDTO auction) {
+        return auction.getAuctionId()
+                + "," + auction.getItemId()
+                + "," + auction.getName()
+                + "," + auction.getCurrentPrice()
                 + "," + auction.getAuctionStatus();
     }
 
@@ -343,8 +401,8 @@ public class ClientHandler implements Runnable {
 
 
     private void processAutoBids(String auctionId) {
-        if (autoBidService != null) {
-            autoBidService.processAutoBidsForAuction(auctionId);
+        if (autoBidController != null) {
+            autoBidController.processAutoBids(auctionId);
         }
     }
 
