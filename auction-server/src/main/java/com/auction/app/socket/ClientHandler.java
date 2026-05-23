@@ -113,6 +113,8 @@ public class ClientHandler implements Runnable {
                 case "SET_AUTO_BID" -> setAutoBid(payload);
                 case "CANCEL_AUTO_BID" -> cancelAutoBid(payload);
                 case "CREATE_ART_AUCTION" -> createArtAuction(payload);
+                case "CREATE_ELECTRONICS_AUCTION" -> createElectronicsAuction(payload);
+                case "CREATE_VEHICLE_AUCTION" -> createVehicleAuction(payload);
                 case "START_AUCTION" -> startAuction(payload);
                 case "END_AUCTION" -> endAuction(payload);
                 default -> "ERR|UNKNOWN_COMMAND";
@@ -306,6 +308,66 @@ public class ClientHandler implements Runnable {
         return "OK|CREATE_ART_AUCTION|" + auctionId + "|Item created";
     }
 
+    private String createElectronicsAuction(String payload) {
+        String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
+        if (rawArgs.length < 7 || rawArgs.length > 8) {
+            throw new IllegalArgumentException("Requires name|description|startDate|endDate|startPrice|minIncrement|warrantyMonths");
+        }
+
+        Seller seller = requireCurrentSeller();
+
+        CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
+            rawArgs[0],                              // itemName
+            rawArgs[1],                              // description
+            "",                                      // condition
+            rawArgs[6],                              // warranty (warrantyMonths)
+            Double.parseDouble(rawArgs[4]),          // startPrice
+            Double.parseDouble(rawArgs[5]),          // minIncrement
+            rawArgs[2],                              // startDateTime
+            rawArgs[3],                              // endDateTime
+            seller.getId(),                          // sellerId
+            "ELECTRONICS"                            // itemType
+        );
+
+        ApiResponseDTO response = auctionController.createAuction(request);
+        if (!response.isSuccess()) {
+            return "ERR|CREATE_AUCTION_FAILED|" + response.getMessage();
+        }
+
+        String auctionId = response.getMessage().split("ID: ")[1];
+        return "OK|CREATE_ELECTRONICS_AUCTION|" + auctionId + "|Item created";
+    }
+
+    private String createVehicleAuction(String payload) {
+        String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
+        if (rawArgs.length < 7 || rawArgs.length > 8) {
+            throw new IllegalArgumentException("Requires name|description|startDate|endDate|startPrice|minIncrement|brand");
+        }
+
+        Seller seller = requireCurrentSeller();
+
+        CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
+            rawArgs[0],                              // itemName
+            rawArgs[1],                              // description
+            "",                                      // condition
+            rawArgs[6],                              // warranty (brand)
+            Double.parseDouble(rawArgs[4]),          // startPrice
+            Double.parseDouble(rawArgs[5]),          // minIncrement
+            rawArgs[2],                              // startDateTime
+            rawArgs[3],                              // endDateTime
+            seller.getId(),                          // sellerId
+            "VEHICLE"                                // itemType
+        );
+
+        ApiResponseDTO response = auctionController.createAuction(request);
+        if (!response.isSuccess()) {
+            return "ERR|CREATE_AUCTION_FAILED|" + response.getMessage();
+        }
+
+        String auctionId = response.getMessage().split("ID: ")[1];
+        return "OK|CREATE_VEHICLE_AUCTION|" + auctionId + "|Item created";
+    }
+
     private String startAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
         requireCurrentSeller();
@@ -350,6 +412,8 @@ public class ClientHandler implements Runnable {
                 + "LIST_AUCTIONS;"
                 + "GET_AUCTION auctionId;"
                 + "CREATE_ART_AUCTION name|description|startDate|endDate|startPrice|minIncrement|author;"
+                + "CREATE_ELECTRONICS_AUCTION name|description|startDate|endDate|startPrice|minIncrement|warrantyMonths;"
+                + "CREATE_VEHICLE_AUCTION name|description|startDate|endDate|startPrice|minIncrement|brand;"
                 + "START_AUCTION auctionId;"
                 + "PLACE_BID auctionId amount;"
                 + "SET_AUTO_BID auctionId maxAmount;"
