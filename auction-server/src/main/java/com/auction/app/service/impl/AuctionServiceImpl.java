@@ -14,6 +14,7 @@ import com.auction.app.repository.impl.UserDAOImpl;
 import com.auction.app.service.AuctionService;
 
 import java.util.List;
+import com.auction.app.service.impl.AuctionExtensionManager;
 
 public class AuctionServiceImpl implements AuctionService {
     private final AuctionDAO auctionDAO;
@@ -140,5 +141,27 @@ public class AuctionServiceImpl implements AuctionService {
         if (!userDAO.save(seller)) {
             throw new IllegalStateException("Failed to update seller's account");
         }
+    }
+
+    @Override
+    public boolean extendIfEndingSoon(String auctionId, long thresholdSeconds, long extensionSeconds) {
+        validateId(auctionId);
+
+        Auction auction = getAuctionById(auctionId);
+        if (auction == null) {
+            return false;
+        }
+
+        if (auction.getAuctionStatus() != Status.RUNNING) {
+            return false;
+        }
+
+        // Reuse AuctionExtensionManager which encapsulates parsing and extension policy.
+        boolean extended = AuctionExtensionManager.checkAndExtend(auction);
+        if (extended) {
+            // Persist the new end date string stored in auction.item
+            return auctionDAO.updateItemEndDate(auctionId, auction.getItem().getEndDateString());
+        }
+        return false;
     }
 }

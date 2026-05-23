@@ -24,7 +24,6 @@ public class BidController {
         this.userService = userService;
     }
 
-    // ✅ Dùng DTO Request/Response
     public PlaceBidResponseDTO placeBid(PlaceBidRequestDTO request) {
         try {
             Bidder bidder = (Bidder) userService.getById(request.getBidderId());
@@ -41,19 +40,32 @@ public class BidController {
             BidTransaction bid = BidMapper.toEntity(request, bidder, auction);
             bidService.placeBid(bid);
 
+            // Anti-sniping: nếu còn <= 10s đến khi kết thúc thì gia hạn thêm 60s
+            boolean extended = auctionService.extendIfEndingSoon(auction.getId(), 10, 60);
+            String message = "Bid placed successfully" + (extended ? "; Auction extended by 60s" : "");
+
+            String newEndDate = null;
+            if (extended) {
+                Auction updated = auctionService.getAuctionById(auction.getId());
+                if (updated != null && updated.getItem() != null) {
+                    newEndDate = updated.getItem().getEndDateString();
+                }
+            }
+
             return new PlaceBidResponseDTO(
                 true,
-                "Bid placed successfully",
+                message,
                 bid.getId(),
                 auction.getId(),
-                request.getBidAmount()
+                request.getBidAmount(),
+                extended,
+                newEndDate
             );
         } catch (Exception e) {
             return new PlaceBidResponseDTO(false, "Error placing bid: " + e.getMessage(), null, null, 0);
         }
     }
 
-    // ✅ Trả về DTO thay vì Entity
     public BidHistoryDTO getBid(String bidId) {
         BidTransaction bid = bidService.getBidById(bidId);
         return AuctionMapper.toBidHistoryDTO(bid);
@@ -71,7 +83,6 @@ public class BidController {
         return AuctionMapper.toBidHistoryDTOs(bids);
     }
 
-    // ✅ Dùng DTO Response
     public ApiResponseDTO deleteBid(String bidId) {
         try {
             bidService.deleteBid(bidId);
@@ -80,6 +91,8 @@ public class BidController {
             return new ApiResponseDTO(false, "Error deleting bid: " + e.getMessage());
         }
     }
+
+
 }
 
 

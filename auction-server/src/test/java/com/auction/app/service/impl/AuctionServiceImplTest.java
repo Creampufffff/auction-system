@@ -99,6 +99,15 @@ class AuctionServiceImplTest {
         }
 
         @Override
+        public boolean updateItemEndDate(String auctionId, String newEndDate) {
+            if (savedAuction != null && savedAuction.getId().equals(auctionId) && savedAuction.getItem() != null) {
+                savedAuction.getItem().setEndDateString(newEndDate);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
         public boolean settleAndFinishAuction(String auctionId) {
             if (savedAuction == null || !savedAuction.getId().equals(auctionId)) {
                 return false;

@@ -13,4 +13,9 @@ public interface AuctionDAO extends BaseDAO<Auction> {
     boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion);
 
     boolean settleAndFinishAuction(String auctionId);
+
+    /**
+     * Update the underlying item's end_date for the given auction.
+     */
+    boolean updateItemEndDate(String auctionId, String newEndDate);
 }

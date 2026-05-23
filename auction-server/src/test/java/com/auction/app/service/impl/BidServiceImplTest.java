@@ -127,6 +127,11 @@ class BidServiceImplTest {
         }
 
         @Override
+        public boolean updateItemEndDate(String auctionId, String newEndDate) {
+            return true;
+        }
+
+        @Override
         public boolean settleAndFinishAuction(String auctionId) {
             return true;
         }

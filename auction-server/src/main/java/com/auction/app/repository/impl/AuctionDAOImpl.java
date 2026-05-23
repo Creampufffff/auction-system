@@ -172,6 +172,20 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    public boolean updateItemEndDate(String auctionId, String newEndDate) {
+        String sql = "UPDATE items i JOIN auctions a ON a.item_id = i.id SET i.end_date = ? WHERE a.id = ?";
+
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newEndDate);
+            statement.setString(2, auctionId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to update auction end date for: " + auctionId, e);
+        }
+    }
+
+    @Override
     public Auction findById(String id) {
         String sql = "SELECT id, item_id, status FROM auctions WHERE id = ?";
 

@@ -16,4 +16,11 @@ public interface AuctionService {
     List<Auction> getAllAuction();
 
     List<Auction> getActiveAuctions();
+
+    /**
+     * If the auction is running and its remaining time is less than or equal to thresholdSeconds,
+     * extend the auction end time by extensionSeconds.
+     * Returns true if the auction end time was updated, false otherwise.
+     */
+    boolean extendIfEndingSoon(String auctionId, long thresholdSeconds, long extensionSeconds);
 }

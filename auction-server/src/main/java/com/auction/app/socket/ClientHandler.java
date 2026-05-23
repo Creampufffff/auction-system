@@ -242,6 +242,11 @@ public class ClientHandler implements Runnable {
         processAutoBids(auctionId);
         // Phát realtime sự kiện bid mới cho toàn bộ client.
         socketServer.broadcast("EVENT|BID_UPDATED|" + auctionId + "|" + bidAmount + "|" + bidder.getId());
+        // Nếu phiên được gia hạn (anti-sniping), phát sự kiện mở rộng
+        if (response.isAuctionExtended()) {
+            String newEndDate = response.getNewEndDate();
+            socketServer.broadcast("EVENT|AUCTION_EXTENDED|" + auctionId + "|" + (newEndDate == null ? "" : newEndDate));
+        }
         return "OK|BID_PLACED|" + response.getBidId() + "|" + auctionId + "|" + bidAmount;
     }
 
