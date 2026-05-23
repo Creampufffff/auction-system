@@ -5,11 +5,42 @@ import com.app.common.dto.PlaceBidRequestDTO;
 import com.app.common.dto.PlaceBidResponseDTO;
 import com.app.common.enums.Status;
 import com.auction.client.session.SessionManager;
+import com.auction.client.service.SocketClientService;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class AuctionService {
+    public String createArtAuction(
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String author
+    ) {
+        if (!SessionManager.hasRole("Seller")) {
+            return "ERR|Chỉ Seller mới được tạo phiên.";
+        }
+
+        String payload = String.join(
+                "|",
+                name,
+                description,
+                startDate,
+                endDate,
+                String.valueOf(startPrice),
+                minIncrement,
+                author
+        );
+        String command = "CREATE_ART_AUCTION " + payload;
+        try {
+            return SocketClientService.sendSessionCommand(command);
+        } catch (Exception e) {
+            return "ERR|Không thể gửi yêu cầu tới server.";
+        }
+    }
 
     public List<AuctionListDTO> getActiveAuctions() {
         String response = sendCommand("LIST_AUCTIONS");

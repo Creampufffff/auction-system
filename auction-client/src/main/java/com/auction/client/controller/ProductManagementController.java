@@ -2,6 +2,7 @@ package com.auction.client.controller;
 
 import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
+import com.auction.client.service.AuctionService;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -11,6 +12,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import java.time.LocalDate;
 import java.util.Optional;
 
 public class ProductManagementController {
@@ -19,6 +21,7 @@ public class ProductManagementController {
     @FXML private Label titleLabel;
 
     private final ObservableList<Product> productData = ProductDataManager.getInstance().getProductList();
+    private final AuctionService auctionService = new AuctionService();
 
     @FXML private Button backButton;
 
@@ -90,6 +93,9 @@ public class ProductManagementController {
         TextArea descriptionArea = new TextArea();
         descriptionArea.setPrefRowCount(3);
         TextField warrantyField = new TextField();
+        DatePicker startDatePicker = new DatePicker(LocalDate.now());
+        DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
+        TextField minIncrementField = new TextField("1");
 
         grid.add(new Label("Tên sản phẩm:"), 0, 0);
         grid.add(nameField, 1, 0);
@@ -101,6 +107,12 @@ public class ProductManagementController {
         grid.add(descriptionArea, 1, 3);
         grid.add(new Label("Bảo hành:"), 0, 4);
         grid.add(warrantyField, 1, 4);
+        grid.add(new Label("Ngày bắt đầu:"), 0, 5);
+        grid.add(startDatePicker, 1, 5);
+        grid.add(new Label("Ngày kết thúc:"), 0, 6);
+        grid.add(endDatePicker, 1, 6);
+        grid.add(new Label("Bước giá tối thiểu:"), 0, 7);
+        grid.add(minIncrementField, 1, 7);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -120,57 +132,57 @@ public class ProductManagementController {
 
         Optional<Product> result = dialog.showAndWait();
         result.ifPresent(newProduct -> {
-            // If current user is a Seller, try creating auction on server
-            try {
-                if (com.auction.client.session.SessionManager.hasRole("Seller")) {
-                    // Build pipe-separated payload (server expects 7 parts)
-                    String name = escapePipe(newProduct.getName());
-                    String desc = escapePipe(newProduct.getDescription());
-                    // Server requires non-empty startDate/endDate; use localdate format
-                    String startDate = "2026-05-15"; // today (server just stores, doesn't validate format strictly)
-                    String endDate = "2026-05-22";   // 7 days later
-                    String startPrice = String.valueOf(newProduct.getPrice());
-                    String minIncrement = "1";
-                    String author = com.auction.client.session.SessionManager.getCurrentUsername();
+            String name = escapePipe(newProduct.getName());
+            String desc = escapePipe(newProduct.getDescription());
+            LocalDate startDateValue = startDatePicker.getValue();
+            LocalDate endDateValue = endDatePicker.getValue();
+            String startDate = startDateValue != null ? startDateValue.toString() : "";
+            String endDate = endDateValue != null ? endDateValue.toString() : "";
+            String minIncrement = minIncrementField.getText();
+            String author = com.auction.client.session.SessionManager.getCurrentUsername();
 
-                    String payload = String.join("|", name, desc, startDate, endDate, startPrice, minIncrement, author);
-                    String command = "CREATE_ART_AUCTION " + payload;
-                    
-                    // Send command on authenticated session socket and wait for response
-                    String resp = com.auction.client.service.SocketClientService.sendSessionCommand(command);
-                    
-                    // Check for error response
-                    if (resp.startsWith("ERR|")) {
-                        String errorMsg = resp.substring(4); // skip "ERR|"
-                        throw new Exception("Server error: " + errorMsg);
-                    }
+            String response = auctionService.createArtAuction(
+                    name,
+                    desc,
+                    startDate,
+                    endDate,
+                    newProduct.getPrice(),
+                    minIncrement,
+                    author
+            );
 
-                    if (resp.startsWith("OK|CREATE_ART_AUCTION|")) {
-                        String[] parts = resp.split("\\|", 4);
-                        if (parts.length >= 3) {
-                            newProduct.setId(parts[2]);
-                        }
-                    } else {
-                        throw new Exception("Unexpected server response: " + resp);
-                    }
-                }
-            } catch (Exception e) {
-                // Log detailed error for troubleshooting
-                System.err.println("❌ Failed to create auction on server: " + e.getMessage());
-                e.printStackTrace();
-
-                // Show error dialog with server message if available
-                String errorMsg = e.getMessage();
-                if (errorMsg == null) errorMsg = "Unknown error";
-
+            if (response == null || response.isBlank()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Lỗi tạo phiên đấu giá");
                 alert.setHeaderText("Không thể tạo phiên trên server");
-                alert.setContentText(errorMsg);
+                alert.setContentText("Server không phản hồi.");
                 alert.showAndWait();
+                return;
             }
 
-            // Add to local lists regardless; if created on server, id already updated
+            if (response.startsWith("ERR|")) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Lỗi tạo phiên đấu giá");
+                alert.setHeaderText("Không thể tạo phiên trên server");
+                alert.setContentText(response.substring(4));
+                alert.showAndWait();
+                return;
+            }
+
+            if (response.startsWith("OK|CREATE_ART_AUCTION|")) {
+                String[] parts = response.split("\\|", 4);
+                if (parts.length >= 3) {
+                    newProduct.setId(parts[2]);
+                }
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Lỗi tạo phiên đấu giá");
+                alert.setHeaderText("Không thể tạo phiên trên server");
+                alert.setContentText("Phản hồi không hợp lệ: " + response);
+                alert.showAndWait();
+                return;
+            }
+
             productData.add(newProduct);
             ProductDataManager.getInstance().pushToGlobalAuction(newProduct);
         });
