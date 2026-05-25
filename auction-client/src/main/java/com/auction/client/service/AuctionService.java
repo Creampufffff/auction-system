@@ -42,9 +42,92 @@ public class AuctionService {
         }
     }
 
+    public String createElectronicsAuction(
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String warrantyMonths
+    ) {
+        return createAuction(
+                "CREATE_ELECTRONICS_AUCTION",
+                name,
+                description,
+                startDate,
+                endDate,
+                startPrice,
+                minIncrement,
+                warrantyMonths
+        );
+    }
+
+    public String createVehicleAuction(
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String brand
+    ) {
+        return createAuction(
+                "CREATE_VEHICLE_AUCTION",
+                name,
+                description,
+                startDate,
+                endDate,
+                startPrice,
+                minIncrement,
+                brand
+        );
+    }
+
+    private String createAuction(
+            String commandName,
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String typeSpecificValue
+    ) {
+        if (!SessionManager.hasRole("Seller")) {
+            return "ERR|Chỉ Seller mới được tạo phiên.";
+        }
+
+        String payload = String.join(
+                "|",
+                name,
+                description,
+                startDate,
+                endDate,
+                String.valueOf(startPrice),
+                minIncrement,
+                typeSpecificValue
+        );
+        String command = commandName + " " + payload;
+        try {
+            return SocketClientService.sendSessionCommand(command);
+        } catch (Exception e) {
+            return "ERR|Không thể gửi yêu cầu tới server.";
+        }
+    }
+
     public List<AuctionListDTO> getActiveAuctions() {
         String response = sendCommand("LIST_AUCTIONS");
         return parseAuctionListResponse(response);
+    }
+
+    public List<AuctionListDTO> getMyAuctions() {
+        try {
+            String response = SocketClientService.sendSessionCommand("LIST_MY_AUCTIONS");
+            return parseAuctionListResponse(response, "OK|MY_AUCTIONS|", "OK|MY_AUCTIONS|EMPTY");
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể tải kho hàng từ server.", e);
+        }
     }
 
     public AuctionListDTO getAuctionById(String auctionId) {
@@ -112,12 +195,16 @@ public class AuctionService {
     }
 
     private List<AuctionListDTO> parseAuctionListResponse(String response) {
+        return parseAuctionListResponse(response, "OK|AUCTIONS|", "OK|AUCTIONS|EMPTY");
+    }
+
+    private List<AuctionListDTO> parseAuctionListResponse(String response, String successPrefix, String emptyResponse) {
         List<AuctionListDTO> auctions = new ArrayList<>();
-        if (response == null || response.isBlank() || response.startsWith("ERR|") || "OK|AUCTIONS|EMPTY".equals(response)) {
+        if (response == null || response.isBlank() || response.startsWith("ERR|") || emptyResponse.equals(response)) {
             return auctions;
         }
 
-        if (!response.startsWith("OK|AUCTIONS|")) {
+        if (!response.startsWith(successPrefix)) {
             return auctions;
         }
 
@@ -157,9 +244,17 @@ public class AuctionService {
             AuctionListDTO auction = new AuctionListDTO();
             auction.setAuctionId(fields[0]);
             auction.setItemId(fields[1]);
-            auction.setName(fields[2]);
-            auction.setCurrentPrice(Double.parseDouble(fields[3]));
-            auction.setAuctionStatus(Status.valueOf(fields[4]));
+            if (fields.length >= 6) {
+                auction.setItemType(fields[2]);
+                auction.setName(fields[3]);
+                auction.setCurrentPrice(Double.parseDouble(fields[4]));
+                auction.setAuctionStatus(Status.valueOf(fields[5]));
+            } else {
+                auction.setItemType("ART");
+                auction.setName(fields[2]);
+                auction.setCurrentPrice(Double.parseDouble(fields[3]));
+                auction.setAuctionStatus(Status.valueOf(fields[4]));
+            }
             return auction;
         } catch (Exception e) {
             return null;

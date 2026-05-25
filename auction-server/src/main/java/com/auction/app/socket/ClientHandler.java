@@ -108,6 +108,7 @@ public class ClientHandler implements Runnable {
                 case "DEPOSIT" -> deposit(payload);
                 case "GET_BALANCE" -> getBalance(payload);
                 case "LIST_AUCTIONS" -> listAuctions();
+                case "LIST_MY_AUCTIONS" -> listMyAuctions();
                 case "GET_AUCTION" -> getAuction(payload);
                 case "PLACE_BID" -> placeBid(payload);
                 case "SET_AUTO_BID" -> setAutoBid(payload);
@@ -214,6 +215,21 @@ public class ClientHandler implements Runnable {
         return response.toString();
     }
 
+    private String listMyAuctions() {
+        Seller seller = requireCurrentSeller();
+        List<AuctionListDTO> auctions = auctionController.getAuctionsBySellerId(seller.getId());
+
+        if (auctions.isEmpty()) {
+            return "OK|MY_AUCTIONS|EMPTY";
+        }
+
+        StringBuilder response = new StringBuilder("OK|MY_AUCTIONS");
+        for (AuctionListDTO auction : auctions) {
+            response.append("|").append(formatAuctionDTO(auction));
+        }
+        return response.toString();
+    }
+
     private String getAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
         AuctionListDTO auction = auctionController.getAuction(auctionId);
@@ -279,7 +295,7 @@ public class ClientHandler implements Runnable {
 
     private String createArtAuction(String payload) {
         String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
-        if (rawArgs.length < 7 || rawArgs.length > 8) {
+        if (rawArgs.length != 7) {
             throw new IllegalArgumentException("Requires name|description|startDate|endDate|startPrice|minIncrement|author");
         }
 
@@ -288,12 +304,12 @@ public class ClientHandler implements Runnable {
         CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
             rawArgs[0],                              // itemName
             rawArgs[1],                              // description
-            rawArgs.length > 7 ? rawArgs[2] : "",   // condition
+            rawArgs[6],                              // condition (author for art)
             "",                                      // warranty
-            Double.parseDouble(rawArgs[5]),          // startPrice
-            Double.parseDouble(rawArgs[6]),          // minIncrement
-            rawArgs[3],                              // startDateTime
-            rawArgs[4],                              // endDateTime
+            Double.parseDouble(rawArgs[4]),          // startPrice
+            Double.parseDouble(rawArgs[5]),          // minIncrement
+            rawArgs[2],                              // startDateTime
+            rawArgs[3],                              // endDateTime
             seller.getId(),                          // sellerId
             "ART"                                    // itemType
         );
@@ -397,6 +413,7 @@ public class ClientHandler implements Runnable {
     private String formatAuctionDTO(AuctionListDTO auction) {
         return auction.getAuctionId()
                 + "," + auction.getItemId()
+                + "," + auction.getItemType()
                 + "," + auction.getName()
                 + "," + auction.getCurrentPrice()
                 + "," + auction.getAuctionStatus();
@@ -410,6 +427,7 @@ public class ClientHandler implements Runnable {
                 + "DEPOSIT amount;"
                 + "GET_BALANCE;"
                 + "LIST_AUCTIONS;"
+                + "LIST_MY_AUCTIONS;"
                 + "GET_AUCTION auctionId;"
                 + "CREATE_ART_AUCTION name|description|startDate|endDate|startPrice|minIncrement|author;"
                 + "CREATE_ELECTRONICS_AUCTION name|description|startDate|endDate|startPrice|minIncrement|warrantyMonths;"

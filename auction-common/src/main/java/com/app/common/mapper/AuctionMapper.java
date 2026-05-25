@@ -19,10 +19,14 @@ public class AuctionMapper {
         String warranty = item instanceof Electronics
             ? String.valueOf(((Electronics) item).getWarrantyMonths())
             : null;
+        String itemType = item instanceof Electronics
+            ? "ELECTRONICS"
+            : item instanceof Vehicle ? "VEHICLE" : "ART";
 
         return new AuctionListDTO(
             auction.getId(),
             item.getId(),
+            itemType,
             item.getName(),
             currentPrice,
             auction.getAuctionStatus(),

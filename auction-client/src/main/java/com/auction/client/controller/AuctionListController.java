@@ -33,7 +33,8 @@ public class AuctionListController {
 
     @FXML
     public void initialize() {
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
+        idColumn.setText("Lo\u1ea1i s\u1ea3n ph\u1ea9m");
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("itemType"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         priceColumn.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("auctionStatus"));
@@ -50,7 +51,7 @@ public class AuctionListController {
             ProductDataManager.getInstance().getServerAuctionList().setAll(auctionService.getActiveAuctions());
         } catch (IllegalStateException ex) {
             if (messageLabel != null) {
-                messageLabel.setText("Không thể tải danh sách đấu giá.");
+                messageLabel.setText("Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch \u0111\u1ea5u gi\u00e1.");
             }
             return;
         }
@@ -62,7 +63,7 @@ public class AuctionListController {
     private void updateUIWithBalance() {
         if (accountBalanceLabel != null) {
             double balance = ProductDataManager.getInstance().getUserBalance();
-            accountBalanceLabel.setText("Ví: $" + String.format("%.2f", balance));
+            accountBalanceLabel.setText("V\u00ed: $" + String.format("%.2f", balance));
 
             // Tweak: Đổi màu nếu sắp hết tiền
             if (balance < 100) {
@@ -78,7 +79,7 @@ public class AuctionListController {
         loadAuctions();
         updateUIWithBalance();
         if (messageLabel != null) {
-            messageLabel.setText("Đã làm mới danh sách đấu giá.");
+            messageLabel.setText("\u0110\u00e3 l\u00e0m m\u1edbi danh s\u00e1ch \u0111\u1ea5u gi\u00e1.");
         }
     }
 
@@ -87,9 +88,9 @@ public class AuctionListController {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             ProductDataManager.getInstance().setSelectedAuction(selected);
-            switchScene("/fxml/ProductDetail.fxml", "Chi tiết sản phẩm");
+            switchScene("/fxml/ProductDetail.fxml", "Chi ti\u1ebft s\u1ea3n ph\u1ea9m");
         } else {
-            if (messageLabel != null) messageLabel.setText("Vui lòng chọn sản phẩm trên bảng!");
+            if (messageLabel != null) messageLabel.setText("Vui l\u00f2ng ch\u1ecdn s\u1ea3n ph\u1ea9m tr\u00ean b\u1ea3ng!");
         }
     }
 
@@ -99,7 +100,7 @@ public class AuctionListController {
         if (selected != null) {
             if (selected.getAuctionStatus() != Status.RUNNING) {
                 if (messageLabel != null) {
-                    messageLabel.setText("Phiên đấu giá chưa bắt đầu. Vui lòng đợi trạng thái RUNNING.");
+                    messageLabel.setText("Phi\u00ean \u0111\u1ea5u gi\u00e1 ch\u01b0a b\u1eaft \u0111\u1ea7u. Vui l\u00f2ng \u0111\u1ee3i tr\u1ea1ng th\u00e1i RUNNING.");
                     messageLabel.setStyle("-fx-text-fill: #ff9800;");
                 }
                 return;
@@ -107,7 +108,7 @@ public class AuctionListController {
 
             if (ProductDataManager.getInstance().isEnded(selected.getAuctionId())) {
                 if (messageLabel != null) {
-                    messageLabel.setText("Phiên đấu giá '" + selected.getName() + "' đã kết thúc!");
+                    messageLabel.setText("Phi\u00ean \u0111\u1ea5u gi\u00e1 '" + selected.getName() + "' \u0111\u00e3 k\u1ebft th\u00fac!");
                     messageLabel.setStyle("-fx-text-fill: #ff4d4d;");
                 }
                 auctionTable.refresh();
@@ -119,7 +120,7 @@ public class AuctionListController {
             try {
                 URL fxmlUrl = getClass().getResource("/fxml/LiveBidding.fxml");
                 if (fxmlUrl == null) {
-                    throw new IllegalStateException("Không tìm thấy file FXML: /fxml/LiveBidding.fxml");
+                    throw new IllegalStateException("Kh\u00f4ng t\u00ecm th\u1ea5y file FXML: /fxml/LiveBidding.fxml");
                 }
 
                 FXMLLoader loader = new FXMLLoader(fxmlUrl);
@@ -129,6 +130,7 @@ public class AuctionListController {
 
                 Product productModel = new Product(
                         selected.getAuctionId(),
+                        selected.getItemType(),
                         selected.getName(),
                         ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
                         selected.getAuctionStatus().toString(),
@@ -145,21 +147,21 @@ public class AuctionListController {
                     String css = requireStylesheet();
                 scene.getStylesheets().add(css);
 
-                stage.setTitle("Đấu giá trực tiếp");
+                stage.setTitle("\u0110\u1ea5u gi\u00e1 tr\u1ef1c ti\u1ebfp");
                 stage.setScene(scene);
                 stage.show();
 
             } catch (Exception e) {
-                throw new IllegalStateException("Không thể mở màn hình đấu giá trực tiếp.", e);
+                throw new IllegalStateException("Kh\u00f4ng th\u1ec3 m\u1edf m\u00e0n h\u00ecnh \u0111\u1ea5u gi\u00e1 tr\u1ef1c ti\u1ebfp.", e);
             }
         } else {
-            if (messageLabel != null) messageLabel.setText("Vui lòng chọn phiên để tham gia!");
+            if (messageLabel != null) messageLabel.setText("Vui l\u00f2ng ch\u1ecdn phi\u00ean \u0111\u1ec3 tham gia!");
         }
     }
 
     @FXML
     private void handleSidebarProducts() {
-        switchScene("/fxml/ProductManagement.fxml", "Quản lý sản phẩm");
+        switchScene("/fxml/ProductManagement.fxml", "Qu\u1ea3n l\u00fd s\u1ea3n ph\u1ea9m");
     }
 
     @FXML
@@ -170,7 +172,7 @@ public class AuctionListController {
     @FXML
     private void handleSidebarAccount() {
         if (messageLabel != null) {
-            messageLabel.setText("Số dư ví: $" + String.format("%.2f", ProductDataManager.getInstance().getUserBalance()));
+            messageLabel.setText("S\u1ed1 d\u01b0 v\u00ed: $" + String.format("%.2f", ProductDataManager.getInstance().getUserBalance()));
         }
     }
 
@@ -178,7 +180,7 @@ public class AuctionListController {
         try {
             URL fxmlUrl = getClass().getResource(fxmlPath);
             if (fxmlUrl == null) {
-                throw new IllegalStateException("Không tìm thấy file FXML: " + fxmlPath);
+                throw new IllegalStateException("Kh\u00f4ng t\u00ecm th\u1ea5y file FXML: " + fxmlPath);
             }
 
             Parent root = FXMLLoader.load(fxmlUrl);
@@ -189,7 +191,7 @@ public class AuctionListController {
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
-            throw new IllegalStateException("Không thể chuyển sang màn hình: " + title, e);
+            throw new IllegalStateException("Kh\u00f4ng th\u1ec3 chuy\u1ec3n sang m\u00e0n h\u00ecnh: " + title, e);
         }
     }
 
@@ -197,7 +199,7 @@ public class AuctionListController {
         String path = "/css/style.css";
         URL cssUrl = getClass().getResource(path);
         if (cssUrl == null) {
-            throw new IllegalStateException("Không tìm thấy stylesheet: " + path);
+            throw new IllegalStateException("Kh\u00f4ng t\u00ecm th\u1ea5y stylesheet: " + path);
         }
         return cssUrl.toExternalForm();
     }

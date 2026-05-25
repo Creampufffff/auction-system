@@ -4,6 +4,7 @@ import javafx.beans.property.*;
 
 public class Product {
     private final StringProperty id;
+    private final StringProperty type;
     private final StringProperty name;
     private final DoubleProperty price;
     private final StringProperty status;
@@ -12,7 +13,12 @@ public class Product {
     private final StringProperty warranty;
 
     public Product(String id, String name, double price, String status, String condition, String description, String warranty) {
+        this(id, "ART", name, price, status, condition, description, warranty);
+    }
+
+    public Product(String id, String type, String name, double price, String status, String condition, String description, String warranty) {
         this.id = new SimpleStringProperty(id);
+        this.type = new SimpleStringProperty(type);
         this.name = new SimpleStringProperty(name);
         this.price = new SimpleDoubleProperty(price);
         this.status = new SimpleStringProperty(status);
@@ -22,6 +28,7 @@ public class Product {
     }
 
     public StringProperty idProperty() { return id; }
+    public StringProperty typeProperty() { return type; }
     public StringProperty nameProperty() { return name; }
     public DoubleProperty priceProperty() { return price; }
     public StringProperty statusProperty() { return status; }
@@ -30,6 +37,7 @@ public class Product {
     public StringProperty warrantyProperty() { return warranty; }
 
     public String getId() { return id.get(); }
+    public String getType() { return type.get(); }
     public String getName() { return name.get(); }
     public double getPrice() { return price.get(); }
     public String getStatus() { return status.get(); }
@@ -42,6 +50,8 @@ public class Product {
        ============================================================ */
 
     public void setId(String value) { this.id.set(value); }
+
+    public void setType(String value) { this.type.set(value); }
 
     // Hàm này sẽ giúp fix lỗi setPrice(double) trong LiveBiddingController
     public void setPrice(double value) { this.price.set(value); }

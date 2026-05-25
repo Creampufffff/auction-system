@@ -7,12 +7,16 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public class ProductManagementController {
@@ -27,22 +31,23 @@ public class ProductManagementController {
 
     @FXML
     public void initialize() {
-        titleLabel.setText("Kho hàng của tôi");
+        titleLabel.setText("Kho h\u00e0ng c\u1ee7a t\u00f4i");
 
-        TableColumn<Product, String> idCol = new TableColumn<>("Mã SP");
-        idCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
+        TableColumn<Product, String> typeCol = new TableColumn<>("Lo\u1ea1i s\u1ea3n ph\u1ea9m");
+        typeCol.setCellValueFactory(cellData -> cellData.getValue().typeProperty());
 
-        TableColumn<Product, String> nameCol = new TableColumn<>("Tên sản phẩm");
+        TableColumn<Product, String> nameCol = new TableColumn<>("T\u00ean s\u1ea3n ph\u1ea9m");
         nameCol.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
 
-        TableColumn<Product, Number> priceCol = new TableColumn<>("Giá ($)");
+        TableColumn<Product, Number> priceCol = new TableColumn<>("Gi\u00e1 ($)");
         priceCol.setCellValueFactory(cellData -> cellData.getValue().priceProperty());
 
-        TableColumn<Product, String> statusCol = new TableColumn<>("Trạng thái");
+        TableColumn<Product, String> statusCol = new TableColumn<>("Tr\u1ea1ng th\u00e1i");
         statusCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
-        myProductsTable.getColumns().setAll(idCol, nameCol, priceCol, statusCol);
+        myProductsTable.getColumns().setAll(typeCol, nameCol, priceCol, statusCol);
         myProductsTable.setItems(productData);
+        loadMyProductsFromServer();
 
         if (backButton != null) {
             // Ốp style xanh đen UET và khử viền xám triệt để
@@ -77,18 +82,34 @@ public class ProductManagementController {
     @FXML
     private void handleAddProduct(ActionEvent event) {
         Dialog<Product> dialog = new Dialog<>();
-        dialog.setTitle("Đăng sản phẩm mới");
-        dialog.setHeaderText("Điền chi tiết kỹ thuật cho sản phẩm");
+        dialog.setTitle("\u0110\u0103ng s\u1ea3n ph\u1ea9m m\u1edbi");
+        dialog.setHeaderText("\u0110i\u1ec1n chi ti\u1ebft k\u1ef9 thu\u1eadt cho s\u1ea3n ph\u1ea9m");
 
-        ButtonType postButtonType = new ButtonType("Đăng bài", ButtonBar.ButtonData.OK_DONE);
+        ButtonType postButtonType = new ButtonType("\u0110\u0103ng b\u00e0i", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(postButtonType, ButtonType.CANCEL);
+        dialog.getDialogPane().getStyleClass().add("product-dialog-pane");
+        dialog.getDialogPane().setPrefWidth(560);
+        String dialogCss = getClass().getResource("/css/style.css").toExternalForm();
+        dialog.getDialogPane().getStylesheets().add(dialogCss);
 
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
+        grid.getStyleClass().add("product-dialog-grid");
+        grid.setHgap(14);
+        grid.setVgap(12);
+        grid.setPadding(new Insets(4, 8, 2, 8));
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        labelColumn.setMinWidth(150);
+        labelColumn.setPrefWidth(160);
+        ColumnConstraints inputColumn = new ColumnConstraints();
+        inputColumn.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().addAll(labelColumn, inputColumn);
 
         TextField nameField = new TextField();
         TextField priceField = new TextField();
+        ComboBox<String> auctionTypeBox = new ComboBox<>();
+        auctionTypeBox.getItems().addAll("ART", "ELECTRONICS", "VEHICLE");
+        auctionTypeBox.setValue("ART");
+        auctionTypeBox.setMaxWidth(Double.MAX_VALUE);
         TextField conditionField = new TextField();
         TextArea descriptionArea = new TextArea();
         descriptionArea.setPrefRowCount(3);
@@ -96,32 +117,70 @@ public class ProductManagementController {
         DatePicker startDatePicker = new DatePicker(LocalDate.now());
         DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
         TextField minIncrementField = new TextField("1");
+        Label conditionLabel = new Label("T\u00e1c gi\u1ea3:");
+        Label warrantyLabel = new Label("Th\u00f4ng tin ph\u1ee5:");
+        warrantyField.setPromptText("C\u00f3 th\u1ec3 b\u1ecf tr\u1ed1ng");
+        styleProductDialogControls(
+                nameField,
+                priceField,
+                auctionTypeBox,
+                conditionField,
+                descriptionArea,
+                warrantyField,
+                startDatePicker,
+                endDatePicker,
+                minIncrementField
+        );
 
-        grid.add(new Label("Tên sản phẩm:"), 0, 0);
+        auctionTypeBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            String selectedType = newValue == null ? "ART" : newValue;
+            if ("ELECTRONICS".equals(selectedType)) {
+                conditionLabel.setText("T\u00ecnh tr\u1ea1ng:");
+                warrantyLabel.setText("B\u1ea3o h\u00e0nh (th\u00e1ng):");
+                warrantyField.setPromptText("V\u00ed d\u1ee5: 12");
+            } else if ("VEHICLE".equals(selectedType)) {
+                conditionLabel.setText("T\u00ecnh tr\u1ea1ng:");
+                warrantyLabel.setText("H\u00e3ng xe:");
+                warrantyField.setPromptText("V\u00ed d\u1ee5: Toyota");
+            } else {
+                conditionLabel.setText("T\u00e1c gi\u1ea3:");
+                warrantyLabel.setText("Th\u00f4ng tin ph\u1ee5:");
+                warrantyField.setPromptText("C\u00f3 th\u1ec3 b\u1ecf tr\u1ed1ng");
+            }
+        });
+
+        grid.add(new Label("T\u00ean s\u1ea3n ph\u1ea9m:"), 0, 0);
         grid.add(nameField, 1, 0);
-        grid.add(new Label("Giá khởi điểm ($):"), 0, 1);
-        grid.add(priceField, 1, 1);
-        grid.add(new Label("Tình trạng:"), 0, 2);
-        grid.add(conditionField, 1, 2);
-        grid.add(new Label("Mô tả chi tiết:"), 0, 3);
-        grid.add(descriptionArea, 1, 3);
-        grid.add(new Label("Bảo hành:"), 0, 4);
-        grid.add(warrantyField, 1, 4);
-        grid.add(new Label("Ngày bắt đầu:"), 0, 5);
-        grid.add(startDatePicker, 1, 5);
-        grid.add(new Label("Ngày kết thúc:"), 0, 6);
-        grid.add(endDatePicker, 1, 6);
-        grid.add(new Label("Bước giá tối thiểu:"), 0, 7);
-        grid.add(minIncrementField, 1, 7);
+        grid.add(new Label("Lo\u1ea1i auction:"), 0, 1);
+        grid.add(auctionTypeBox, 1, 1);
+        grid.add(new Label("Gi\u00e1 kh\u1edfi \u0111i\u1ec3m ($):"), 0, 2);
+        grid.add(priceField, 1, 2);
+        grid.add(conditionLabel, 0, 3);
+        grid.add(conditionField, 1, 3);
+        grid.add(new Label("M\u00f4 t\u1ea3 chi ti\u1ebft:"), 0, 4);
+        grid.add(descriptionArea, 1, 4);
+        grid.add(warrantyLabel, 0, 5);
+        grid.add(warrantyField, 1, 5);
+        grid.add(new Label("Ng\u00e0y b\u1eaft \u0111\u1ea7u:"), 0, 6);
+        grid.add(startDatePicker, 1, 6);
+        grid.add(new Label("Ng\u00e0y k\u1ebft th\u00fac:"), 0, 7);
+        grid.add(endDatePicker, 1, 7);
+        grid.add(new Label("B\u01b0\u1edbc gi\u00e1 t\u1ed1i thi\u1ec3u:"), 0, 8);
+        grid.add(minIncrementField, 1, 8);
 
         dialog.getDialogPane().setContent(grid);
+        Button postButton = (Button) dialog.getDialogPane().lookupButton(postButtonType);
+        postButton.getStyleClass().add("product-dialog-primary-button");
+        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancelButton.getStyleClass().add("product-dialog-secondary-button");
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == postButtonType) {
                 try {
                     double price = Double.parseDouble(priceField.getText());
                     String id = "MINE-" + (productData.size() + 101);
-                    return new Product(id, nameField.getText(), price, "Đang mở",
+                    String auctionType = auctionTypeBox.getValue() == null ? "ART" : auctionTypeBox.getValue();
+                    return new Product(id, auctionType, nameField.getText(), price, "\u0110ang m\u1edf",
                             conditionField.getText(), descriptionArea.getText(), warrantyField.getText());
                 } catch (NumberFormatException e) {
                     return null;
@@ -139,46 +198,69 @@ public class ProductManagementController {
             String startDate = startDateValue != null ? startDateValue.toString() : "";
             String endDate = endDateValue != null ? endDateValue.toString() : "";
             String minIncrement = minIncrementField.getText();
-            String author = com.auction.client.session.SessionManager.getCurrentUsername();
+            String auctionType = auctionTypeBox.getValue() == null ? "ART" : auctionTypeBox.getValue();
+            String condition = escapePipe(newProduct.getCondition());
+            String extra = escapePipe(newProduct.getWarranty());
 
-            String response = auctionService.createArtAuction(
-                    name,
-                    desc,
-                    startDate,
-                    endDate,
-                    newProduct.getPrice(),
-                    minIncrement,
-                    author
-            );
+            String response = switch (auctionType) {
+                case "ELECTRONICS" -> auctionService.createElectronicsAuction(
+                        name,
+                        desc,
+                        startDate,
+                        endDate,
+                        newProduct.getPrice(),
+                        minIncrement,
+                        extra
+                );
+                case "VEHICLE" -> auctionService.createVehicleAuction(
+                        name,
+                        desc,
+                        startDate,
+                        endDate,
+                        newProduct.getPrice(),
+                        minIncrement,
+                        extra
+                );
+                default -> auctionService.createArtAuction(
+                        name,
+                        desc,
+                        startDate,
+                        endDate,
+                        newProduct.getPrice(),
+                        minIncrement,
+                        condition
+                );
+            };
 
             if (response == null || response.isBlank()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Lỗi tạo phiên đấu giá");
-                alert.setHeaderText("Không thể tạo phiên trên server");
-                alert.setContentText("Server không phản hồi.");
+                alert.setTitle("L\u1ed7i t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1");
+                alert.setHeaderText("Kh\u00f4ng th\u1ec3 t\u1ea1o phi\u00ean tr\u00ean server");
+                alert.setContentText("Server kh\u00f4ng ph\u1ea3n h\u1ed3i.");
                 alert.showAndWait();
                 return;
             }
 
             if (response.startsWith("ERR|")) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Lỗi tạo phiên đấu giá");
-                alert.setHeaderText("Không thể tạo phiên trên server");
+                alert.setTitle("L\u1ed7i t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1");
+                alert.setHeaderText("Kh\u00f4ng th\u1ec3 t\u1ea1o phi\u00ean tr\u00ean server");
                 alert.setContentText(response.substring(4));
                 alert.showAndWait();
                 return;
             }
 
-            if (response.startsWith("OK|CREATE_ART_AUCTION|")) {
+            String expectedPrefix = "OK|CREATE_" + auctionType + "_AUCTION|";
+            if (response.startsWith(expectedPrefix)) {
                 String[] parts = response.split("\\|", 4);
                 if (parts.length >= 3) {
                     newProduct.setId(parts[2]);
                 }
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Lỗi tạo phiên đấu giá");
-                alert.setHeaderText("Không thể tạo phiên trên server");
-                alert.setContentText("Phản hồi không hợp lệ: " + response);
+                alert.setTitle("L\u1ed7i t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1");
+                alert.setHeaderText("Kh\u00f4ng th\u1ec3 t\u1ea1o phi\u00ean tr\u00ean server");
+                alert.setContentText("Ph\u1ea3n h\u1ed3i kh\u00f4ng h\u1ee3p l\u1ec7: " + response);
                 alert.showAndWait();
                 return;
             }
@@ -195,14 +277,42 @@ public class ProductManagementController {
         return input.replace("|", " ");
     }
 
+    private void styleProductDialogControls(Control... controls) {
+        for (Control control : controls) {
+            control.getStyleClass().add("product-dialog-input");
+            control.setMaxWidth(Double.MAX_VALUE);
+        }
+    }
+
+    private void loadMyProductsFromServer() {
+        try {
+            List<Product> products = auctionService.getMyAuctions()
+                    .stream()
+                    .map(auction -> new Product(
+                            auction.getAuctionId(),
+                            auction.getItemType(),
+                            auction.getName(),
+                            auction.getCurrentPrice(),
+                            auction.getAuctionStatus().toString(),
+                            auction.getCondition(),
+                            auction.getDescription(),
+                            auction.getWarranty()
+                    ))
+                    .collect(java.util.stream.Collectors.toList());
+            productData.setAll(products);
+        } catch (IllegalStateException e) {
+            System.err.println("Cannot load seller products: " + e.getMessage());
+        }
+    }
+
     @FXML
     private void handleEditProduct(ActionEvent event) {
         Product selected = myProductsTable.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
         TextInputDialog nameDialog = new TextInputDialog(selected.getName());
-        nameDialog.setTitle("Sửa nhanh");
-        nameDialog.setHeaderText("Cập nhật tên sản phẩm:");
+        nameDialog.setTitle("S\u1eeda nhanh");
+        nameDialog.setHeaderText("C\u1eadp nh\u1eadt t\u00ean s\u1ea3n ph\u1ea9m:");
         nameDialog.showAndWait().ifPresent(newName -> {
             selected.nameProperty().set(newName);
             myProductsTable.refresh();

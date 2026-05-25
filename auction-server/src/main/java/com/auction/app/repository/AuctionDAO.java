@@ -10,6 +10,8 @@ public interface AuctionDAO extends BaseDAO<Auction> {
 
     List<Auction> findRunningAuctions();
 
+    List<Auction> findBySellerId(String sellerId);
+
     boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion);
 
     boolean settleAndFinishAuction(String auctionId);

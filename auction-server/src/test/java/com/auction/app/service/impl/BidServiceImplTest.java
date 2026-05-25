@@ -122,6 +122,11 @@ class BidServiceImplTest {
         }
 
         @Override
+        public List<Auction> findBySellerId(String sellerId) {
+            return List.of();
+        }
+
+        @Override
         public boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion) {
             return true;
         }

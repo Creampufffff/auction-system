@@ -105,7 +105,7 @@ public class ProductDataManager {
 
     public void pushToGlobalAuction(Product p) {
         AuctionListDTO dto = new AuctionListDTO(
-                p.getId(), "ITEM-" + p.getId(), p.getName(), p.getPrice(),
+                p.getId(), "ITEM-" + p.getId(), p.getType(), p.getName(), p.getPrice(),
                 Status.OPEN, p.getCondition(), p.getDescription(), p.getWarranty()
         );
         if (serverAuctionList.stream().noneMatch(a -> a.getAuctionId().equals(p.getId()))) {

@@ -63,6 +63,11 @@ public class AuctionController {
         List<Auction> auctions = auctionService.getActiveAuctions();
         return AuctionMapper.toListDTOs(auctions);
     }
+
+    public List<AuctionListDTO> getAuctionsBySellerId(String sellerId) {
+        List<Auction> auctions = auctionService.getAuctionsBySellerId(sellerId);
+        return AuctionMapper.toListDTOs(auctions);
+    }
 }
 
 

@@ -106,6 +106,14 @@ public class AuctionServiceImpl implements AuctionService {
         return auctionDAO.findActiveAuctions();
     }
 
+    @Override
+    public List<Auction> getAuctionsBySellerId(String sellerId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new IllegalArgumentException("Seller ID cannot be empty");
+        }
+        return auctionDAO.findBySellerId(sellerId);
+    }
+
     private void validateId(String id) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Auction ID cannot be empty");

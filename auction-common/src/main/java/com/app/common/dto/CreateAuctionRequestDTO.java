@@ -28,8 +28,8 @@ public class CreateAuctionRequestDTO implements Serializable {
                                   String itemType) {
         this.itemName = itemName;
         this.description = description;
-        this.condition = condition;
-        this.warranty = warranty;
+        this.condition = condition; // author for art
+        this.warranty = warranty; // warranty months for electronics, brand for vehicle
         this.startPrice = startPrice;
         this.minIncrement = minIncrement;
         this.startDateTime = startDateTime;

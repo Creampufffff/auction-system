@@ -94,6 +94,14 @@ class AuctionServiceImplTest {
         }
 
         @Override
+        public List<Auction> findBySellerId(String sellerId) {
+            if (savedAuction == null || savedAuction.getItem() == null) {
+                return List.of();
+            }
+            return sellerId.equals(savedAuction.getItem().getSellerId()) ? List.of(savedAuction) : List.of();
+        }
+
+        @Override
         public boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion) {
             return true;
         }

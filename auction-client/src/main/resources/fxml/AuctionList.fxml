@@ -138,7 +138,7 @@
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
             </columnResizePolicy>
             <columns>
-                <TableColumn fx:id="idColumn" text="Mã phiên"/>
+                <TableColumn fx:id="idColumn" text="Loai san pham"/>
                 <TableColumn fx:id="nameColumn" text="Sản phẩm"/>
                 <TableColumn fx:id="priceColumn" text="Giá hiện tại"/>
                 <TableColumn fx:id="statusColumn" text="Trạng thái"/>
