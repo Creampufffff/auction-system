@@ -1,8 +1,10 @@
 package com.auction.client.controller;
 
+import com.app.common.dto.BalanceResponseDTO;
 import com.app.common.dto.PlaceBidResponseDTO;
 import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
+import com.auction.client.service.AccountService;
 import com.auction.client.service.AuctionService;
 import com.auction.client.session.SessionManager;
 import javafx.application.Platform;
@@ -13,6 +15,12 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -28,10 +36,11 @@ public class LiveBiddingController {
 
     private Product currentProduct;
     private Timer timer;
-    private int timeLeft = 30;
+    private long timeLeft;
     private ObservableList<String> bidHistory;
     private static LiveBiddingController activeController;
     private final AuctionService auctionService = new AuctionService();
+    private final AccountService accountService = new AccountService();
 
     @FXML
     public void initialize() {
@@ -59,6 +68,15 @@ public class LiveBiddingController {
         Platform.runLater(() -> controller.applyExternalAuctionEnded(auctionId));
     }
 
+    public static void onAuctionExtended(String auctionId, String newEndDateTime) {
+        LiveBiddingController controller = activeController;
+        if (controller == null) {
+            return;
+        }
+
+        Platform.runLater(() -> controller.applyExternalAuctionExtended(auctionId, newEndDateTime));
+    }
+
     private void updateBalanceUI() {
         if (accountBalanceLabel != null) {
             double balance = ProductDataManager.getInstance().getUserBalance();
@@ -66,10 +84,24 @@ public class LiveBiddingController {
         }
     }
 
+    private void refreshBalanceFromServer() {
+        BalanceResponseDTO response = accountService.getBalance();
+        if (response != null && response.getUserId() != null) {
+            ProductDataManager.getInstance().setUserBalance(response.getBalance());
+        }
+        updateBalanceUI();
+    }
+
+    private String getCurrentDisplayName() {
+        String username = SessionManager.getCurrentUsername();
+        return username == null || username.isBlank() ? "Bạn" : username;
+    }
+
     @FXML
     private void handlePlaceBid() {
         if (currentProduct == null) return;
 
+        timeLeft = calculateSecondsRemaining(currentProduct.getEndDateTime());
         if (timeLeft <= 0) {
             showAlert("Thông báo", "Phiên đấu giá đã kết thúc!");
             return;
@@ -94,26 +126,18 @@ public class LiveBiddingController {
                 }
 
                 ProductDataManager manager = ProductDataManager.getInstance();
-                double previouslyHeld = manager.getHeldMoney(currentProduct.getId());
-                manager.refundBalance(previouslyHeld);
-                manager.deductBalance(bidAmount);
-                manager.setHeldMoney(currentProduct.getId(), bidAmount);
-                manager.setLeadingUser(currentProduct.getId(), "Bạn");
+                String displayName = getCurrentDisplayName();
+                manager.setLeadingUser(currentProduct.getId(), displayName);
 
                 currentProduct.setPrice(bidAmount);
                 currentPriceLabel.setText("$" + String.format("%.2f", bidAmount));
                 manager.setCurrentPrice(currentProduct.getId(), bidAmount);
 
-                updateBalanceUI();
+                refreshBalanceFromServer();
 
-                bidHistory.add(0, "Bạn đã đặt giá thành công: $" + bidAmount);
+                bidHistory.add(0, displayName + " đã đặt giá thành công: $" + bidAmount);
                 bidAmountField.clear();
 
-                if (timeLeft <= 30) {
-                    timeLeft += 30;
-                    manager.setTimeLeft(currentProduct.getId(), timeLeft);
-                    bidHistory.add(0, "⚠️ Hệ thống: Gia hạn thêm 30 giây!");
-                }
             } else {
                 showAlert("Giá thầu thấp", "Bạn phải đặt cao hơn $" + currentPrice);
             }
@@ -133,7 +157,7 @@ public class LiveBiddingController {
         currentPriceLabel.setText("$" + String.format("%.2f", savedPrice));
         this.currentProduct.setPrice(savedPrice);
 
-        this.timeLeft = ProductDataManager.getInstance().getTimeLeft(product.getId(), 30);
+        this.timeLeft = calculateSecondsRemaining(product.getEndDateTime());
 
         this.bidHistory = ProductDataManager.getInstance().getHistoryForProduct(product.getId());
         this.bidHistory.clear();
@@ -141,16 +165,11 @@ public class LiveBiddingController {
 
         // Sử dụng chuỗi rỗng làm mặc định để check logic sạch hơn
         String leader = ProductDataManager.getInstance().getLeadingUser(product.getId(), "");
-        double myHeldMoney = ProductDataManager.getInstance().getHeldMoney(product.getId());
 
-        if (myHeldMoney > 0) {
-            bidHistory.add(0, "ℹ️ Bạn đang dẫn đầu sàn này với: $" + myHeldMoney);
+        if (!leader.isEmpty()) {
+            bidHistory.add(0, "ℹ️ Người đang dẫn đầu: " + leader + " ($" + savedPrice + ")");
         } else {
-            if (!leader.isEmpty()) {
-                bidHistory.add(0, "ℹ️ Người đang dẫn đầu: " + leader + " ($" + savedPrice + ")");
-            } else {
-                bidHistory.add(0, "ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
-            }
+            bidHistory.add(0, "ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
         }
 
         if (timeLeft <= 0) {
@@ -182,12 +201,12 @@ public class LiveBiddingController {
                         return;
                     }
 
-                    timeLeft = ProductDataManager.getInstance().getTimeLeft(currentProduct.getId(), 30);
+                    timeLeft = calculateSecondsRemaining(currentProduct.getEndDateTime());
 
-                    if (timeLeft > 0) {
-                        int mins = timeLeft / 60;
-                        int secs = timeLeft % 60;
-                        timerLabel.setText(String.format("%02d:%02d", mins, secs));
+                    if (timeLeft == Long.MAX_VALUE) {
+                        timerLabel.setText("Chưa rõ thời gian kết thúc");
+                    } else if (timeLeft > 0) {
+                        timerLabel.setText(formatTimeLeft(timeLeft));
                     } else {
                         timerLabel.setText("HẾT GIỜ");
                         timerLabel.setStyle("-fx-text-fill: #ff4d4d; -fx-font-weight: bold;");
@@ -200,13 +219,58 @@ public class LiveBiddingController {
                             String winnerName = ProductDataManager.getInstance().getLeadingUser(currentProduct.getId(), "");
                             showWinnerDialog(winnerName);
 
-                            ProductDataManager.getInstance().closeAuction(currentProduct.getId());
                             stopTimer();
                         }
                     }
                 });
             }
         }, 0, 1000);
+    }
+
+    private long calculateSecondsRemaining(String endDateTime) {
+        LocalDateTime endTime = parseEndDateTime(endDateTime);
+        if (endTime == null) {
+            return Long.MAX_VALUE;
+        }
+        return Duration.between(LocalDateTime.now(), endTime).getSeconds();
+    }
+
+    private String formatTimeLeft(long secondsRemaining) {
+        long days = secondsRemaining / 86400;
+        long hours = (secondsRemaining % 86400) / 3600;
+        long minutes = (secondsRemaining % 3600) / 60;
+        long seconds = secondsRemaining % 60;
+
+        if (days > 0) {
+            return String.format("%d ngày %02d:%02d:%02d", days, hours, minutes, seconds);
+        }
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    private LocalDateTime parseEndDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (value.contains("|")) {
+            value = value.split("\\|", 2)[0];
+        }
+
+        for (DateTimeFormatter formatter : List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )) {
+            try {
+                return LocalDateTime.parse(value, formatter);
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        try {
+            return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE).atTime(23, 59, 59);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 
     private void applyExternalBidUpdate(String auctionId, double currentPrice, String leadingBidderId) {
@@ -218,25 +282,16 @@ public class LiveBiddingController {
         String currentUserId = SessionManager.getCurrentUserId();
         boolean isMe = currentUserId != null && currentUserId.equals(leadingBidderId);
 
-        if (!isMe) {
-            double heldMoney = manager.getHeldMoney(auctionId);
-            if (heldMoney > 0) {
-                manager.refundBalance(heldMoney);
-                manager.setHeldMoney(auctionId, 0.0);
-            }
-        } else {
-            manager.setHeldMoney(auctionId, currentPrice);
-        }
-
         currentProduct.setPrice(currentPrice);
         currentPriceLabel.setText("$" + String.format("%.2f", currentPrice));
         manager.setCurrentPrice(auctionId, currentPrice);
-        manager.setLeadingUser(auctionId, isMe ? "Bạn" : leadingBidderId);
-        updateBalanceUI();
+        String displayName = isMe ? getCurrentDisplayName() : leadingBidderId;
+        manager.setLeadingUser(auctionId, displayName);
+        refreshBalanceFromServer();
 
         if (bidHistory != null) {
             bidHistory.add(0, isMe
-                    ? "Bạn đã được cập nhật giá dẫn đầu: $" + currentPrice
+                    ? displayName + " đã được cập nhật giá dẫn đầu: $" + currentPrice
                     : "Người khác đã đặt giá: $" + currentPrice + " (" + leadingBidderId + ")");
         }
     }
@@ -253,6 +308,19 @@ public class LiveBiddingController {
 
         if (bidHistory != null) {
             bidHistory.add(0, "🏁 Phiên đấu giá đã kết thúc.");
+        }
+    }
+
+    private void applyExternalAuctionExtended(String auctionId, String newEndDateTime) {
+        if (currentProduct == null || auctionId == null || !auctionId.equals(currentProduct.getId())) {
+            return;
+        }
+
+        currentProduct.setEndDateTime(newEndDateTime);
+        ProductDataManager.getInstance().updateAuctionEndDate(auctionId, newEndDateTime);
+        bidAmountField.setDisable(false);
+        if (bidHistory != null) {
+            bidHistory.add(0, "Hệ thống: Phiên đấu giá đã được gia hạn.");
         }
     }
 

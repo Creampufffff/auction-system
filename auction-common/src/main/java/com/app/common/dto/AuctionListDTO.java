@@ -18,6 +18,8 @@ public class AuctionListDTO implements Serializable {
     private String condition;
     private String description;
     private String warranty;
+    private String startDateTime;
+    private String endDateTime;
 
     public AuctionListDTO() {
     }
@@ -33,6 +35,22 @@ public class AuctionListDTO implements Serializable {
             String description,
             String warranty
     ) {
+        this(auctionId, itemId, itemType, name, currentPrice, auctionStatus, condition, description, warranty, null, null);
+    }
+
+    public AuctionListDTO(
+            String auctionId,
+            String itemId,
+            String itemType,
+            String name,
+            double currentPrice,
+            Status auctionStatus,
+            String condition,
+            String description,
+            String warranty,
+            String startDateTime,
+            String endDateTime
+    ) {
         this.auctionId = auctionId;
         this.itemId = itemId;
         this.itemType = itemType;
@@ -42,6 +60,8 @@ public class AuctionListDTO implements Serializable {
         this.condition = condition;
         this.description = description;
         this.warranty = warranty;
+        this.startDateTime = startDateTime;
+        this.endDateTime = endDateTime;
     }
 
 }

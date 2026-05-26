@@ -327,6 +327,14 @@ public final class SocketClientService {
                 if (parts.length >= 3) {
                     handleAuctionEnded(parts[2]);
                 }
+                return;
+            }
+
+            if (message.startsWith("EVENT|AUCTION_EXTENDED|")) {
+                String[] parts = message.split("\\|", 4);
+                if (parts.length >= 4) {
+                    handleAuctionExtended(parts[2], parts[3]);
+                }
             }
         } catch (Exception e) {
             System.err.println("Cannot process realtime message: " + message + " | " + e.getMessage());
@@ -352,6 +360,16 @@ public final class SocketClientService {
         ProductDataManager manager = ProductDataManager.getInstance();
         manager.closeAuction(auctionId);
         LiveBiddingController.onAuctionEnded(auctionId);
+    }
+
+    private static void handleAuctionExtended(String auctionId, String newEndDateTime) {
+        if (auctionId == null || auctionId.isBlank()) {
+            return;
+        }
+
+        ProductDataManager manager = ProductDataManager.getInstance();
+        manager.updateAuctionEndDate(auctionId, newEndDateTime);
+        LiveBiddingController.onAuctionExtended(auctionId, newEndDateTime);
     }
 
     private static double parseDouble(String value) {

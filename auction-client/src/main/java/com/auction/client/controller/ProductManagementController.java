@@ -16,10 +16,16 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 
 public class ProductManagementController {
+    private static final DateTimeFormatter AUCTION_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML private TableView<Product> myProductsTable;
     @FXML private Label titleLabel;
@@ -116,10 +122,14 @@ public class ProductManagementController {
         TextField warrantyField = new TextField();
         DatePicker startDatePicker = new DatePicker(LocalDate.now());
         DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
+        TextField startTimeField = new TextField("09:00");
+        TextField endTimeField = new TextField("18:00");
         TextField minIncrementField = new TextField("1");
         Label conditionLabel = new Label("T\u00e1c gi\u1ea3:");
         Label warrantyLabel = new Label("Th\u00f4ng tin ph\u1ee5:");
         warrantyField.setPromptText("C\u00f3 th\u1ec3 b\u1ecf tr\u1ed1ng");
+        startTimeField.setPromptText("HH:mm");
+        endTimeField.setPromptText("HH:mm");
         styleProductDialogControls(
                 nameField,
                 priceField,
@@ -129,6 +139,8 @@ public class ProductManagementController {
                 warrantyField,
                 startDatePicker,
                 endDatePicker,
+                startTimeField,
+                endTimeField,
                 minIncrementField
         );
 
@@ -163,14 +175,31 @@ public class ProductManagementController {
         grid.add(warrantyField, 1, 5);
         grid.add(new Label("Ng\u00e0y b\u1eaft \u0111\u1ea7u:"), 0, 6);
         grid.add(startDatePicker, 1, 6);
-        grid.add(new Label("Ng\u00e0y k\u1ebft th\u00fac:"), 0, 7);
-        grid.add(endDatePicker, 1, 7);
-        grid.add(new Label("B\u01b0\u1edbc gi\u00e1 t\u1ed1i thi\u1ec3u:"), 0, 8);
-        grid.add(minIncrementField, 1, 8);
+        grid.add(new Label("Gi\u1edd b\u1eaft \u0111\u1ea7u:"), 0, 7);
+        grid.add(startTimeField, 1, 7);
+        grid.add(new Label("Ng\u00e0y k\u1ebft th\u00fac:"), 0, 8);
+        grid.add(endDatePicker, 1, 8);
+        grid.add(new Label("Gi\u1edd k\u1ebft th\u00fac:"), 0, 9);
+        grid.add(endTimeField, 1, 9);
+        grid.add(new Label("B\u01b0\u1edbc gi\u00e1 t\u1ed1i thi\u1ec3u:"), 0, 10);
+        grid.add(minIncrementField, 1, 10);
 
         dialog.getDialogPane().setContent(grid);
         Button postButton = (Button) dialog.getDialogPane().lookupButton(postButtonType);
         postButton.getStyleClass().add("product-dialog-primary-button");
+        postButton.addEventFilter(ActionEvent.ACTION, actionEvent -> {
+            if (!validateAuctionDialogInput(
+                    nameField,
+                    priceField,
+                    startDatePicker,
+                    startTimeField,
+                    endDatePicker,
+                    endTimeField,
+                    minIncrementField
+            )) {
+                actionEvent.consume();
+            }
+        });
         Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
         cancelButton.getStyleClass().add("product-dialog-secondary-button");
 
@@ -195,8 +224,9 @@ public class ProductManagementController {
             String desc = escapePipe(newProduct.getDescription());
             LocalDate startDateValue = startDatePicker.getValue();
             LocalDate endDateValue = endDatePicker.getValue();
-            String startDate = startDateValue != null ? startDateValue.toString() : "";
-            String endDate = endDateValue != null ? endDateValue.toString() : "";
+            String startDate = buildDateTimeString(startDateValue, startTimeField);
+            String endDate = buildDateTimeString(endDateValue, endTimeField);
+            newProduct.setEndDateTime(endDate);
             String minIncrement = minIncrementField.getText();
             String auctionType = auctionTypeBox.getValue() == null ? "ART" : auctionTypeBox.getValue();
             String condition = escapePipe(newProduct.getCondition());
@@ -284,6 +314,83 @@ public class ProductManagementController {
         }
     }
 
+    private boolean validateAuctionDialogInput(
+            TextField nameField,
+            TextField priceField,
+            DatePicker startDatePicker,
+            TextField startTimeField,
+            DatePicker endDatePicker,
+            TextField endTimeField,
+            TextField minIncrementField
+    ) {
+        if (nameField.getText() == null || nameField.getText().isBlank()) {
+            showDialogError("T\u00ean s\u1ea3n ph\u1ea9m kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng.");
+            return false;
+        }
+
+        try {
+            double price = Double.parseDouble(priceField.getText().trim());
+            double minIncrement = Double.parseDouble(minIncrementField.getText().trim());
+            if (price <= 0 || minIncrement <= 0) {
+                showDialogError("Gi\u00e1 v\u00e0 b\u01b0\u1edbc gi\u00e1 ph\u1ea3i l\u1edbn h\u01a1n 0.");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            showDialogError("Gi\u00e1 v\u00e0 b\u01b0\u1edbc gi\u00e1 ph\u1ea3i l\u00e0 s\u1ed1 h\u1ee3p l\u1ec7.");
+            return false;
+        }
+
+        if (startDatePicker.getValue() == null || endDatePicker.getValue() == null) {
+            showDialogError("Vui l\u00f2ng ch\u1ecdn ng\u00e0y b\u1eaft \u0111\u1ea7u v\u00e0 ng\u00e0y k\u1ebft th\u00fac.");
+            return false;
+        }
+
+        try {
+            LocalDateTime startDateTime = buildDateTime(startDatePicker.getValue(), startTimeField);
+            LocalDateTime endDateTime = buildDateTime(endDatePicker.getValue(), endTimeField);
+            if (!endDateTime.isAfter(startDateTime)) {
+                showDialogError("Th\u1eddi gian k\u1ebft th\u00fac ph\u1ea3i sau th\u1eddi gian b\u1eaft \u0111\u1ea7u.");
+                return false;
+            }
+        } catch (DateTimeParseException e) {
+            showDialogError("Gi\u1edd ph\u1ea3i c\u00f3 \u0111\u1ecbnh d\u1ea1ng HH:mm, v\u00ed d\u1ee5 09:00 ho\u1eb7c 18:30.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private String buildDateTimeString(LocalDate date, TextField timeField) {
+        return buildDateTime(date, timeField).format(AUCTION_DATE_TIME_FORMATTER);
+    }
+
+    private LocalDateTime buildDateTime(LocalDate date, TextField timeField) {
+        return LocalDateTime.of(date, parseTime(timeField.getText()));
+    }
+
+    private LocalTime parseTime(String value) {
+        if (value == null) {
+            throw new DateTimeParseException("Time is empty", "", 0);
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.matches("\\d{1,2}:\\d{2}")) {
+            return LocalTime.parse(trimmed, DateTimeFormatter.ofPattern("H:mm"));
+        }
+        if (trimmed.matches("\\d{1,2}:\\d{2}:\\d{2}")) {
+            return LocalTime.parse(trimmed, DateTimeFormatter.ofPattern("H:mm:ss"));
+        }
+        throw new DateTimeParseException("Invalid time", trimmed, 0);
+    }
+
+    private void showDialogError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("D\u1eef li\u1ec7u kh\u00f4ng h\u1ee3p l\u1ec7");
+        alert.setHeaderText("Vui l\u00f2ng ki\u1ec3m tra th\u00f4ng tin \u0111\u1ea5u gi\u00e1");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
     private void loadMyProductsFromServer() {
         try {
             List<Product> products = auctionService.getMyAuctions()
@@ -296,7 +403,8 @@ public class ProductManagementController {
                             auction.getAuctionStatus().toString(),
                             auction.getCondition(),
                             auction.getDescription(),
-                            auction.getWarranty()
+                            auction.getWarranty(),
+                            auction.getEndDateTime()
                     ))
                     .collect(java.util.stream.Collectors.toList());
             productData.setAll(products);

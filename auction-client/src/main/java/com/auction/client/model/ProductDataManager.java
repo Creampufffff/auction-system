@@ -2,9 +2,15 @@ package com.auction.client.model;
 
 import com.app.common.dto.AuctionListDTO;
 import com.app.common.enums.Status;
+import com.auction.client.session.SessionManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,6 +56,22 @@ public class ProductDataManager {
     public void refundBalance(double amount) { this.userBalance += amount; }
     public double getHeldMoney(String auctionId) { return userHeldMoneyMap.getOrDefault(auctionId, 0.0); }
     public void setHeldMoney(String auctionId, double amount) { userHeldMoneyMap.put(auctionId, amount); }
+
+    public void syncBalanceFromSession() {
+        if (SessionManager.isLoggedIn()) {
+            userBalance = SessionManager.getCurrentUserBalance();
+        }
+    }
+
+    public void resetSessionState() {
+        userBalance = 5000.0;
+        userHeldMoneyMap.clear();
+        leadingUserMap.clear();
+        dialogShownMap.clear();
+        currentPriceMap.clear();
+        timeLeftMap.clear();
+        selectedAuction = null;
+    }
 
     private void startGlobalCountdown() {
         globalTimer = new Timer(true);
@@ -125,7 +147,11 @@ public class ProductDataManager {
     public void setSelectedAuction(AuctionListDTO auction) { this.selectedAuction = auction; }
 
     public boolean isEnded(String auctionId) {
-        return getTimeLeft(auctionId, 30) <= 0;
+        return serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .map(a -> isEndDateReached(a.getEndDateTime()))
+                .orElse(false);
     }
 
     public void closeAuction(String auctionId) {
@@ -135,6 +161,13 @@ public class ProductDataManager {
                 .ifPresent(a -> {
                     a.setAuctionStatus(Status.FINISHED);
                 });
+    }
+
+    public void updateAuctionEndDate(String auctionId, String endDateTime) {
+        serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .ifPresent(a -> a.setEndDateTime(endDateTime));
     }
 
     public String getLeadingUser(String auctionId, String defaultUser) {
@@ -157,5 +190,36 @@ public class ProductDataManager {
         serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
         // Dọn dẹp luôn trạng thái dialog
         dialogShownMap.remove(auctionId);
+    }
+
+    private boolean isEndDateReached(String endDateTime) {
+        LocalDateTime endTime = parseEndDateTime(endDateTime);
+        return endTime != null && !LocalDateTime.now().isBefore(endTime);
+    }
+
+    private LocalDateTime parseEndDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (value.contains("|")) {
+            value = value.split("\\|", 2)[0];
+        }
+
+        for (DateTimeFormatter formatter : List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )) {
+            try {
+                return LocalDateTime.parse(value, formatter);
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        try {
+            return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE).atTime(23, 59, 59);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 }

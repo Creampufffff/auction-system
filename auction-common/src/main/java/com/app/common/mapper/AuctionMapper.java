@@ -32,7 +32,9 @@ public class AuctionMapper {
             auction.getAuctionStatus(),
             null,
             item.getDescription(),
-            warranty
+            warranty,
+            item.getStartDateString(),
+            item.getEndDateString()
         );
     }
 

@@ -56,9 +56,9 @@ public class AuctionApplication {
                 userController, auctionController, bidController, autoBidController);
 
         AuctionManager auctionManager = AuctionManager.getInstance();
-        auctionManager.startAutoClose(auctionService, server);
+        auctionManager.startStatusSync(auctionService, server);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(auctionManager::stopAutoClose));
+        Runtime.getRuntime().addShutdownHook(new Thread(auctionManager::stopStatusSync));
 
         System.out.println("Khởi động Auction Server trên port " + port + "...");
         server.start();

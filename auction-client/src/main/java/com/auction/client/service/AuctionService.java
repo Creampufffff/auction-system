@@ -249,6 +249,10 @@ public class AuctionService {
                 auction.setName(fields[3]);
                 auction.setCurrentPrice(Double.parseDouble(fields[4]));
                 auction.setAuctionStatus(Status.valueOf(fields[5]));
+                if (fields.length >= 8) {
+                    auction.setStartDateTime(fields[6]);
+                    auction.setEndDateTime(fields[7]);
+                }
             } else {
                 auction.setItemType("ART");
                 auction.setName(fields[2]);

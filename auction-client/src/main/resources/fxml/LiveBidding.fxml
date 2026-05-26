@@ -45,9 +45,9 @@
                 </HBox>
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
-            <VBox alignment="CENTER_RIGHT" spacing="5" style="-fx-background-color: #172033; -fx-padding: 10 20; -fx-background-radius: 10;">
+            <VBox alignment="CENTER_RIGHT" spacing="5" style="-fx-background-color: #172033; -fx-padding: 12 24; -fx-background-radius: 10;">
                 <Label text="THỜI GIAN CÒN LẠI" style="-fx-font-size: 10px; -fx-text-fill: #8fb2ff;"/>
-                <Label fx:id="timerLabel" text="00:00" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; -fx-font-family: 'Monospaced';"/>
+                <Label fx:id="timerLabel" text="00:00" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white; -fx-font-family: 'Monospaced';"/>
             </VBox>
         </HBox>
 

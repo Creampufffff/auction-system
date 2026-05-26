@@ -37,17 +37,17 @@ public class AuctionManager {
         return AuctionManagerInstanceHolder.AuctionManagerInstance;
     }
 
-    public synchronized void startAutoClose(AuctionService auctionService) {
-        startAutoClose(auctionService, null);
+    public synchronized void startStatusSync(AuctionService auctionService) {
+        startStatusSync(auctionService, null);
     }
 
-    public synchronized void startAutoClose(AuctionService auctionService, AuctionSocketServer socketServer) {
+    public synchronized void startStatusSync(AuctionService auctionService, AuctionSocketServer socketServer) {
         if (started) {
             return;
         }
 
         scheduler.scheduleAtFixedRate(
-                () -> closeExpiredAuctions(auctionService, socketServer),
+                () -> syncAuctionStatuses(auctionService, socketServer),
                 0,
                 CHECK_INTERVAL_SECONDS,
                 TimeUnit.SECONDS
@@ -55,61 +55,97 @@ public class AuctionManager {
         started = true;
     }
 
-    public synchronized void stopAutoClose() {
+    public synchronized void stopStatusSync() {
         scheduler.shutdownNow();
         started = false;
     }
 
-    private void closeExpiredAuctions(AuctionService auctionService, AuctionSocketServer socketServer) {
+    private void syncAuctionStatuses(AuctionService auctionService, AuctionSocketServer socketServer) {
         try {
             LocalDateTime now = LocalDateTime.now();
             List<Auction> activeAuctions = auctionService.getActiveAuctions();
 
             for (Auction auction : activeAuctions) {
                 try {
-                    if (auction.getAuctionStatus() != Status.RUNNING) {
-                        continue;
-                    }
-
                     if (auction.getItem() == null) {
-                        System.err.println("Auto-close warning: auction " + auction.getId() + " has no item");
+                        System.err.println("Auction status sync warning: auction " + auction.getId() + " has no item");
                         continue;
                     }
 
+                    LocalDateTime startTime = parseStartTime(auction.getItem().getStartDateString());
                     LocalDateTime endTime = parseEndTime(auction.getItem().getEndDateString());
+
+                    // End time wins first, so an expired OPEN auction is not started accidentally.
                     if (endTime != null && !now.isBefore(endTime)) {
                         auctionService.endAuction(auction.getId());
                         if (socketServer != null) {
                             socketServer.broadcast("EVENT|AUCTION_ENDED|" + auction.getId());
                         }
+                        continue;
+                    }
+
+                    // Auto-start auctions once their configured start time has arrived.
+                    if (auction.getAuctionStatus() == Status.OPEN
+                            && startTime != null
+                            && !now.isBefore(startTime)) {
+                        auctionService.startAuction(auction.getId());
+                        if (socketServer != null) {
+                            socketServer.broadcast("EVENT|AUCTION_STARTED|" + auction.getId());
+                        }
                     }
                 } catch (Exception e) {
-                    System.err.println("Auto-close error when processing auction " + auction.getId() + ": " + e.getMessage());
+                    System.err.println("Auction status sync error when processing auction " + auction.getId() + ": " + e.getMessage());
                 }
             }
         } catch (Exception e) {
-            System.err.println("Auto-close general error: " + e.getMessage());
+            System.err.println("Auction status sync general error: " + e.getMessage());
+        }
+    }
+
+    private LocalDateTime parseStartTime(String startDateString) {
+        LocalDateTime dateTime = parseDateTime(startDateString);
+        if (dateTime != null) {
+            return dateTime;
+        }
+
+        try {
+            return LocalDate.parse(startDateString, DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+        } catch (Exception ignored) {
+            return null;
         }
     }
 
     private LocalDateTime parseEndTime(String endDateString) {
-        if (endDateString == null || endDateString.isBlank()) {
+        LocalDateTime dateTime = parseDateTime(endDateString);
+        if (dateTime != null) {
+            return dateTime;
+        }
+
+        try {
+            return LocalDate.parse(endDateString, DateTimeFormatter.ISO_LOCAL_DATE).atTime(23, 59, 59);
+        } catch (Exception ignored) {
             return null;
+        }
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        if (value.contains("|")) {
+            value = value.split("\\|", 2)[0];
         }
 
         for (DateTimeFormatter formatter : SUPPORTED_FORMATS) {
             try {
-                return LocalDateTime.parse(endDateString, formatter);
+                return LocalDateTime.parse(value, formatter);
             } catch (DateTimeParseException ignored) {
 
             }
         }
 
-        try {
-            return LocalDate.parse(endDateString, DateTimeFormatter.ISO_LOCAL_DATE).atTime(23, 59, 59);
-        } catch (DateTimeParseException ignored) {
-            return null;
-        }
+        return null;
     }
 
 }

@@ -416,7 +416,13 @@ public class ClientHandler implements Runnable {
                 + "," + auction.getItemType()
                 + "," + auction.getName()
                 + "," + auction.getCurrentPrice()
-                + "," + auction.getAuctionStatus();
+                + "," + auction.getAuctionStatus()
+                + "," + nullToEmpty(auction.getStartDateTime())
+                + "," + nullToEmpty(auction.getEndDateTime());
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private String help() {

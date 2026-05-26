@@ -142,12 +142,14 @@ public class AuctionListController {
 
                 Product productModel = new Product(
                         selected.getAuctionId(),
+                        selected.getItemType(),
                         selected.getName(),
                         ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
                         selected.getAuctionStatus().toString(),
                         "New",
                         "No description",
-                        "No warranty"
+                        "No warranty",
+                        selected.getEndDateTime()
                 );
 
                 controller.setProduct(productModel);
