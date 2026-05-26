@@ -13,5 +13,8 @@
         <module name="auction-common" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="auction-app" target="15" />
+    </bytecodeTargetLevel>
   </component>
 </project>
