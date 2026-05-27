@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService {
     public void deposit(String userId, double amount) {
         User user = getRequiredUser(userId);
         user.deposit(amount);
-        if (!userDAO.save(user)) {
+        if (!userDAO.updateBalance(user)) {
             throw new IllegalStateException("Failed to update balance");
         }
     }
@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService {
     public void withdraw(String userId, double amount) {
         User user = getRequiredUser(userId);
         user.withdraw(amount);
-        if (!userDAO.save(user)) {
+        if (!userDAO.updateBalance(user)) {
             throw new IllegalStateException("Failed to update balance");
         }
     }

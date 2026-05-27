@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.ImageUploadController"
+      spacing="16"
+      style="-fx-background-color: #f3f6fb;"
+      prefWidth="900"
+      prefHeight="700">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <!-- Tiêu đề -->
+    <VBox spacing="8">
+        <Label text="Upload Ảnh Sản Phẩm"
+               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+        <Label text="Thêm ảnh cho sản phẩm đang bán"
+               style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+    </VBox>
+
+    <!-- Chọn sản phẩm -->
+    <VBox spacing="8">
+        <Label text="Chọn Sản Phẩm"
+               style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+        <HBox spacing="10">
+            <ComboBox fx:id="productComboBox"
+                      HBox.hgrow="ALWAYS"
+                      promptText="Chọn sản phẩm..."
+                      style="-fx-font-size: 12px;"/>
+            <Button text="Làm mới"
+                    onAction="#handleRefreshProducts"
+                    style="-fx-background-color: #2d6cdf; -fx-text-fill: white; -fx-padding: 8 16;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Upload ảnh mới -->
+    <VBox spacing="12"
+          style="-fx-background-color: white; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+
+        <Label text="Tải Ảnh Mới"
+               style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Button fx:id="browseButton"
+                    text="Chọn Ảnh..."
+                    onAction="#handleBrowseImage"
+                    style="-fx-background-color: #2d6cdf; -fx-text-fill: white; -fx-padding: 10 20;"/>
+            <Label fx:id="selectedFileLabel"
+                   text="Chưa chọn file"
+                   style="-fx-text-fill: #667085; -fx-font-size: 12px;"/>
+        </HBox>
+
+        <HBox spacing="10">
+            <Button fx:id="uploadButton"
+                    text="Upload"
+                    onAction="#handleUploadImage"
+                    style="-fx-background-color: #12a594; -fx-text-fill: white; -fx-padding: 10 30;"/>
+            <Label fx:id="uploadStatusLabel"
+                   text=""
+                   style="-fx-font-size: 12px;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Danh sách ảnh -->
+    <VBox spacing="12"
+          VBox.vgrow="ALWAYS"
+          style="-fx-background-color: white; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+
+        <Label text="Danh Sách Ảnh"
+               style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+            <VBox fx:id="imageListContainer"
+                  spacing="10"
+                  style="-fx-padding: 10;"/>
+        </ScrollPane>
+    </VBox>
+
+    <!-- Nút điều khiển -->
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Quay Lại"
+                onAction="#handleBack"
+                style="-fx-background-color: white; -fx-border-color: #b8c2d6; -fx-border-radius: 6; -fx-padding: 10 20; -fx-text-fill: #344054;"/>
+        <Button text="Đóng"
+                onAction="#handleClose"
+                style="-fx-background-color: #d92d20; -fx-text-fill: white; -fx-padding: 10 20;"/>
+    </HBox>
+
+</VBox>
+

@@ -110,22 +110,15 @@ public class AuctionDAOImpl implements AuctionDAO {
     @Override
     public boolean settleAndFinishAuction(String auctionId) {
         String lockAuctionSql = """
-                SELECT a.status, i.seller_id
+                SELECT a.status, a.last_bidder_id, i.seller_id, i.highest_current_price
                 FROM auctions a
                 JOIN items i ON i.id = a.item_id
                 WHERE a.id = ?
                 FOR UPDATE
                 """;
-        String highestBidSql = """
-                SELECT bidder_id, bid_amount
-                FROM bid_transactions
-                WHERE auction_id = ?
-                ORDER BY bid_amount DESC, created_at DESC
-                LIMIT 1
-                """;
-        String lockBidderSql = "SELECT balance FROM bidder WHERE id = ? FOR UPDATE";
+        String lockBidderSql = "SELECT balance, held_balance FROM bidder WHERE id = ? FOR UPDATE";
         String lockSellerSql = "SELECT balance FROM seller WHERE id = ? FOR UPDATE";
-        String updateBidderBalanceSql = "UPDATE bidder SET balance = ? WHERE id = ?";
+        String updateBidderSql = "UPDATE bidder SET balance = ?, held_balance = ? WHERE id = ?";
         String updateSellerBalanceSql = "UPDATE seller SET balance = ? WHERE id = ?";
         String finishAuctionSql = "UPDATE auctions SET status = ? WHERE id = ?";
 
@@ -134,6 +127,8 @@ public class AuctionDAOImpl implements AuctionDAO {
 
             try {
                 String sellerId;
+                String bidderId;
+                double amount;
                 try (PreparedStatement statement = connection.prepareStatement(lockAuctionSql)) {
                     statement.setString(1, auctionId);
                     try (ResultSet resultSet = statement.executeQuery()) {
@@ -150,30 +145,32 @@ public class AuctionDAOImpl implements AuctionDAO {
                             throw new IllegalStateException("Cannot finish canceled auction");
                         }
                         sellerId = resultSet.getString("seller_id");
+                        bidderId = resultSet.getString("last_bidder_id");
+                        amount = resultSet.getDouble("highest_current_price");
                     }
                 }
 
-                String bidderId = null;
-                double amount = 0;
-                try (PreparedStatement statement = connection.prepareStatement(highestBidSql)) {
-                    statement.setString(1, auctionId);
-                    try (ResultSet resultSet = statement.executeQuery()) {
-                        if (resultSet.next()) {
-                            bidderId = resultSet.getString("bidder_id");
-                            amount = resultSet.getDouble("bid_amount");
+                if (bidderId != null && !bidderId.isBlank() && amount > 0) {
+                    double bidderBalance;
+                    double bidderHeldBalance;
+                    try (PreparedStatement statement = connection.prepareStatement(lockBidderSql)) {
+                        statement.setString(1, bidderId);
+                        try (ResultSet resultSet = statement.executeQuery()) {
+                            if (!resultSet.next()) {
+                                throw new IllegalStateException("Winner not found");
+                            }
+                            bidderBalance = resultSet.getDouble("balance");
+                            bidderHeldBalance = resultSet.getDouble("held_balance");
                         }
                     }
-                }
 
-                if (bidderId != null) {
-                    double bidderBalance = lockUserBalance(connection, lockBidderSql, bidderId, "Winner not found");
                     double sellerBalance = lockUserBalance(connection, lockSellerSql, sellerId, "Seller not found");
 
-                    if (bidderBalance < amount) {
-                        throw new IllegalStateException("Winner has insufficient balance");
+                    if (bidderHeldBalance < amount) {
+                        throw new IllegalStateException("Winner has insufficient held balance");
                     }
 
-                    updateUserBalance(connection, updateBidderBalanceSql, bidderId, bidderBalance - amount);
+                    updateUserBalance(connection, updateBidderSql, bidderId, bidderBalance, bidderHeldBalance - amount);
                     updateUserBalance(connection, updateSellerBalanceSql, sellerId, sellerBalance + amount);
                 }
 
@@ -320,6 +317,17 @@ public class AuctionDAOImpl implements AuctionDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setDouble(1, balance);
             statement.setString(2, userId);
+            if (statement.executeUpdate() == 0) {
+                throw new IllegalStateException("Failed to update user balance");
+            }
+        }
+    }
+
+    private void updateUserBalance(Connection connection, String sql, String userId, double balance, double heldBalance) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDouble(1, balance);
+            statement.setDouble(2, heldBalance);
+            statement.setString(3, userId);
             if (statement.executeUpdate() == 0) {
                 throw new IllegalStateException("Failed to update user balance");
             }

@@ -106,6 +106,7 @@ public class ClientHandler implements Runnable {
                 case "REGISTER_BIDDER" -> registerBidder(payload);
                 case "REGISTER_SELLER" -> registerSeller(payload);
                 case "DEPOSIT" -> deposit(payload);
+                case "WITHDRAW" -> withdraw(payload);
                 case "GET_BALANCE" -> getBalance(payload);
                 case "LIST_AUCTIONS" -> listAuctions();
                 case "LIST_MY_AUCTIONS" -> listMyAuctions();
@@ -175,21 +176,65 @@ public class ClientHandler implements Runnable {
     private String deposit(String payload) {
         String[] args = requirePayload(payload, "Payload").split("\\s+");
         if (args.length != 1 && args.length != 2) {
-            throw new IllegalArgumentException("Requires amount");
+            throw new IllegalArgumentException("Requires amount or userId and amount");
         }
-        User user = requireCurrentUser();
-        String amount = args.length == 1 ? args[0] : args[1];
 
-        DepositRequestDTO request = new DepositRequestDTO(user.getId(), Double.parseDouble(amount));
+        User user = requireCurrentUser();
+
+        String targetUserId;
+        String amount;
+        // Allow depositing to other user for mock/testing: DEPOSIT <userId> <amount>
+        if (args.length == 2) {
+            targetUserId = args[0];
+            amount = args[1];
+        } else {
+            // Single argument: deposit to current logged-in user
+            targetUserId = user.getId();
+            amount = args[0];
+        }
+
+        DepositRequestDTO request = new DepositRequestDTO(targetUserId, Double.parseDouble(amount));
         ApiResponseDTO response = userController.deposit(request);
 
         if (!response.isSuccess()) {
             return "ERR|DEPOSIT_FAILED|" + response.getMessage();
         }
 
-        // Get updated balance
-        BalanceResponseDTO balanceResponse = userController.getBalance(user.getId());
-        return "OK|DEPOSIT|" + user.getId() + "|" + balanceResponse.getBalance();
+        // Get updated balance for the target user
+        BalanceResponseDTO balanceResponse = userController.getBalance(targetUserId);
+        return "OK|DEPOSIT|" + targetUserId + "|" + balanceResponse.getBalance();
+    }
+
+    private String withdraw(String payload) {
+        String[] args = requirePayload(payload, "Payload").split("\\s+");
+        if (args.length != 1 && args.length != 2) {
+            throw new IllegalArgumentException("Requires amount or userId and amount");
+        }
+
+        User user = requireCurrentUser();
+
+        String targetUserId;
+        String amount;
+        // Allow withdrawing from another user for mock/testing: WITHDRAW <userId> <amount>
+        if (args.length == 2) {
+            targetUserId = args[0];
+            amount = args[1];
+        } else {
+            // Single argument: withdraw from current logged-in user
+            targetUserId = user.getId();
+            amount = args[0];
+        }
+
+        WithdrawRequestDTO request = new WithdrawRequestDTO(targetUserId, Double.parseDouble(amount));
+        ApiResponseDTO response = userController.withdraw(request);
+
+        if (!response.isSuccess()) {
+            return "ERR|WITHDRAW_FAILED|" + response.getMessage();
+        }
+
+        // Get updated balance for the target user
+        BalanceResponseDTO balanceResponse = userController.getBalance(targetUserId);
+        return "OK|WITHDRAW|" + targetUserId + "|" + balanceResponse.getBalance();
     }
 
     private String getBalance(String payload) {
@@ -430,7 +475,8 @@ public class ClientHandler implements Runnable {
                 + "LOGIN username password;"
                 + "REGISTER_BIDDER username password email;"
                 + "REGISTER_SELLER username password email;"
-                + "DEPOSIT amount;"
+                + "DEPOSIT amount;" // For mock: DEPOSIT userId amount is also supported
+                + "WITHDRAW amount;" // For mock: WITHDRAW userId amount is also supported
                 + "GET_BALANCE;"
                 + "LIST_AUCTIONS;"
                 + "LIST_MY_AUCTIONS;"

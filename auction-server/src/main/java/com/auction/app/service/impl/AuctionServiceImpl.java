@@ -1,8 +1,6 @@
 package com.auction.app.service.impl;
 
 import com.app.common.entity.Auction;
-import com.app.common.entity.BidTransaction;
-import com.app.common.entity.User;
 import com.app.common.exception.AuctionClosedException;
 import com.app.common.exception.AuctionNotFoundException;
 import com.app.common.enums.Status;
@@ -14,7 +12,6 @@ import com.auction.app.repository.impl.UserDAOImpl;
 import com.auction.app.service.AuctionService;
 
 import java.util.List;
-import com.auction.app.service.impl.AuctionExtensionManager;
 
 public class AuctionServiceImpl implements AuctionService {
     private final AuctionDAO auctionDAO;
@@ -120,36 +117,6 @@ public class AuctionServiceImpl implements AuctionService {
         }
     }
 
-    private void settleWinningBid(Auction auction) {
-
-        BidTransaction highestBid = bidDAO.getMaxBidByAuctionId(auction.getId());
-
-        if (highestBid == null) {
-            return;
-        }
-
-        User winner = userDAO.findById(highestBid.getBidder().getId());
-        if (winner == null) {
-            throw new IllegalStateException("Winner not found");
-        }
-
-        winner.withdraw(highestBid.getBidAmount());
-
-        String sellerId = auction.getItem().getSellerId();
-        User seller = userDAO.findById(sellerId);
-        if (seller == null) {
-            throw new IllegalStateException("Seller not found");
-        }
-
-        seller.deposit(highestBid.getBidAmount());
-
-        if (!userDAO.save(winner)) {
-            throw new IllegalStateException("Failed to update winner's account");
-        }
-        if (!userDAO.save(seller)) {
-            throw new IllegalStateException("Failed to update seller's account");
-        }
-    }
 
     @Override
     public boolean extendIfEndingSoon(String auctionId, long thresholdSeconds, long extensionSeconds) {

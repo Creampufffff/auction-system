@@ -26,7 +26,11 @@ public class UserDAOImpl implements UserDAO {
                        WHEN u.role = 'SELLER' THEN COALESCE(s.balance, 0)
                        WHEN u.role = 'BIDDER' THEN COALESCE(b.balance, 0)
                        ELSE 0
-                   END AS balance
+                   END AS balance,
+                   CASE
+                       WHEN u.role = 'BIDDER' THEN COALESCE(b.held_balance, 0)
+                       ELSE 0
+                   END AS held_balance
             FROM users u
             LEFT JOIN seller s ON s.id = u.id
             LEFT JOIN bidder b ON b.id = u.id
@@ -88,6 +92,58 @@ public class UserDAOImpl implements UserDAO {
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot save user: " + entity.getId(), e);
+        }
+    }
+
+    @Override
+    public boolean updateBalance(User user) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                boolean updated = updateBalance(user, connection);
+                connection.commit();
+                return updated;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot update balance for user: " + user.getId(), e);
+        }
+    }
+
+    boolean updateBalance(User user, Connection connection) throws SQLException {
+        if (user instanceof Admin) {
+            return true;
+        }
+
+        String sql;
+        boolean isSeller = user instanceof Seller;
+
+        if (isSeller) {
+            sql = """
+                    INSERT INTO seller (id, balance)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE balance = VALUES(balance)
+                    """;
+        } else {
+            sql = """
+                    INSERT INTO bidder (id, balance, held_balance)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE balance = VALUES(balance), held_balance = VALUES(held_balance)
+                    """;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getId());
+            statement.setDouble(2, user.getBalance());
+            if (!isSeller) {
+                statement.setDouble(3, user.getHeldBalance());
+            }
+            return statement.executeUpdate() > 0;
         }
     }
 
@@ -174,6 +230,7 @@ public class UserDAOImpl implements UserDAO {
 
         user.setId(resultSet.getString("id"));
         user.setBalance(resultSet.getDouble("balance"));
+        user.setHeldBalance(resultSet.getDouble("held_balance"));
         return user;
     }
 
@@ -202,12 +259,17 @@ public class UserDAOImpl implements UserDAO {
         if (entity instanceof Seller) {
             subtypeSql = "INSERT INTO seller (id, balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance)";
         } else {
-            subtypeSql = "INSERT INTO bidder (id, balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance)";
+            subtypeSql = "INSERT INTO bidder (id, balance, held_balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance), held_balance = VALUES(held_balance)";
         }
 
         try (PreparedStatement statement = connection.prepareStatement(subtypeSql)) {
             statement.setString(1, entity.getId());
             statement.setDouble(2, entity.getBalance());
+            if (entity instanceof Seller) {
+                statement.executeUpdate();
+                return;
+            }
+            statement.setDouble(3, entity.getHeldBalance());
             statement.executeUpdate();
         }
     }

@@ -1,4 +1,4 @@
-concurrency: Multitasking
+`concurrency: Multitasking
 config : config
 controller : controller
 dto : Data Transfer Object
@@ -7,7 +7,7 @@ exception : exception
 repository : data....
 service : Model
 socket : Socket.....
-
+`
 ├── config                <- [1đ Design Pattern] Cấu hình WebSocket, Security
 ├── controller            <- [0.5đ MVC] Tiếp nhận yêu cầu từ Client
 ├── service               <- [1đ Chức năng] Xử lý logic đấu giá

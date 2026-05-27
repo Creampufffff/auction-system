@@ -16,6 +16,8 @@ public class ItemDAOImpl implements ItemDAO {
     private static final String TYPE_ELECTRONICS = "ELECTRONICS";
     private static final String TYPE_VEHICLE = "VEHICLE";
 
+
+
     private static final String ITEM_SELECT_SQL = """
             SELECT i.id,
                    i.seller_id,
@@ -243,6 +245,7 @@ public class ItemDAOImpl implements ItemDAO {
         item.setId(resultSet.getString("id"));
         item.setHighestCurrentPrice(resultSet.getDouble("highest_current_price"));
         item.setSellerId(resultSet.getString("seller_id"));
+
         return item;
     }
 

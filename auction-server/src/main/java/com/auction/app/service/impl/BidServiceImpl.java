@@ -14,6 +14,8 @@ import java.util.List;
 
 public class BidServiceImpl implements BidService {
     private final BidDAO bidDAO;        // DAO to access database
+    @SuppressWarnings("unused")
+    private final AuctionDAO auctionDAO;
     private final UserDAO userDAO;      // DAO to check users
 
     public BidServiceImpl(BidDAO bidDAO, AuctionDAO auctionDAO) {
@@ -22,6 +24,7 @@ public class BidServiceImpl implements BidService {
 
     public BidServiceImpl(BidDAO bidDAO, AuctionDAO auctionDAO, UserDAO userDAO) {
         this.bidDAO = bidDAO;
+        this.auctionDAO = auctionDAO;
         this.userDAO = userDAO;
     }
 
@@ -48,9 +51,12 @@ public class BidServiceImpl implements BidService {
             throw new InvalidBidException("User not found");
         }
 
-        if (bidder.getBalance() < bid.getBidAmount()) {
+
+        double reusableHeldAmount = bidDAO.getMaxBidByBidder(bid.getAuction().getId(), bidder.getId());
+        if (bidder.getBalance() + reusableHeldAmount < bid.getBidAmount()) {
             throw new InsufficientBalanceException("Insufficient funds to place this bid");
         }
+
 
         if (!bidDAO.placeBidSafely(bid)) {
             throw new IllegalStateException("Failed to save bid to database");

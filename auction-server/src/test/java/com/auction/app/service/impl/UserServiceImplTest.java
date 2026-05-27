@@ -80,6 +80,11 @@ class UserServiceImplTest {
         }
 
         @Override
+        public boolean updateBalance(User user) {
+            return save(user);
+        }
+
+        @Override
         public boolean delete(String id) {
             return users.removeIf(user -> user.getId().equals(id));
         }

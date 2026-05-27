@@ -11,7 +11,6 @@ abstract public class Item extends BaseEntity {
     private double highestCurrentPrice;
     private String sellerId;
 
-
     public Item(String description, String name, String startDateString, String endDateString, double startPrice, double minIncreasement) {
         this.description = description;
         this.name = name;
@@ -69,3 +68,4 @@ abstract public class Item extends BaseEntity {
         this.sellerId = sellerId;
     }
 }
+

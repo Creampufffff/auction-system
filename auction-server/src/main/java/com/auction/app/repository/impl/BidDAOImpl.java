@@ -152,9 +152,10 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public boolean placeBidSafely(BidTransaction bid) {
-        // Lock auction record to serialize concurrent bid operations.
         String lockAuctionSql = """
                 SELECT a.status,
+                       a.last_bidder_id,
+                       a.current_version,
                        i.start_price,
                        i.min_increment,
                        i.highest_current_price
@@ -163,7 +164,6 @@ public class BidDAOImpl implements BidDAO {
                 WHERE a.id = ?
                 FOR UPDATE
                 """;
-        String bidderSql = "SELECT balance FROM bidder WHERE id = ? FOR UPDATE";
         String maxBidSql = "SELECT MAX(bid_amount) AS max_bid FROM bid_transactions WHERE auction_id = ?";
         String insertBidSql = """
                 INSERT INTO bid_transactions (id, auction_id, bidder_id, bid_amount)
@@ -177,15 +177,64 @@ public class BidDAOImpl implements BidDAO {
                     a.current_version = a.current_version + 1
                 WHERE a.id = ?
                 """;
+        String lockBidderSql = "SELECT balance, held_balance FROM bidder WHERE id = ? FOR UPDATE";
+        String updateBidderSql = "UPDATE bidder SET balance = ?, held_balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             connection.setAutoCommit(false);
 
             try {
-                // Toàn bộ các bước kiểm tra + ghi bid + cập nhật giá phải cùng 1 transaction.
                 LockedAuction lockedAuction = lockAuction(connection, lockAuctionSql, bid.getAuction().getId());
-                validateBidder(connection, bidderSql, bid.getBidder().getId(), bid.getBidAmount());
                 validateBidAmount(connection, maxBidSql, bid, lockedAuction);
+
+                String bidderId = bid.getBidder().getId();
+                String lastBidderId = lockedAuction.lastBidderId;
+
+                List<String> bidderIdsToLock = new ArrayList<>();
+                bidderIdsToLock.add(bidderId);
+                if (lastBidderId != null && !lastBidderId.isBlank() && !lastBidderId.equals(bidderId)) {
+                    bidderIdsToLock.add(lastBidderId);
+                }
+                bidderIdsToLock.sort(String::compareTo);
+
+                BidderAccountState currentBidderState = null;
+                BidderAccountState previousBidderState = null;
+                String currentBidderId = bidderId;
+
+                for (String id : bidderIdsToLock) {
+                    BidderAccountState state = lockBidderAccount(connection, lockBidderSql, id);
+                    if (id.equals(currentBidderId)) {
+                        currentBidderState = state;
+                    }
+                    if (lastBidderId != null && id.equals(lastBidderId)) {
+                        previousBidderState = state;
+                    }
+                }
+
+                if (currentBidderState == null) {
+                    throw new IllegalStateException("Bidder account not found");
+                }
+
+                if (lastBidderId != null && !lastBidderId.isBlank() && lastBidderId.equals(bidderId)) {
+                    previousBidderState = currentBidderState;
+                }
+
+                double currentPrice = lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : lockedAuction.startPrice;
+
+                // Only release the previous bidder's held balance if:
+                // 1) There is a previous bidder AND
+                // 2) They actually have held balance (indicating a valid previous bid)
+                if (lastBidderId != null && !lastBidderId.isBlank() && previousBidderState != null && previousBidderState.heldBalance > 0) {
+                    previousBidderState.release(lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : 0);
+                }
+
+                currentBidderState.reserve(bid.getBidAmount());
+
+                updateBidderAccount(connection, updateBidderSql, bidderId, currentBidderState);
+                if (previousBidderState != null && !lastBidderId.equals(bidderId)) {
+                    updateBidderAccount(connection, updateBidderSql, lastBidderId, previousBidderState);
+                }
+
                 insertBid(connection, insertBidSql, bid);
                 updateAuctionPrice(connection, updateAuctionSql, bid);
 
@@ -242,16 +291,17 @@ public class BidDAOImpl implements BidDAO {
                     throw new IllegalArgumentException("Auction is not active");
                 }
 
+                String lastBidderId = resultSet.getString("last_bidder_id");
                 double startPrice = resultSet.getDouble("start_price");
                 double minIncrement = resultSet.getDouble("min_increment");
                 double highestCurrentPrice = resultSet.getDouble("highest_current_price");
 
-                return new LockedAuction(startPrice, minIncrement, highestCurrentPrice);
+                return new LockedAuction(startPrice, minIncrement, highestCurrentPrice, lastBidderId);
             }
         }
     }
 
-    private void validateBidder(Connection connection, String sql, String bidderId, double bidAmount) throws SQLException {
+    private BidderAccountState lockBidderAccount(Connection connection, String sql, String bidderId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, bidderId);
 
@@ -259,9 +309,11 @@ public class BidDAOImpl implements BidDAO {
                 if (!resultSet.next()) {
                     throw new IllegalArgumentException("Bidder not found");
                 }
-                if (resultSet.getDouble("balance") < bidAmount) {
-                    throw new IllegalArgumentException("Insufficient funds to place this bid");
-                }
+
+                return new BidderAccountState(
+                        resultSet.getDouble("balance"),
+                        resultSet.getDouble("held_balance")
+                );
             }
         }
     }
@@ -310,15 +362,60 @@ public class BidDAOImpl implements BidDAO {
         }
     }
 
+    private void updateBidderAccount(Connection connection, String sql, String bidderId, BidderAccountState state) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDouble(1, state.balance);
+            statement.setDouble(2, state.heldBalance);
+            statement.setString(3, bidderId);
+            if (statement.executeUpdate() == 0) {
+                throw new IllegalStateException("Failed to update bidder account");
+            }
+        }
+    }
+
     private static class LockedAuction {
         private final double startPrice;
         private final double minIncrement;
         private final double highestCurrentPrice;
+        private final String lastBidderId;
 
-        private LockedAuction(double startPrice, double minIncrement, double highestCurrentPrice) {
+        private LockedAuction(double startPrice, double minIncrement, double highestCurrentPrice, String lastBidderId) {
             this.startPrice = startPrice;
             this.minIncrement = minIncrement;
             this.highestCurrentPrice = highestCurrentPrice;
+            this.lastBidderId = lastBidderId;
+        }
+    }
+
+    private static class BidderAccountState {
+        private double balance;
+        private double heldBalance;
+
+        private BidderAccountState(double balance, double heldBalance) {
+            this.balance = balance;
+            this.heldBalance = heldBalance;
+        }
+
+        private void reserve(double amount) {
+            if (amount <= 0) {
+                throw new IllegalArgumentException("Bid amount must be greater than 0");
+            }
+            if (balance < amount) {
+                throw new IllegalArgumentException("Insufficient funds to place this bid");
+            }
+            balance -= amount;
+            heldBalance += amount;
+        }
+
+        private void release(double amount) {
+            if (amount <= 0) {
+                return;
+            }
+            if (heldBalance < amount) {
+                throw new IllegalStateException("Held balance is lower than the released amount");
+            }
+            heldBalance -= amount;
+            balance += amount;
         }
     }
 }

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- ========== USERS (Bảng con) ==========
 CREATE TABLE IF NOT EXISTS admin (
     id VARCHAR(36) PRIMARY KEY,
+    balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
     CONSTRAINT fk_admin_user
         FOREIGN KEY (id) REFERENCES users(id)
         ON UPDATE CASCADE
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS seller (
 CREATE TABLE IF NOT EXISTS bidder (
     id VARCHAR(36) PRIMARY KEY,
     balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    held_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
     CONSTRAINT fk_bidder_user
         FOREIGN KEY (id) REFERENCES users(id)
         ON UPDATE CASCADE
@@ -125,6 +127,9 @@ CREATE TABLE IF NOT EXISTS bid_transactions (
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 );
+
+-- ========== ITEM IMAGES ==========
+-- (No item_images table in this schema - reverted to previous version)
 
 -- ========== INDEXES ==========
 CREATE INDEX idx_items_seller ON items(seller_id);

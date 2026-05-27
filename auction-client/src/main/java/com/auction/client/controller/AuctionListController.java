@@ -12,9 +12,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
@@ -35,6 +33,12 @@ public class AuctionListController {
     @FXML private Label onlineUsersLabel;    // Phiên đang mở (OPEN + RUNNING)
     @FXML private Label statBalanceLabel;    // Số dư (stat box riêng, khác sidebar)
 
+    // [MỚI] Pagination & Search
+    @FXML private TextField searchField;
+    @FXML private Button previousPageButton;
+    @FXML private Button nextPageButton;
+    @FXML private Label pageInfoLabel;
+
     private final AuctionService auctionService = new AuctionService();
 
     @FXML
@@ -48,6 +52,14 @@ public class AuctionListController {
 
         auctionTable.refresh();
 
+        // [MỚI] Setup tìm kiếm
+        if (searchField != null) {
+            searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+                ProductDataManager.getInstance().setSearchKeyword(newVal);
+                refreshTablePage();
+            });
+        }
+
         Platform.runLater(() -> {
             updateUIWithBalance();
         });
@@ -57,8 +69,36 @@ public class AuctionListController {
         if (ProductDataManager.getInstance().getServerAuctionList().isEmpty()) {
             ProductDataManager.getInstance().getServerAuctionList().addAll(auctionService.getActiveAuctions());
         }
-        auctionTable.setItems(ProductDataManager.getInstance().getServerAuctionList());
+        refreshTablePage();
+    }
+
+    // [MỚI] Refresh table theo trang hiện tại
+    private void refreshTablePage() {
+        auctionTable.setItems(ProductDataManager.getInstance().getPagedAuctions());
         auctionTable.refresh();
+        updatePageInfo();
+    }
+
+    // [MỚI] Cập nhật thông tin phân trang
+    private void updatePageInfo() {
+        int currentPage = ProductDataManager.getInstance().getCurrentPage();
+        int totalPages = ProductDataManager.getInstance().getTotalPages();
+        int totalItems = ProductDataManager.getInstance().getTotalFilteredItems();
+
+        if (pageInfoLabel != null) {
+            if (totalPages == 0) {
+                pageInfoLabel.setText("Không có phiên nào");
+            } else {
+                pageInfoLabel.setText(String.format("Trang %d / %d (%d phiên)", currentPage, totalPages, totalItems));
+            }
+        }
+
+        if (previousPageButton != null) {
+            previousPageButton.setDisable(currentPage <= 1);
+        }
+        if (nextPageButton != null) {
+            nextPageButton.setDisable(currentPage >= totalPages);
+        }
     }
 
     private void updateUIWithBalance() {
@@ -192,6 +232,19 @@ public class AuctionListController {
         SessionManager.clear();
         ProductDataManager.getInstance().resetSessionState();
         switchScene("/fxml/Login.fxml", "Đăng nhập", 800, 600);
+    }
+
+    // [MỚI] Phương thức xử lý phân trang
+    @FXML
+    private void handlePreviousPage(ActionEvent event) {
+        ProductDataManager.getInstance().previousPage();
+        refreshTablePage();
+    }
+
+    @FXML
+    private void handleNextPage(ActionEvent event) {
+        ProductDataManager.getInstance().nextPage();
+        refreshTablePage();
     }
 
     private void switchScene(String fxmlPath, String title, double width, double height) {

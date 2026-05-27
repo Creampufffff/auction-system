@@ -3,6 +3,7 @@ package com.app.common.entity;
 public abstract class User extends BaseEntity {
     private String username, password, email;
     private double balance;
+    private double heldBalance;
 //    public static final int permissionLevel = 3;
 
     public User(String username, String password, String email){
@@ -10,6 +11,7 @@ public abstract class User extends BaseEntity {
         this.password = password;
         this.email = email;
         this.balance = 0;
+        this.heldBalance = 0;
 //        System.out.println("Tai khoan da duoc tao."); // Sau nay luu log lai
     }
     public String getUsername() {
@@ -47,6 +49,17 @@ public abstract class User extends BaseEntity {
         this.balance = balance;
     }
 
+    public double getHeldBalance() {
+        return heldBalance;
+    }
+
+    public void setHeldBalance(double heldBalance) {
+        if (heldBalance < 0) {
+            throw new IllegalArgumentException("Held balance cannot be negative");
+        }
+        this.heldBalance = heldBalance;
+    }
+
     public void deposit(double amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Deposit amount must be greater than 0");
@@ -62,5 +75,37 @@ public abstract class User extends BaseEntity {
             throw new IllegalArgumentException("Insufficient balance");
         }
         this.balance -= amount;
+    }
+
+    public void reserve(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Reserve amount must be greater than 0");
+        }
+        if (amount > this.balance) {
+            throw new IllegalArgumentException("Insufficient balance to reserve");
+        }
+        this.balance -= amount;
+        this.heldBalance += amount;
+    }
+
+    public void releaseHeld(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Release amount must be greater than 0");
+        }
+        if (amount > this.heldBalance) {
+            throw new IllegalArgumentException("Insufficient held balance");
+        }
+        this.heldBalance -= amount;
+        this.balance += amount;
+    }
+
+    public void consumeHeld(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Consume amount must be greater than 0");
+        }
+        if (amount > this.heldBalance) {
+            throw new IllegalArgumentException("Insufficient held balance");
+        }
+        this.heldBalance -= amount;
     }
 }

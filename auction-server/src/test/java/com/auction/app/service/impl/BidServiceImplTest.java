@@ -194,6 +194,11 @@ class BidServiceImplTest {
         }
 
         @Override
+        public boolean updateBalance(com.app.common.entity.User user) {
+            return save(user);
+        }
+
+        @Override
         public boolean delete(String id) {
             return users.removeIf(user -> user.getId().equals(id));
         }

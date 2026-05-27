@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 public class ProductDataManager {
     private static ProductDataManager instance;
@@ -30,6 +31,12 @@ public class ProductDataManager {
     private double userBalance = 5000.0;
     private final Map<String, Double> userHeldMoneyMap = new HashMap<>();
     private final Map<String, String> leadingUserMap = new HashMap<>();
+
+    // --- [MỚI] LOGIC PHÂN TRANG & TÌM KIẾM ---
+    private static final int ITEMS_PER_PAGE = 10;
+    private int currentPage = 1;
+    private String searchKeyword = "";
+    private List<AuctionListDTO> filteredAuctionList = List.of();
 
     private Timer globalTimer;
 
@@ -71,6 +78,9 @@ public class ProductDataManager {
         currentPriceMap.clear();
         timeLeftMap.clear();
         selectedAuction = null;
+        currentPage = 1;
+        searchKeyword = "";
+        filteredAuctionList = List.of();
     }
 
     private void startGlobalCountdown() {
@@ -221,5 +231,76 @@ public class ProductDataManager {
         } catch (DateTimeParseException ignored) {
             return null;
         }
+    }
+
+    // --- [MỚI] PHƯƠNG THỨC TÌM KIẾM VÀ PHÂN TRANG ---
+    public void setSearchKeyword(String keyword) {
+        this.searchKeyword = keyword.toLowerCase().trim();
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    private void applyFilter() {
+        if (searchKeyword.isEmpty()) {
+            filteredAuctionList = new java.util.ArrayList<>(serverAuctionList);
+        } else {
+            filteredAuctionList = serverAuctionList.stream()
+                    .filter(a -> a.getName().toLowerCase().contains(searchKeyword) ||
+                               a.getItemType().toLowerCase().contains(searchKeyword) ||
+                               a.getAuctionId().toLowerCase().contains(searchKeyword))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public ObservableList<AuctionListDTO> getPagedAuctions() {
+        applyFilter();
+        int start = (currentPage - 1) * ITEMS_PER_PAGE;
+        int end = Math.min(start + ITEMS_PER_PAGE, filteredAuctionList.size());
+
+        if (start >= filteredAuctionList.size()) {
+            return FXCollections.observableArrayList();
+        }
+
+        return FXCollections.observableArrayList(filteredAuctionList.subList(start, end));
+    }
+
+    public void nextPage() {
+        applyFilter();
+        int totalPages = getTotalPages();
+        if (currentPage < totalPages) {
+            currentPage++;
+        }
+    }
+
+    public void previousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+        }
+    }
+
+    public void goToPage(int pageNumber) {
+        applyFilter();
+        int totalPages = getTotalPages();
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            currentPage = pageNumber;
+        }
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public int getTotalPages() {
+        applyFilter();
+        return (int) Math.ceil((double) filteredAuctionList.size() / ITEMS_PER_PAGE);
+    }
+
+    public int getTotalFilteredItems() {
+        applyFilter();
+        return filteredAuctionList.size();
+    }
+
+    public String getSearchKeyword() {
+        return searchKeyword;
     }
 }
