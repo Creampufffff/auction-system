@@ -2,6 +2,7 @@ package com.auction.client.controller;
 
 import com.app.common.dto.BalanceResponseDTO;
 import com.app.common.dto.BidHistoryDTO;
+import com.auction.client.model.ProductDataManager;
 import com.auction.client.service.AccountService;
 import com.auction.client.session.SessionManager;
 import javafx.application.Platform;
@@ -12,6 +13,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
@@ -21,6 +23,9 @@ public class AccountController {
     @FXML private Label usernameLabel;
     @FXML private Label roleLabel;
     @FXML private Label userIdLabel;
+    @FXML private Label sidebarRoleLabel;
+    @FXML private Label sidebarBalanceLabel;
+    @FXML private Button productsSidebarButton;
 
     // --- Balance section ---
     @FXML private Label balanceLabel;
@@ -31,6 +36,7 @@ public class AccountController {
     @FXML private Label actionMessageLabel;
 
     // --- Bid history table ---
+    @FXML private VBox bidHistoryCard;
     @FXML private TableView<BidHistoryDTO> bidHistoryTable;
     @FXML private TableColumn<BidHistoryDTO, String> colBidId;
     @FXML private TableColumn<BidHistoryDTO, String> colAuctionId;
@@ -48,31 +54,71 @@ public class AccountController {
         usernameLabel.setText(SessionManager.getCurrentUsername());
         roleLabel.setText(SessionManager.getCurrentUserRole());
         userIdLabel.setText("ID: " + SessionManager.getCurrentUserId());
+        if (sidebarRoleLabel != null) {
+            sidebarRoleLabel.setText("Role: " + SessionManager.getCurrentUserRole());
+        }
+        configureSidebarForRole();
+        configureBidHistoryForRole();
 
         // Bid history table columns
-        colBidId.setCellValueFactory(new PropertyValueFactory<>("bidId"));
-        colAuctionId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
-        colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
-        colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
+        if (bidHistoryTable != null) {
+            colBidId.setCellValueFactory(new PropertyValueFactory<>("bidId"));
+            colAuctionId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
+            colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
+            colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
+        }
 
         Platform.runLater(() -> {
             loadBalance();
-            loadBidHistory();
+            if (SessionManager.hasRole("Bidder")) {
+                loadBidHistory();
+            }
         });
+    }
+
+    private void configureSidebarForRole() {
+        if (productsSidebarButton != null) {
+            boolean isSeller = SessionManager.hasRole("Seller");
+            productsSidebarButton.setVisible(isSeller);
+            productsSidebarButton.setManaged(isSeller);
+        }
+    }
+
+    private void configureBidHistoryForRole() {
+        if (bidHistoryCard != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            bidHistoryCard.setVisible(isBidder);
+            bidHistoryCard.setManaged(isBidder);
+        }
     }
 
     private void loadBalance() {
         BalanceResponseDTO response = accountService.getBalance();
         if (response != null && response.getUserId() != null) {
-            balanceLabel.setText("$" + String.format("%.2f", response.getBalance()));
-            if (response.getBalance() < 100) {
+            double balance = response.getBalance();
+            ProductDataManager.getInstance().setUserBalance(balance);
+            String balanceText = "$" + String.format("%.2f", balance);
+            balanceLabel.setText(balanceText);
+            if (sidebarBalanceLabel != null) {
+                sidebarBalanceLabel.setText("Ví: " + balanceText);
+            }
+            if (balance < 100) {
                 balanceLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;");
+                if (sidebarBalanceLabel != null) {
+                    sidebarBalanceLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;");
+                }
             } else {
                 balanceLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;");
+                if (sidebarBalanceLabel != null) {
+                    sidebarBalanceLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
+                }
             }
             if (balanceMessageLabel != null) balanceMessageLabel.setText(response.getMessage());
         } else {
             balanceLabel.setText("--");
+            if (sidebarBalanceLabel != null) {
+                sidebarBalanceLabel.setText("Ví: --");
+            }
             if (balanceMessageLabel != null) balanceMessageLabel.setText("Không thể tải số dư.");
         }
     }
@@ -91,7 +137,7 @@ public class AccountController {
 
         BalanceResponseDTO response = accountService.deposit(amount);
         if (response != null && response.getUserId() != null) {
-            balanceLabel.setText("$" + String.format("%.2f", response.getBalance()));
+            updateBalanceLabels(response.getBalance());
             setActionMessage("Nạp tiền thành công: $" + String.format("%.2f", amount), false);
         } else {
             setActionMessage(response != null ? response.getMessage() : "Nạp tiền thất bại.", true);
@@ -106,7 +152,7 @@ public class AccountController {
 
         BalanceResponseDTO response = accountService.withdraw(amount);
         if (response != null && response.getUserId() != null) {
-            balanceLabel.setText("$" + String.format("%.2f", response.getBalance()));
+            updateBalanceLabels(response.getBalance());
             setActionMessage("Rút tiền thành công: $" + String.format("%.2f", amount), false);
         } else {
             setActionMessage(response != null ? response.getMessage() : "Rút tiền thất bại.", true);
@@ -116,6 +162,9 @@ public class AccountController {
 
     @FXML
     private void handleRefreshHistory(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            return;
+        }
         loadBidHistory();
         if (messageLabel != null) messageLabel.setText("Đã làm mới lịch sử đặt giá.");
     }
@@ -125,7 +174,37 @@ public class AccountController {
         switchScene("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1040, 660);
     }
 
+    @FXML
+    private void handleSidebarProducts(ActionEvent event) {
+        if (!SessionManager.hasRole("Seller")) {
+            return;
+        }
+        switchScene("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1040, 660);
+    }
+
+    @FXML
+    private void handleLogout(ActionEvent event) {
+        SessionManager.clear();
+        ProductDataManager.getInstance().resetSessionState();
+        switchScene("/fxml/Login.fxml", "Đăng nhập", 800, 600);
+    }
+
     // --- Helpers ---
+
+    private void updateBalanceLabels(double balance) {
+        ProductDataManager.getInstance().setUserBalance(balance);
+        String balanceText = "$" + String.format("%.2f", balance);
+        balanceLabel.setText(balanceText);
+        if (sidebarBalanceLabel != null) {
+            sidebarBalanceLabel.setText("Ví: " + balanceText);
+            sidebarBalanceLabel.setStyle(balance < 100
+                    ? "-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;"
+                    : "-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
+        }
+        balanceLabel.setStyle(balance < 100
+                ? "-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;"
+                : "-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;");
+    }
 
     private double parseAmount() {
         try {

@@ -25,11 +25,19 @@ public class AccountService {
     }
 
     public BalanceResponseDTO withdraw(double amount) {
-        return new BalanceResponseDTO(null, 0, "Server chua ho tro rut tien.");
+        try {
+            return parseWithdrawResponse(SocketClientService.sendSessionCommand("WITHDRAW " + amount));
+        } catch (Exception e) {
+            return new BalanceResponseDTO(null, 0, "Rut tien that bai.");
+        }
     }
 
     public List<BidHistoryDTO> getBidHistory() {
-        return new ArrayList<>();
+        try {
+            return parseBidHistoryResponse(SocketClientService.sendSessionCommand("GET_MY_BID_HISTORY"));
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
     private BalanceResponseDTO parseBalanceResponse(String response) {
@@ -60,6 +68,59 @@ public class AccountService {
         }
 
         return new BalanceResponseDTO(null, 0, extractErrorMessage(response));
+    }
+
+    private BalanceResponseDTO parseWithdrawResponse(String response) {
+        if (response == null || response.isBlank()) {
+            return new BalanceResponseDTO(null, 0, "Server khong phan hoi.");
+        }
+
+        if (response.startsWith("OK|WITHDRAW|")) {
+            String[] parts = response.split("\\|", 4);
+            if (parts.length >= 4) {
+                return createBalanceResponse(parts[2], parts[3], "Rut tien thanh cong.");
+            }
+        }
+
+        return new BalanceResponseDTO(null, 0, extractErrorMessage(response));
+    }
+
+    private List<BidHistoryDTO> parseBidHistoryResponse(String response) {
+        List<BidHistoryDTO> bids = new ArrayList<>();
+        if (response == null || response.isBlank() || response.startsWith("ERR|") || "OK|BID_HISTORY|EMPTY".equals(response)) {
+            return bids;
+        }
+        if (!response.startsWith("OK|BID_HISTORY|")) {
+            return bids;
+        }
+
+        String[] records = response.split("\\|");
+        for (int i = 2; i < records.length; i++) {
+            BidHistoryDTO bid = parseBidHistoryRecord(records[i]);
+            if (bid != null) {
+                bids.add(bid);
+            }
+        }
+        return bids;
+    }
+
+    private BidHistoryDTO parseBidHistoryRecord(String record) {
+        String[] fields = record.split(",", -1);
+        if (fields.length < 5) {
+            return null;
+        }
+
+        try {
+            return new BidHistoryDTO(
+                    fields[0],
+                    fields[1],
+                    fields[2],
+                    Double.parseDouble(fields[3]),
+                    fields[4]
+            );
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private BalanceResponseDTO createBalanceResponse(String userId, String balanceValue, String message) {

@@ -82,6 +82,12 @@ public class BidServiceImpl implements BidService {
     }
 
     @Override
+    public List<BidTransaction> getBidByBidderId(String bidderId) {
+        validateId(bidderId, "Bidder ID");
+        return bidDAO.findByBidderId(bidderId);
+    }
+
+    @Override
     public void deleteBid(String bidId) {
         validateId(bidId, "ID bid");
         if (!bidDAO.delete(bidId)) {

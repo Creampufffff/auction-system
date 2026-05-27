@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.app.common.dto.BalanceResponseDTO;
+import com.app.common.dto.BidHistoryDTO;
 import com.app.common.dto.PlaceBidResponseDTO;
 import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
@@ -29,6 +30,7 @@ public class LiveBiddingController {
     @FXML private Label productNameLabel;
     @FXML private Label currentPriceLabel;
     @FXML private Label timerLabel;
+    @FXML private Label leadingBidderLabel;
     @FXML private Label accountBalanceLabel;
     @FXML private TextField bidAmountField;
     @FXML private ListView<String> bidHistoryList;
@@ -92,6 +94,47 @@ public class LiveBiddingController {
         updateBalanceUI();
     }
 
+    private void refreshBidHistoryFromServer() {
+        if (currentProduct == null || bidHistory == null) {
+            return;
+        }
+
+        List<BidHistoryDTO> serverHistory = auctionService.getBidHistory(currentProduct.getId());
+        bidHistory.clear();
+
+        if (serverHistory.isEmpty()) {
+            updateLeadingBidder(null);
+            bidHistory.add("ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
+            return;
+        }
+
+        updateLeadingBidder(serverHistory.get(0));
+        for (BidHistoryDTO bid : serverHistory) {
+            bidHistory.add(formatBidHistoryLine(bid));
+        }
+    }
+
+    private void updateLeadingBidder(BidHistoryDTO highestBid) {
+        if (leadingBidderLabel == null) {
+            return;
+        }
+
+        if (highestBid == null || highestBid.getBidderUsername() == null || highestBid.getBidderUsername().isBlank()) {
+            leadingBidderLabel.setText("Chưa có");
+            return;
+        }
+
+        leadingBidderLabel.setText(highestBid.getBidderUsername());
+        ProductDataManager.getInstance().setLeadingUser(currentProduct.getId(), highestBid.getBidderUsername());
+    }
+
+    private String formatBidHistoryLine(BidHistoryDTO bid) {
+        String bidder = bid.getBidderUsername() == null || bid.getBidderUsername().isBlank()
+                ? "Unknown"
+                : bid.getBidderUsername();
+        return bidder + " đã đặt giá: $" + String.format("%.2f", bid.getBidAmount());
+    }
+
     private String getCurrentDisplayName() {
         String username = SessionManager.getCurrentUsername();
         return username == null || username.isBlank() ? "Bạn" : username;
@@ -134,8 +177,8 @@ public class LiveBiddingController {
                 manager.setCurrentPrice(currentProduct.getId(), bidAmount);
 
                 refreshBalanceFromServer();
+                refreshBidHistoryFromServer();
 
-                bidHistory.add(0, displayName + " đã đặt giá thành công: $" + bidAmount);
                 bidAmountField.clear();
 
             } else {
@@ -162,15 +205,7 @@ public class LiveBiddingController {
         this.bidHistory = ProductDataManager.getInstance().getHistoryForProduct(product.getId());
         this.bidHistory.clear();
         bidHistoryList.setItems(this.bidHistory);
-
-        // Sử dụng chuỗi rỗng làm mặc định để check logic sạch hơn
-        String leader = ProductDataManager.getInstance().getLeadingUser(product.getId(), "");
-
-        if (!leader.isEmpty()) {
-            bidHistory.add(0, "ℹ️ Người đang dẫn đầu: " + leader + " ($" + savedPrice + ")");
-        } else {
-            bidHistory.add(0, "ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
-        }
+        refreshBidHistoryFromServer();
 
         if (timeLeft <= 0) {
             timerLabel.setText("HẾT GIỜ");
@@ -288,8 +323,9 @@ public class LiveBiddingController {
         String displayName = isMe ? getCurrentDisplayName() : leadingBidderId;
         manager.setLeadingUser(auctionId, displayName);
         refreshBalanceFromServer();
+        refreshBidHistoryFromServer();
 
-        if (bidHistory != null) {
+        if (bidHistory != null && bidHistory.isEmpty()) {
             bidHistory.add(0, isMe
                     ? displayName + " đã được cập nhật giá dẫn đầu: $" + currentPrice
                     : "Người khác đã đặt giá: $" + currentPrice + " (" + leadingBidderId + ")");

@@ -16,9 +16,12 @@ public class AuctionMapper {
         double currentPrice = item.getHighestCurrentPrice() > 0
             ? item.getHighestCurrentPrice()
             : item.getStartPrice();
+        String condition = item instanceof Art
+            ? ((Art) item).getAuthor()
+            : null;
         String warranty = item instanceof Electronics
             ? String.valueOf(((Electronics) item).getWarrantyMonths())
-            : null;
+            : item instanceof Vehicle ? ((Vehicle) item).getBrand() : null;
         String itemType = item instanceof Electronics
             ? "ELECTRONICS"
             : item instanceof Vehicle ? "VEHICLE" : "ART";
@@ -30,7 +33,7 @@ public class AuctionMapper {
             item.getName(),
             currentPrice,
             auction.getAuctionStatus(),
-            null,
+            condition,
             item.getDescription(),
             warranty,
             item.getStartDateString(),
@@ -74,7 +77,7 @@ public class AuctionMapper {
             bid.getAuction().getId(),
             bidderUsername,
             bid.getBidAmount(),
-            bid.getId()
+            bid.getCreatedAt() != null ? bid.getCreatedAt() : bid.getId()
         );
     }
 

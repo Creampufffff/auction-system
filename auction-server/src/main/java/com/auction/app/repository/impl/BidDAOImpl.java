@@ -63,6 +63,32 @@ public class BidDAOImpl implements BidDAO {
     }
 
     @Override
+    public List<BidTransaction> findByBidderId(String bidderId) {
+        String sql = """
+                SELECT id, auction_id, bidder_id, bid_amount
+                FROM bid_transactions
+                WHERE bidder_id = ?
+                ORDER BY created_at DESC, id DESC
+                """;
+        List<BidTransaction> bids = new ArrayList<>();
+
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, bidderId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    bids.add(mapBid(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load bids for bidder: " + bidderId, e);
+        }
+
+        return bids;
+    }
+
+    @Override
     public BidTransaction getMaxBidByAuctionId(String auctionId) {
         String sql = """
                 SELECT id, auction_id, bidder_id, bid_amount

@@ -421,8 +421,24 @@ public class ProductManagementController {
         TextInputDialog nameDialog = new TextInputDialog(selected.getName());
         nameDialog.setTitle("S\u1eeda nhanh");
         nameDialog.setHeaderText("C\u1eadp nh\u1eadt t\u00ean s\u1ea3n ph\u1ea9m:");
-        nameDialog.showAndWait().ifPresent(newName -> {
+        nameDialog.showAndWait().ifPresent(rawName -> {
+            String newName = rawName == null ? "" : rawName.trim();
+            if (newName.isEmpty()) {
+                showDialogError("T\u00ean s\u1ea3n ph\u1ea9m kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng.");
+                return;
+            }
+
+            String response = auctionService.renameAuction(selected.getId(), escapePipe(newName));
+            if (response == null || !response.startsWith("OK|UPDATE_AUCTION|")) {
+                showServerActionError("Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt s\u1ea3n ph\u1ea9m", response);
+                return;
+            }
+
             selected.nameProperty().set(newName);
+            ProductDataManager.getInstance().getServerAuctionList().stream()
+                    .filter(auction -> auction.getAuctionId().equals(selected.getId()))
+                    .findFirst()
+                    .ifPresent(auction -> auction.setName(newName));
             myProductsTable.refresh();
         });
     }
@@ -431,11 +447,41 @@ public class ProductManagementController {
     private void handleDeleteProduct(ActionEvent event) {
         Product selected = myProductsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            // Gọi hàm xóa ở cả 2 danh sách trong Manager
-            ProductDataManager.getInstance().deleteProductAndAuction(selected.getId());
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("X\u00f3a s\u1ea3n ph\u1ea9m");
+            confirm.setHeaderText("X\u00f3a s\u1ea3n ph\u1ea9m kh\u1ecfi server?");
+            confirm.setContentText(selected.getName());
 
-            // UI sẽ tự cập nhật vì productData là ObservableList được quan sát bởi Manager
+            Optional<ButtonType> answer = confirm.showAndWait();
+            if (answer.isEmpty() || answer.get() != ButtonType.OK) {
+                return;
+            }
+
+            String response = auctionService.deleteAuction(selected.getId());
+            if (response == null || !response.startsWith("OK|DELETE_AUCTION|")) {
+                showServerActionError("Kh\u00f4ng th\u1ec3 x\u00f3a s\u1ea3n ph\u1ea9m", response);
+                return;
+            }
+
+            ProductDataManager.getInstance().deleteProductAndAuction(selected.getId());
+            myProductsTable.refresh();
         }
+    }
+
+    private void showServerActionError(String header, String response) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("L\u1ed7i server");
+        alert.setHeaderText(header);
+        alert.setContentText(extractServerMessage(response));
+        alert.showAndWait();
+    }
+
+    private String extractServerMessage(String response) {
+        if (response == null || response.isBlank()) {
+            return "Server kh\u00f4ng ph\u1ea3n h\u1ed3i.";
+        }
+        String[] parts = response.split("\\|", 3);
+        return parts.length >= 3 ? parts[2] : response;
     }
 
     @FXML
@@ -459,5 +505,29 @@ public class ProductManagementController {
         }
     }
 
+    @FXML
+    private void handleCurrentAuctions(ActionEvent event) {
+        switchScene("/fxml/AuctionList.fxml", "UET Auction System", 1040, 660);
+    }
+
+    @FXML
+    private void handleSidebarAccount(ActionEvent event) {
+        switchScene("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1040, 660);
+    }
+
+    private void switchScene(String fxmlPath, String title, double width, double height) {
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
+            Stage stage = (Stage) myProductsTable.getScene().getWindow();
+            Scene scene = new Scene(root, width, height);
+            String css = getClass().getResource("/css/style.css").toExternalForm();
+            scene.getStylesheets().add(css);
+            stage.setTitle(title);
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

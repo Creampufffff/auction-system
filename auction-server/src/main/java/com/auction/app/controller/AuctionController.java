@@ -68,6 +68,24 @@ public class AuctionController {
         List<Auction> auctions = auctionService.getAuctionsBySellerId(sellerId);
         return AuctionMapper.toListDTOs(auctions);
     }
+
+    public ApiResponseDTO updateAuction(Auction auction) {
+        try {
+            auctionService.updateAuction(auction);
+            return new ApiResponseDTO(true, "Auction updated successfully");
+        } catch (Exception e) {
+            return new ApiResponseDTO(false, "Error updating auction: " + e.getMessage());
+        }
+    }
+
+    public ApiResponseDTO deleteAuction(String auctionId) {
+        try {
+            auctionService.deleteAuction(auctionId);
+            return new ApiResponseDTO(true, "Auction deleted successfully");
+        } catch (Exception e) {
+            return new ApiResponseDTO(false, "Error deleting auction: " + e.getMessage());
+        }
+    }
 }
 
 

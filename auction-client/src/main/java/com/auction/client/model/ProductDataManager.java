@@ -58,7 +58,10 @@ public class ProductDataManager {
 
     // --- [MỚI] HÀM TRỢ GIÚP VÍ TIỀN ---
     public double getUserBalance() { return userBalance; }
-    public void setUserBalance(double balance) { this.userBalance = balance; }
+    public void setUserBalance(double balance) {
+        this.userBalance = balance;
+        SessionManager.updateCurrentUserBalance(balance);
+    }
     public void deductBalance(double amount) { this.userBalance -= amount; }
     public void refundBalance(double amount) { this.userBalance += amount; }
     public double getHeldMoney(String auctionId) { return userHeldMoneyMap.getOrDefault(auctionId, 0.0); }

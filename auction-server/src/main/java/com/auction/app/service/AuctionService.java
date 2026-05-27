@@ -19,6 +19,10 @@ public interface AuctionService {
 
     List<Auction> getAuctionsBySellerId(String sellerId);
 
+    void updateAuction(Auction auction);
+
+    void deleteAuction(String auctionId);
+
     /**
      * If the auction is running and its remaining time is less than or equal to thresholdSeconds,
      * extend the auction end time by extensionSeconds.

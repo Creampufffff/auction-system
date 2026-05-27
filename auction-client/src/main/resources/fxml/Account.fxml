@@ -31,6 +31,12 @@
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
+            <Button fx:id="productsSidebarButton"
+                    text="Kho hàng"
+                    onAction="#handleSidebarProducts"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
             <Button text="Tài khoản"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
@@ -42,10 +48,13 @@
         <VBox spacing="10">
             <VBox spacing="6"
                   style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
-                <Label text="Đã đăng nhập"
+                <Label text="Tài khoản"
                        style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
-                <Label fx:id="usernameLabel"
-                       text="..."
+                <Label fx:id="sidebarRoleLabel"
+                       text="Role: --"
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label fx:id="sidebarBalanceLabel"
+                       text="Ví: --"
                        style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </VBox>
         </VBox>
@@ -73,12 +82,20 @@
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
                 <Label text="HỒ SƠ"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                <Label fx:id="usernameLabel"
+                       text="--"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
                 <Label fx:id="roleLabel"
                        text="--"
                        style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
                 <Label fx:id="userIdLabel"
                        text="--"
                        style="-fx-font-size: 11px; -fx-text-fill: #aab0bb;"/>
+                <Button text="Đăng xuất"
+                        onAction="#handleLogout"
+                        maxWidth="Infinity"
+                        alignment="CENTER"
+                        style="-fx-background-color: #d92d20; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 14;"/>
             </VBox>
 
             <!-- Balance card -->
@@ -122,7 +139,9 @@
         </HBox>
 
         <!-- Bid history table -->
-        <VBox spacing="14" VBox.vgrow="ALWAYS"
+        <VBox fx:id="bidHistoryCard"
+              spacing="14"
+              VBox.vgrow="ALWAYS"
               style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e0e7f0; -fx-border-radius: 10; -fx-padding: 18;">
 
             <HBox alignment="CENTER_LEFT" spacing="12">
@@ -154,14 +173,6 @@
                 </columns>
             </TableView>
         </VBox>
-
-        <!-- Back button -->
-        <HBox alignment="CENTER_RIGHT">
-            <Button text="Quay lại"
-                    onAction="#handleBack"
-                    prefWidth="150"
-                    style="-fx-background-color: white; -fx-border-color: #b8c2d6; -fx-border-radius: 6; -fx-background-radius: 6; -fx-text-fill: #344054; -fx-font-weight: bold; -fx-padding: 11 14;"/>
-        </HBox>
 
     </VBox>
 </HBox>

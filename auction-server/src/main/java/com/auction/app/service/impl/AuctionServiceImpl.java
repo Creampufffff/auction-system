@@ -111,6 +111,33 @@ public class AuctionServiceImpl implements AuctionService {
         return auctionDAO.findBySellerId(sellerId);
     }
 
+    @Override
+    public void updateAuction(Auction auction) {
+        if (auction == null || auction.getId() == null || auction.getId().isBlank()) {
+            throw new IllegalArgumentException("Auction ID cannot be empty");
+        }
+        if (auction.getItem() == null) {
+            throw new IllegalArgumentException("Auction item cannot be null");
+        }
+        if (!auctionDAO.save(auction)) {
+            throw new IllegalStateException("Failed to update auction");
+        }
+    }
+
+    @Override
+    public void deleteAuction(String auctionId) {
+        validateId(auctionId);
+
+        Auction auction = getAuctionById(auctionId);
+        if (auction == null) {
+            throw new AuctionNotFoundException("Auction not found");
+        }
+
+        if (!auctionDAO.delete(auctionId)) {
+            throw new IllegalStateException("Failed to delete auction");
+        }
+    }
+
     private void validateId(String id) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Auction ID cannot be empty");

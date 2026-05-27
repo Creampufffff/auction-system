@@ -1,7 +1,9 @@
 package com.auction.client.controller;
 
 import com.app.common.dto.AuctionListDTO;
+import com.auction.client.model.Product;
 import com.auction.client.model.ProductDataManager;
+import com.auction.client.service.AuctionService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -11,35 +13,37 @@ import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 public class ProductDetailController {
+    private final AuctionService auctionService = new AuctionService();
+    private AuctionListDTO currentAuction;
 
-    // Các ID này phải khớp y hệt với fx:id trong file ProductDetail.fxml của bạn
     @FXML private Label productNameLabel;
     @FXML private Label categoryLabel;
-    @FXML private Label startingPriceLabel; // Khớp với FXML
+    @FXML private Label startingPriceLabel;
     @FXML private Label conditionLabel;
-    @FXML private Label specsLabel;         // Khớp với FXML (thay cho description)
+    @FXML private Label specsLabel;
     @FXML private Label warrantyLabel;
     @FXML private Label endTimeLabel;
 
     @FXML
     public void initialize() {
-        // Lấy dữ liệu từ Manager
         AuctionListDTO selected = ProductDataManager.getInstance().getSelectedAuction();
-
-        if (selected != null) {
-            // Đổ dữ liệu vào các Label
-            productNameLabel.setText(selected.getName());
-            categoryLabel.setText("Mã phiên: " + selected.getAuctionId());
-            startingPriceLabel.setText("$" + String.format("%.2f", selected.getCurrentPrice()));
-
-            // Chi tiết kỹ thuật
-            conditionLabel.setText(selected.getCondition() != null ? selected.getCondition() : "N/A");
-            specsLabel.setText(selected.getDescription() != null ? selected.getDescription() : "Không có mô tả chi tiết.");
-            warrantyLabel.setText(selected.getWarranty() != null ? selected.getWarranty() : "Không có thông tin.");
-
-            // Trạng thái thời gian (Ví dụ)
-            endTimeLabel.setText("Phiên đấu giá đang diễn ra");
+        if (selected == null) {
+            return;
         }
+
+        AuctionListDTO serverAuction = auctionService.getAuctionById(selected.getAuctionId());
+        currentAuction = serverAuction != null ? serverAuction : selected;
+        ProductDataManager.getInstance().setSelectedAuction(currentAuction);
+
+        productNameLabel.setText(currentAuction.getName());
+        categoryLabel.setText("Ma phien: " + currentAuction.getAuctionId());
+        startingPriceLabel.setText("$" + String.format("%.2f", currentAuction.getCurrentPrice()));
+        conditionLabel.setText(hasText(currentAuction.getCondition()) ? currentAuction.getCondition() : "N/A");
+        specsLabel.setText(hasText(currentAuction.getDescription()) ? currentAuction.getDescription() : "Khong co mo ta chi tiet.");
+        warrantyLabel.setText(hasText(currentAuction.getWarranty()) ? currentAuction.getWarranty() : "Khong co thong tin.");
+        endTimeLabel.setText(hasText(currentAuction.getEndDateTime())
+                ? "Ket thuc: " + currentAuction.getEndDateTime()
+                : "Chua co thoi gian ket thuc");
     }
 
     @FXML
@@ -49,14 +53,40 @@ public class ProductDetailController {
 
     @FXML
     private void handleJoinAuction(ActionEvent event) {
-        switchScene("/fxml/LiveBidding.fxml", "Đấu giá trực tiếp");
+        if (currentAuction == null) {
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LiveBidding.fxml"));
+            Parent root = loader.load();
+            LiveBiddingController controller = loader.getController();
+            controller.setProduct(new Product(
+                    currentAuction.getAuctionId(),
+                    currentAuction.getItemType(),
+                    currentAuction.getName(),
+                    ProductDataManager.getInstance().getCurrentPrice(currentAuction.getAuctionId(), currentAuction.getCurrentPrice()),
+                    currentAuction.getAuctionStatus().toString(),
+                    currentAuction.getCondition(),
+                    currentAuction.getDescription(),
+                    currentAuction.getWarranty(),
+                    currentAuction.getEndDateTime()
+            ));
+
+            Stage stage = (Stage) productNameLabel.getScene().getWindow();
+            stage.setTitle("Dau gia truc tiep");
+            stage.setScene(new Scene(root, 1040, 660));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
     @FXML
     private void handleDeleteProduct(ActionEvent event) {
         AuctionListDTO selected = ProductDataManager.getInstance().getSelectedAuction();
         if (selected != null) {
             ProductDataManager.getInstance().deleteProductAndAuction(selected.getAuctionId());
-            handleBack(event); // Quay lại màn hình danh sách, lúc này sản phẩm đã biến mất
+            handleBack(event);
         }
     }
 
@@ -64,13 +94,16 @@ public class ProductDetailController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
-            // Lấy stage hiện tại từ bất kỳ Label nào có sẵn
             Stage stage = (Stage) productNameLabel.getScene().getWindow();
             stage.setTitle(title);
             stage.setScene(new Scene(root, 1040, 660));
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Không thể load file FXML: " + fxmlPath);
+            System.err.println("Khong the load file FXML: " + fxmlPath);
         }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

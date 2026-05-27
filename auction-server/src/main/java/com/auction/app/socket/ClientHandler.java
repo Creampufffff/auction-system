@@ -1,9 +1,7 @@
 package com.auction.app.socket;
 
 import com.app.common.dto.*;
-import com.app.common.entity.Bidder;
-import com.app.common.entity.Seller;
-import com.app.common.entity.User;
+import com.app.common.entity.*;
 import com.app.common.exception.AuctionClosedException;
 import com.app.common.exception.AuctionNotFoundException;
 import com.app.common.exception.InsufficientBalanceException;
@@ -111,12 +109,16 @@ public class ClientHandler implements Runnable {
                 case "LIST_AUCTIONS" -> listAuctions();
                 case "LIST_MY_AUCTIONS" -> listMyAuctions();
                 case "GET_AUCTION" -> getAuction(payload);
+                case "GET_BID_HISTORY" -> getBidHistory(payload);
+                case "GET_MY_BID_HISTORY" -> getMyBidHistory();
                 case "PLACE_BID" -> placeBid(payload);
                 case "SET_AUTO_BID" -> setAutoBid(payload);
                 case "CANCEL_AUTO_BID" -> cancelAutoBid(payload);
                 case "CREATE_ART_AUCTION" -> createArtAuction(payload);
                 case "CREATE_ELECTRONICS_AUCTION" -> createElectronicsAuction(payload);
                 case "CREATE_VEHICLE_AUCTION" -> createVehicleAuction(payload);
+                case "UPDATE_AUCTION" -> updateAuction(payload);
+                case "DELETE_AUCTION" -> deleteAuction(payload);
                 case "START_AUCTION" -> startAuction(payload);
                 case "END_AUCTION" -> endAuction(payload);
                 default -> "ERR|UNKNOWN_COMMAND";
@@ -286,6 +288,39 @@ public class ClientHandler implements Runnable {
         return "OK|AUCTION|" + formatAuctionDTO(auction);
     }
 
+    private String getBidHistory(String payload) {
+        String auctionId = requirePayload(payload, "Auction id");
+        List<BidHistoryDTO> bids = bidController.getAuctionBidHistory(auctionId);
+        return formatBidHistoryResponse(bids);
+    }
+
+    private String getMyBidHistory() {
+        Bidder bidder = requireCurrentBidder();
+        List<BidHistoryDTO> bids = bidController.getBidderBidHistory(bidder.getId());
+        return formatBidHistoryResponse(bids);
+    }
+
+    private String formatBidHistoryResponse(List<BidHistoryDTO> bids) {
+        if (bids == null || bids.isEmpty()) {
+            return "OK|BID_HISTORY|EMPTY";
+        }
+
+        StringBuilder response = new StringBuilder("OK|BID_HISTORY");
+        for (BidHistoryDTO bid : bids) {
+            response.append("|")
+                    .append(nullToEmpty(bid.getBidId()))
+                    .append(",")
+                    .append(nullToEmpty(bid.getAuctionId()))
+                    .append(",")
+                    .append(nullToEmpty(bid.getBidderUsername()))
+                    .append(",")
+                    .append(bid.getBidAmount())
+                    .append(",")
+                    .append(nullToEmpty(bid.getBidTime()));
+        }
+        return response.toString();
+    }
+
     private String placeBid(String payload) {
         String[] args = requirePayload(payload, "Payload").split("\\s+");
         if (args.length != 2 && args.length != 3) {
@@ -429,6 +464,116 @@ public class ClientHandler implements Runnable {
         return "OK|CREATE_VEHICLE_AUCTION|" + auctionId + "|Item created";
     }
 
+    private String updateAuction(String payload) {
+        String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
+        if (rawArgs.length != 2 && rawArgs.length != 8) {
+            throw new IllegalArgumentException("Requires auctionId|name or auctionId|name|description|startDate|endDate|startPrice|minIncrement|typeSpecificValue");
+        }
+
+        Seller seller = requireCurrentSeller();
+        String auctionId = rawArgs[0];
+        Auction existing = auctionService.getAuctionById(auctionId);
+        if (existing == null || existing.getItem() == null) {
+            return "ERR|AUCTION_NOT_FOUND|Auction not found";
+        }
+        if (!seller.getId().equals(existing.getItem().getSellerId())) {
+            return "ERR|AUTH_FAILED|Cannot update another seller's auction";
+        }
+
+        Item updatedItem = rawArgs.length == 2
+                ? createRenamedItem(existing, rawArgs[1], seller.getId())
+                : createUpdatedItem(existing, rawArgs, seller.getId());
+        Auction updatedAuction = new Auction(updatedItem);
+        updatedAuction.setId(existing.getId());
+        updatedAuction.setAuctionStatus(existing.getAuctionStatus());
+
+        ApiResponseDTO response = auctionController.updateAuction(updatedAuction);
+        if (!response.isSuccess()) {
+            return "ERR|UPDATE_AUCTION_FAILED|" + response.getMessage();
+        }
+        return "OK|UPDATE_AUCTION|" + auctionId;
+    }
+
+    private Item createRenamedItem(Auction existing, String name, String sellerId) {
+        Item oldItem = existing.getItem();
+        String extra;
+        if (oldItem instanceof Electronics) {
+            extra = String.valueOf(((Electronics) oldItem).getWarrantyMonths());
+        } else if (oldItem instanceof Vehicle) {
+            extra = ((Vehicle) oldItem).getBrand();
+        } else if (oldItem instanceof Art) {
+            extra = ((Art) oldItem).getAuthor();
+        } else {
+            extra = "";
+        }
+
+        String[] args = {
+                existing.getId(),
+                name,
+                oldItem.getDescription(),
+                oldItem.getStartDateString(),
+                oldItem.getEndDateString(),
+                String.valueOf(oldItem.getStartPrice()),
+                String.valueOf(oldItem.getMinIncreasement()),
+                extra
+        };
+        return createUpdatedItem(existing, args, sellerId);
+    }
+
+    private Item createUpdatedItem(Auction existing, String[] rawArgs, String sellerId) {
+        Item oldItem = existing.getItem();
+        String type = resolveItemType(oldItem);
+        String name = rawArgs[1];
+        String description = rawArgs[2];
+        String startDate = rawArgs[3];
+        String endDate = rawArgs[4];
+        double startPrice = Double.parseDouble(rawArgs[5]);
+        double minIncrement = Double.parseDouble(rawArgs[6]);
+        String extra = rawArgs[7];
+
+        Item item;
+        if ("ELECTRONICS".equals(type)) {
+            item = new Electronics(description, name, startDate, endDate, startPrice, minIncrement, Integer.parseInt(extra));
+        } else if ("VEHICLE".equals(type)) {
+            item = new Vehicle(description, name, startDate, endDate, startPrice, minIncrement, extra);
+        } else {
+            item = new Art(description, name, startDate, endDate, startPrice, minIncrement, extra);
+        }
+        item.setId(oldItem.getId());
+        item.setSellerId(sellerId);
+        item.setHighestCurrentPrice(oldItem.getHighestCurrentPrice());
+        return item;
+    }
+
+    private String resolveItemType(Item item) {
+        if (item instanceof Electronics) {
+            return "ELECTRONICS";
+        }
+        if (item instanceof Vehicle) {
+            return "VEHICLE";
+        }
+        return "ART";
+    }
+
+    private String deleteAuction(String payload) {
+        String auctionId = requirePayload(payload, "Auction id");
+        Seller seller = requireCurrentSeller();
+        Auction existing = auctionService.getAuctionById(auctionId);
+        if (existing == null || existing.getItem() == null) {
+            return "ERR|AUCTION_NOT_FOUND|Auction not found";
+        }
+        if (!seller.getId().equals(existing.getItem().getSellerId())) {
+            return "ERR|AUTH_FAILED|Cannot delete another seller's auction";
+        }
+
+        ApiResponseDTO response = auctionController.deleteAuction(auctionId);
+        if (!response.isSuccess()) {
+            return "ERR|DELETE_AUCTION_FAILED|" + response.getMessage();
+        }
+        socketServer.broadcast("EVENT|AUCTION_ENDED|" + auctionId);
+        return "OK|DELETE_AUCTION|" + auctionId;
+    }
+
     private String startAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
         requireCurrentSeller();
@@ -463,11 +608,18 @@ public class ClientHandler implements Runnable {
                 + "," + auction.getCurrentPrice()
                 + "," + auction.getAuctionStatus()
                 + "," + nullToEmpty(auction.getStartDateTime())
-                + "," + nullToEmpty(auction.getEndDateTime());
+                + "," + nullToEmpty(auction.getEndDateTime())
+                + "," + escapeCsvField(auction.getCondition())
+                + "," + escapeCsvField(auction.getDescription())
+                + "," + escapeCsvField(auction.getWarranty());
     }
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String escapeCsvField(String value) {
+        return nullToEmpty(value).replace(",", " ");
     }
 
     private String help() {
@@ -481,9 +633,13 @@ public class ClientHandler implements Runnable {
                 + "LIST_AUCTIONS;"
                 + "LIST_MY_AUCTIONS;"
                 + "GET_AUCTION auctionId;"
+                + "GET_BID_HISTORY auctionId;"
+                + "GET_MY_BID_HISTORY;"
                 + "CREATE_ART_AUCTION name|description|startDate|endDate|startPrice|minIncrement|author;"
                 + "CREATE_ELECTRONICS_AUCTION name|description|startDate|endDate|startPrice|minIncrement|warrantyMonths;"
                 + "CREATE_VEHICLE_AUCTION name|description|startDate|endDate|startPrice|minIncrement|brand;"
+                + "UPDATE_AUCTION auctionId|name;"
+                + "DELETE_AUCTION auctionId;"
                 + "START_AUCTION auctionId;"
                 + "PLACE_BID auctionId amount;"
                 + "SET_AUTO_BID auctionId maxAmount;"

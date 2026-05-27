@@ -60,7 +60,9 @@
                     </VBox>
                     <VBox spacing="8">
                         <Label text="Người dẫn đầu:" style="-fx-text-fill: #667085; -fx-font-size: 13px;"/>
-                        <Label text="dang_thang_uet" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
+                        <Label fx:id="leadingBidderLabel"
+                               text="Chưa có"
+                               style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
                     </VBox>
                 </VBox>
 

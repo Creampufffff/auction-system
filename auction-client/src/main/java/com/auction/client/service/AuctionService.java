@@ -1,6 +1,7 @@
 package com.auction.client.service;
 
 import com.app.common.dto.AuctionListDTO;
+import com.app.common.dto.BidHistoryDTO;
 import com.app.common.dto.PlaceBidRequestDTO;
 import com.app.common.dto.PlaceBidResponseDTO;
 import com.app.common.enums.Status;
@@ -139,6 +140,75 @@ public class AuctionService {
         return parseAuctionDetailResponse(response);
     }
 
+    public List<BidHistoryDTO> getBidHistory(String auctionId) {
+        if (isBlank(auctionId)) {
+            return new ArrayList<>();
+        }
+
+        try {
+            String response = SocketClientService.sendSessionCommand("GET_BID_HISTORY " + auctionId);
+            return parseBidHistoryResponse(response);
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public String updateAuction(
+            String auctionId,
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String typeSpecificValue
+    ) {
+        if (!SessionManager.hasRole("Seller")) {
+            return "ERR|Chỉ Seller mới được sửa phiên.";
+        }
+
+        String payload = String.join(
+                "|",
+                auctionId,
+                name,
+                description,
+                startDate,
+                endDate,
+                String.valueOf(startPrice),
+                minIncrement,
+                typeSpecificValue
+        );
+        try {
+            return SocketClientService.sendSessionCommand("UPDATE_AUCTION " + payload);
+        } catch (Exception e) {
+            return "ERR|Không thể gửi yêu cầu sửa phiên tới server.";
+        }
+    }
+
+    public String renameAuction(String auctionId, String name) {
+        if (!SessionManager.hasRole("Seller")) {
+            return "ERR|Chỉ Seller mới được sửa phiên.";
+        }
+
+        try {
+            return SocketClientService.sendSessionCommand("UPDATE_AUCTION " + auctionId + "|" + name);
+        } catch (Exception e) {
+            return "ERR|Không thể gửi yêu cầu sửa phiên tới server.";
+        }
+    }
+
+    public String deleteAuction(String auctionId) {
+        if (!SessionManager.hasRole("Seller")) {
+            return "ERR|Chỉ Seller mới được xóa phiên.";
+        }
+
+        try {
+            return SocketClientService.sendSessionCommand("DELETE_AUCTION " + auctionId);
+        } catch (Exception e) {
+            return "ERR|Không thể gửi yêu cầu xóa phiên tới server.";
+        }
+    }
+
     public PlaceBidResponseDTO placeBid(String auctionId, double bidAmount) {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId(auctionId);
@@ -230,6 +300,44 @@ public class AuctionService {
         return parseAuctionRecord(parts[2]);
     }
 
+    private List<BidHistoryDTO> parseBidHistoryResponse(String response) {
+        List<BidHistoryDTO> bids = new ArrayList<>();
+        if (response == null || response.isBlank() || response.startsWith("ERR|") || "OK|BID_HISTORY|EMPTY".equals(response)) {
+            return bids;
+        }
+        if (!response.startsWith("OK|BID_HISTORY|")) {
+            return bids;
+        }
+
+        String[] records = response.split("\\|");
+        for (int i = 2; i < records.length; i++) {
+            BidHistoryDTO bid = parseBidHistoryRecord(records[i]);
+            if (bid != null) {
+                bids.add(bid);
+            }
+        }
+        return bids;
+    }
+
+    private BidHistoryDTO parseBidHistoryRecord(String record) {
+        String[] fields = record.split(",", -1);
+        if (fields.length < 5) {
+            return null;
+        }
+
+        try {
+            return new BidHistoryDTO(
+                    fields[0],
+                    fields[1],
+                    fields[2],
+                    Double.parseDouble(fields[3]),
+                    fields[4]
+            );
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private AuctionListDTO parseAuctionRecord(String record) {
         if (record == null || record.isBlank()) {
             return null;
@@ -253,6 +361,11 @@ public class AuctionService {
                     auction.setStartDateTime(fields[6]);
                     auction.setEndDateTime(fields[7]);
                 }
+                if (fields.length >= 11) {
+                    auction.setCondition(emptyToNull(fields[8]));
+                    auction.setDescription(emptyToNull(fields[9]));
+                    auction.setWarranty(emptyToNull(fields[10]));
+                }
             } else {
                 auction.setItemType("ART");
                 auction.setName(fields[2]);
@@ -263,6 +376,10 @@ public class AuctionService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String emptyToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private PlaceBidResponseDTO parsePlaceBidResponse(String response, double amount) {

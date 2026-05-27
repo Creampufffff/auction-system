@@ -26,6 +26,7 @@ public class AuctionListController {
     @FXML private Label messageLabel;
 
     // Sidebar balance (bottom-left panel)
+    @FXML private Label accountRoleLabel;
     @FXML private Label accountBalanceLabel;
 
     // [MỚI] 3 stat boxes ở trên
@@ -37,17 +38,19 @@ public class AuctionListController {
     @FXML private TextField searchField;
     @FXML private Button previousPageButton;
     @FXML private Button nextPageButton;
+    @FXML private Button productsSidebarButton;
     @FXML private Label pageInfoLabel;
 
     private final AuctionService auctionService = new AuctionService();
 
     @FXML
     public void initialize() {
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("itemType"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         priceColumn.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("auctionStatus"));
 
+        configureSidebarForRole();
         loadAuctions();
 
         auctionTable.refresh();
@@ -63,6 +66,14 @@ public class AuctionListController {
         Platform.runLater(() -> {
             updateUIWithBalance();
         });
+    }
+
+    private void configureSidebarForRole() {
+        if (productsSidebarButton != null) {
+            boolean isSeller = SessionManager.hasRole("Seller");
+            productsSidebarButton.setVisible(isSeller);
+            productsSidebarButton.setManaged(isSeller);
+        }
     }
 
     private void loadAuctions() {
@@ -105,6 +116,11 @@ public class AuctionListController {
         ProductDataManager.getInstance().syncBalanceFromSession();
         double balance = ProductDataManager.getInstance().getUserBalance();
         String balanceText = "$" + String.format("%.2f", balance);
+
+        if (accountRoleLabel != null) {
+            String role = SessionManager.getCurrentUserRole();
+            accountRoleLabel.setText("Role: " + (role == null ? "--" : role));
+        }
 
         // Sidebar label (bottom-left)
         if (accountBalanceLabel != null) {
@@ -214,12 +230,13 @@ public class AuctionListController {
 
     @FXML
     private void handleSidebarProducts(ActionEvent event) {
+        if (!SessionManager.hasRole("Seller")) {
+            if (messageLabel != null) {
+                messageLabel.setText("Chỉ seller mới được quản lý sản phẩm.");
+            }
+            return;
+        }
         switchScene("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1040, 660);
-    }
-
-    @FXML
-    private void handleSidebarBidding(ActionEvent event) {
-        handleJoinBidding(event);
     }
 
     @FXML

@@ -8,20 +8,37 @@
       prefWidth="1040" prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
 
-    <VBox prefWidth="230" spacing="22" style="-fx-background-color: #172033;">
-        <padding><Insets top="28" right="18" bottom="24" left="18"/></padding>
+    <VBox prefWidth="230"
+          spacing="22"
+          style="-fx-background-color: #172033;">
+        <padding>
+            <Insets top="28" right="18" bottom="24" left="18"/>
+        </padding>
+
         <VBox spacing="2">
-            <Label text="CÁ NHÂN" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
-            <Label text="Kho hàng" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Label text="ĐẤU GIÁ"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
+            <Label text="Bảng điều khiển"
+                   style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         </VBox>
+
         <VBox spacing="8">
-            <Button fx:id="backButton"
-                    text="← Quay lại"
-                    onAction="#handleBack"
+            <Button text="Phiên đấu giá"
+                    onAction="#handleCurrentAuctions"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    focusTraversable="false" />
+                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
+            <Button text="Kho hàng"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
+            <Button text="Tài khoản"
+                    onAction="#handleSidebarAccount"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
         </VBox>
+
         <Region VBox.vgrow="ALWAYS"/>
     </VBox>
 

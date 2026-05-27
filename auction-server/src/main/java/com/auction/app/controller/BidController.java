@@ -83,6 +83,11 @@ public class BidController {
         return AuctionMapper.toBidHistoryDTOs(bids);
     }
 
+    public List<BidHistoryDTO> getBidderBidHistory(String bidderId) {
+        List<BidTransaction> bids = bidService.getBidByBidderId(bidderId);
+        return AuctionMapper.toBidHistoryDTOs(bids);
+    }
+
     public ApiResponseDTO deleteBid(String bidId) {
         try {
             bidService.deleteBid(bidId);

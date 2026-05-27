@@ -39,4 +39,10 @@ public class SessionManager {
     public static boolean hasRole(String role) {
         return role != null && role.equalsIgnoreCase(getCurrentUserRole());
     }
+
+    public static void updateCurrentUserBalance(double balance){
+        if (currentUser != null){
+            currentUser.setBalance(balance);
+        }
+    }
 }

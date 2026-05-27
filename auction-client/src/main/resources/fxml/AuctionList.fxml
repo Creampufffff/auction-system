@@ -30,12 +30,8 @@
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
-            <Button text="Đấu giá trực tiếp"
-                    onAction="#handleSidebarBidding"
-                    maxWidth="Infinity"
-                    alignment="CENTER_LEFT"
-                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
-            <Button text="Sản phẩm"
+            <Button fx:id="productsSidebarButton"
+                    text="Kho hàng"
                     onAction="#handleSidebarProducts"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
@@ -52,20 +48,17 @@
         <VBox spacing="10">
             <VBox spacing="6"
                   style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
-                <Label text="Đã đăng nhập"
+                <Label text="Tài khoản"
                        style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
 
-                <!-- Sidebar balance label — kept as-is -->
+                <Label fx:id="accountRoleLabel"
+                       text="Role: --"
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
                 <Label fx:id="accountBalanceLabel"
                        text="Đang tải..."
                        style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </VBox>
-
-            <Button text="Đăng xuất"
-                    onAction="#handleLogout"
-                    maxWidth="Infinity"
-                    alignment="CENTER_LEFT"
-                    style="-fx-background-color: #d92d20; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
         </VBox>
     </VBox>
 
@@ -159,7 +152,7 @@
                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                 </columnResizePolicy>
                 <columns>
-                    <TableColumn fx:id="idColumn" text="Mã phiên"/>
+                    <TableColumn fx:id="idColumn" text="Loại sản phẩm"/>
                     <TableColumn fx:id="nameColumn" text="Sản phẩm"/>
                     <TableColumn fx:id="priceColumn" text="Giá hiện tại"/>
                     <TableColumn fx:id="statusColumn" text="Trạng thái"/>

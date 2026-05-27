@@ -13,5 +13,7 @@ public interface BidService {
 
     List<BidTransaction> getBidByAuctionId(String auctionId);
 
+    List<BidTransaction> getBidByBidderId(String bidderId);
+
     void deleteBid(String bidId);
 }
