@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.client.controller.AccountController"
+      fx:controller="com.auction.ui.view.AccountController"
       prefWidth="1040"
       prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
@@ -176,3 +176,4 @@
 
     </VBox>
 </HBox>
+

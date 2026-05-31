@@ -4,7 +4,7 @@
 <?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.client.controller.ProductDetailController"
+      fx:controller="com.auction.ui.view.ProductDetailController"
       prefWidth="1040" prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
 
@@ -15,7 +15,7 @@
             <Label text="Sản phẩm" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
         </VBox>
         <VBox spacing="8">
-            <Button text="← Quay lại" onAction="#handleBack" maxWidth="Infinity" alignment="CENTER_LEFT"
+            <Button text="← Quay lại" onAction="#handleBack" maxWidth="Infinity"
                     style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14; -fx-border-color: rgba(255,255,255,0.2); -fx-border-radius: 6;"/>
         </VBox>
         <Region VBox.vgrow="ALWAYS"/>
@@ -27,7 +27,7 @@
         <HBox alignment="CENTER_LEFT" spacing="18">
             <VBox spacing="4">
                 <Label fx:id="productNameLabel" style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
-                <Label fx:id="categoryLabel" style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+                <Label fx:id="categoryLabel" wrapText="true" style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
             <Button text="Tham gia đấu giá" onAction="#handleJoinAuction"
@@ -46,28 +46,41 @@
                 </VBox>
             </VBox>
 
-            <VBox spacing="20" HBox.hgrow="ALWAYS"
+            <VBox spacing="18" HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e0e7f0; -fx-border-radius: 10; -fx-padding: 25;">
-                <Label text="CHI TIẾT KỸ THUẬT" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
-                <GridPane vgap="18" hgap="20">
+                <Label text="THÔNG TIN SẢN PHẨM" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
+
+                <GridPane vgap="16" hgap="20">
                     <columnConstraints>
-                        <ColumnConstraints prefWidth="100"/>
+                        <ColumnConstraints prefWidth="150"/>
                         <ColumnConstraints hgrow="ALWAYS"/>
                     </columnConstraints>
 
-                    <Label fx:id="conditionTitleLabel" text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="0"/>
-                    <Label fx:id="conditionLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                    <Label text="Loại sản phẩm:" style="-fx-text-fill: #667085;" GridPane.rowIndex="0"/>
+                    <Label fx:id="itemTypeLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                    <Label fx:id="specsTitleLabel" text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="1"/>
-                    <Label fx:id="specsLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    <Label text="Trạng thái:" style="-fx-text-fill: #667085;" GridPane.rowIndex="1"/>
+                    <Label fx:id="statusLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                    <Label fx:id="warrantyTitleLabel" text="Bảo hành:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
-                    <Label fx:id="warrantyLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    <Label text="Ngày bắt đầu:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
+                    <Label fx:id="startTimeLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Ngày kết thúc:" style="-fx-text-fill: #667085;" GridPane.rowIndex="3"/>
+                    <Label fx:id="endTimeLabel" style="-fx-font-weight: bold; -fx-text-fill: #d92d20;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="4"/>
+                    <Label fx:id="conditionLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                    <Label text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="5"/>
+                    <Label fx:id="specsLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+                    <Label text="Bảo hành / thông tin thêm:" style="-fx-text-fill: #667085;" GridPane.rowIndex="6"/>
+                    <Label fx:id="warrantyLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
                 </GridPane>
+
                 <Region VBox.vgrow="ALWAYS"/>
                 <Separator style="-fx-opacity: 0.5;"/>
                 <HBox spacing="15" alignment="CENTER_RIGHT">
-                    <Label fx:id="endTimeLabel" style="-fx-font-weight: bold; -fx-text-fill: #d92d20;" HBox.hgrow="ALWAYS"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="Xóa sản phẩm" onAction="#handleDeleteProduct"
                             style="-fx-background-color: #fef3f2; -fx-text-fill: #d92d20; -fx-border-color: #fda29b; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-padding: 8 16;"/>
@@ -76,3 +89,4 @@
         </HBox>
     </VBox>
 </HBox>
+

@@ -4,7 +4,7 @@
 <?import javafx.geometry.Insets?>
 
 <HBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.client.controller.ProductManagementController"
+      fx:controller="com.auction.ui.view.ProductManagementController"
       prefWidth="1040" prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
 
@@ -74,3 +74,4 @@
         </HBox>
     </VBox>
 </HBox>
+

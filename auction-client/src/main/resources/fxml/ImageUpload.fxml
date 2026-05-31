@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.auction.client.controller.ImageUploadController"
+      fx:controller="com.auction.ui.view.ImageUploadController"
       spacing="16"
       style="-fx-background-color: #f3f6fb;"
       prefWidth="900"
@@ -92,4 +92,5 @@
     </HBox>
 
 </VBox>
+
 

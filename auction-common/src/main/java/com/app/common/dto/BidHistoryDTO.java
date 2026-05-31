@@ -30,6 +30,15 @@ public class BidHistoryDTO implements Serializable {
         this.bidTime = bidTime;
     }
 
+    public BidHistoryDTO(String bidId, String auctionId, String bidderUsername,
+                        double bidAmount, String bidTime) {
+        this.bidId = bidId;
+        this.auctionId = auctionId;
+        this.bidderUsername = bidderUsername;
+        this.bidAmount = bidAmount;
+        this.bidTime = bidTime;
+    }
+
     public String getItemType() {
         return itemType;
     }
@@ -47,4 +56,3 @@ public class BidHistoryDTO implements Serializable {
     }
 
 }
-

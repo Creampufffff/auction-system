@@ -75,8 +75,18 @@ public class AuctionManager {
                     LocalDateTime startTime = parseStartTime(auction.getItem().getStartDateString());
                     LocalDateTime endTime = parseEndTime(auction.getItem().getEndDateString());
 
+                    // DEBUG: Print auction status details
+                    System.out.println("[AuctionManager] Checking auction: " + auction.getId()
+                            + " | Status: " + auction.getAuctionStatus()
+                            + " | Now: " + now
+                            + " | StartDtString: " + auction.getItem().getStartDateString()
+                            + " | StartTime: " + startTime
+                            + " | EndDtString: " + auction.getItem().getEndDateString()
+                            + " | EndTime: " + endTime);
+
                     // End time wins first, so an expired OPEN auction is not started accidentally.
                     if (endTime != null && !now.isBefore(endTime)) {
+                        System.out.println("[AuctionManager] Ending auction " + auction.getId() + " (endTime passed)");
                         auctionService.endAuction(auction.getId());
                         if (socketServer != null) {
                             socketServer.broadcast("EVENT|AUCTION_ENDED|" + auction.getId());
@@ -88,17 +98,24 @@ public class AuctionManager {
                     if (auction.getAuctionStatus() == Status.OPEN
                             && startTime != null
                             && !now.isBefore(startTime)) {
+                        System.out.println("[AuctionManager] Starting auction " + auction.getId() + " (startTime arrived)");
                         auctionService.startAuction(auction.getId());
                         if (socketServer != null) {
                             socketServer.broadcast("EVENT|AUCTION_STARTED|" + auction.getId());
                         }
+                    } else if (auction.getAuctionStatus() == Status.OPEN) {
+                        System.out.println("[AuctionManager] Auction " + auction.getId()
+                                + " NOT started: startTime=" + startTime
+                                + " | isBefore(now): " + (startTime != null ? now.isBefore(startTime) : "N/A"));
                     }
                 } catch (Exception e) {
                     System.err.println("Auction status sync error when processing auction " + auction.getId() + ": " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
         } catch (Exception e) {
             System.err.println("Auction status sync general error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
