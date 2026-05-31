@@ -1,9 +1,14 @@
 package com.auction.app.repository.impl;
 
+import com.app.common.entity.Art;
 import com.app.common.entity.Auction;
 import com.app.common.entity.Bidder;
 import com.app.common.entity.BidTransaction;
+import com.app.common.entity.Electronics;
+import com.app.common.entity.Item;
 import com.app.common.entity.User;
+import com.app.common.entity.Vehicle;
+import com.app.common.enums.Status;
 import com.auction.app.config.DatabaseConfig;
 import com.auction.app.repository.BidDAO;
 
@@ -18,7 +23,7 @@ public class BidDAOImpl implements BidDAO {
     @Override
     public List<BidTransaction> findByAuctionId(String auctionId) {
         String sql = """
-                SELECT id, auction_id, bidder_id, bid_amount
+                SELECT id, auction_id, bidder_id, bid_amount, created_at
                 FROM bid_transactions
                 WHERE auction_id = ?
                 ORDER BY bid_amount DESC, created_at DESC
@@ -65,10 +70,37 @@ public class BidDAOImpl implements BidDAO {
     @Override
     public List<BidTransaction> findByBidderId(String bidderId) {
         String sql = """
-                SELECT id, auction_id, bidder_id, bid_amount
-                FROM bid_transactions
-                WHERE bidder_id = ?
-                ORDER BY created_at DESC, id DESC
+                SELECT b.id,
+                       b.auction_id,
+                       b.bidder_id,
+                       b.bid_amount,
+                       b.created_at,
+                       u.username AS bidder_username,
+                       u.password AS bidder_password,
+                       u.email AS bidder_email,
+                       a.status AS auction_status,
+                       i.id AS item_id,
+                       i.seller_id,
+                       i.type AS item_type,
+                       i.name AS item_name,
+                       i.description,
+                       i.start_date,
+                       i.end_date,
+                       i.start_price,
+                       i.min_increment,
+                       i.highest_current_price,
+                       art.author,
+                       e.warranty_months,
+                       v.brand
+                FROM bid_transactions b
+                JOIN users u ON u.id = b.bidder_id
+                JOIN auctions a ON a.id = b.auction_id
+                JOIN items i ON i.id = a.item_id
+                LEFT JOIN art art ON art.id = i.id
+                LEFT JOIN electronics e ON e.id = i.id
+                LEFT JOIN vehicle v ON v.id = i.id
+                WHERE b.bidder_id = ?
+                ORDER BY b.created_at DESC, b.id DESC
                 """;
         List<BidTransaction> bids = new ArrayList<>();
 
@@ -78,7 +110,7 @@ public class BidDAOImpl implements BidDAO {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    bids.add(mapBid(resultSet));
+                    bids.add(mapBidWithAuctionSummary(resultSet));
                 }
             }
         } catch (SQLException e) {
@@ -91,7 +123,7 @@ public class BidDAOImpl implements BidDAO {
     @Override
     public BidTransaction getMaxBidByAuctionId(String auctionId) {
         String sql = """
-                SELECT id, auction_id, bidder_id, bid_amount
+                SELECT id, auction_id, bidder_id, bid_amount, created_at
                 FROM bid_transactions
                 WHERE auction_id = ?
                 ORDER BY bid_amount DESC, created_at DESC
@@ -116,7 +148,7 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public BidTransaction findById(String id) {
-        String sql = "SELECT id, auction_id, bidder_id, bid_amount FROM bid_transactions WHERE id = ?";
+        String sql = "SELECT id, auction_id, bidder_id, bid_amount, created_at FROM bid_transactions WHERE id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -136,7 +168,7 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public List<BidTransaction> findAll() {
-        String sql = "SELECT id, auction_id, bidder_id, bid_amount FROM bid_transactions ORDER BY created_at DESC";
+        String sql = "SELECT id, auction_id, bidder_id, bid_amount, created_at FROM bid_transactions ORDER BY created_at DESC";
         List<BidTransaction> bids = new ArrayList<>();
 
         try (Connection connection = DatabaseConfig.getConnection();
@@ -300,7 +332,74 @@ public class BidDAOImpl implements BidDAO {
 
         BidTransaction bid = new BidTransaction((Bidder) user, auction, resultSet.getDouble("bid_amount"));
         bid.setId(resultSet.getString("id"));
+        Timestamp createdAt = resultSet.getTimestamp("created_at");
+        if (createdAt != null) {
+            bid.setCreatedAt(createdAt.toString());
+        }
         return bid;
+    }
+
+    private BidTransaction mapBidWithAuctionSummary(ResultSet resultSet) throws SQLException {
+        Bidder bidder = new Bidder(
+                resultSet.getString("bidder_username"),
+                resultSet.getString("bidder_password"),
+                resultSet.getString("bidder_email")
+        );
+        bidder.setId(resultSet.getString("bidder_id"));
+
+        Item item = mapJoinedItem(resultSet);
+        Auction auction = new Auction(item);
+        auction.setId(resultSet.getString("auction_id"));
+        auction.setAuctionStatus(Status.valueOf(resultSet.getString("auction_status")));
+
+        BidTransaction bid = new BidTransaction(bidder, auction, resultSet.getDouble("bid_amount"));
+        bid.setId(resultSet.getString("id"));
+        Timestamp createdAt = resultSet.getTimestamp("created_at");
+        if (createdAt != null) {
+            bid.setCreatedAt(createdAt.toString());
+        }
+        return bid;
+    }
+
+    private Item mapJoinedItem(ResultSet resultSet) throws SQLException {
+        String type = resultSet.getString("item_type");
+        Item item;
+        if ("ELECTRONICS".equals(type)) {
+            item = new Electronics(
+                    resultSet.getString("description"),
+                    resultSet.getString("item_name"),
+                    resultSet.getString("start_date"),
+                    resultSet.getString("end_date"),
+                    resultSet.getDouble("start_price"),
+                    resultSet.getDouble("min_increment"),
+                    resultSet.getInt("warranty_months")
+            );
+        } else if ("VEHICLE".equals(type)) {
+            item = new Vehicle(
+                    resultSet.getString("description"),
+                    resultSet.getString("item_name"),
+                    resultSet.getString("start_date"),
+                    resultSet.getString("end_date"),
+                    resultSet.getDouble("start_price"),
+                    resultSet.getDouble("min_increment"),
+                    resultSet.getString("brand")
+            );
+        } else {
+            item = new Art(
+                    resultSet.getString("description"),
+                    resultSet.getString("item_name"),
+                    resultSet.getString("start_date"),
+                    resultSet.getString("end_date"),
+                    resultSet.getDouble("start_price"),
+                    resultSet.getDouble("min_increment"),
+                    resultSet.getString("author")
+            );
+        }
+
+        item.setId(resultSet.getString("item_id"));
+        item.setSellerId(resultSet.getString("seller_id"));
+        item.setHighestCurrentPrice(resultSet.getDouble("highest_current_price"));
+        return item;
     }
 
     private LockedAuction lockAuction(Connection connection, String sql, String auctionId) throws SQLException {

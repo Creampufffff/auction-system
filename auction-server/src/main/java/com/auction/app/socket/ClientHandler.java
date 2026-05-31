@@ -177,23 +177,13 @@ public class ClientHandler implements Runnable {
 
     private String deposit(String payload) {
         String[] args = requirePayload(payload, "Payload").split("\\s+");
-        if (args.length != 1 && args.length != 2) {
-            throw new IllegalArgumentException("Requires amount or userId and amount");
+        if (args.length != 1) {
+            throw new IllegalArgumentException("Requires amount");
         }
 
         User user = requireCurrentUser();
-
-        String targetUserId;
-        String amount;
-        // Allow depositing to other user for mock/testing: DEPOSIT <userId> <amount>
-        if (args.length == 2) {
-            targetUserId = args[0];
-            amount = args[1];
-        } else {
-            // Single argument: deposit to current logged-in user
-            targetUserId = user.getId();
-            amount = args[0];
-        }
+        String targetUserId = user.getId();
+        String amount = args[0];
 
         DepositRequestDTO request = new DepositRequestDTO(targetUserId, Double.parseDouble(amount));
         ApiResponseDTO response = userController.deposit(request);
@@ -209,23 +199,13 @@ public class ClientHandler implements Runnable {
 
     private String withdraw(String payload) {
         String[] args = requirePayload(payload, "Payload").split("\\s+");
-        if (args.length != 1 && args.length != 2) {
-            throw new IllegalArgumentException("Requires amount or userId and amount");
+        if (args.length != 1) {
+            throw new IllegalArgumentException("Requires amount");
         }
 
         User user = requireCurrentUser();
-
-        String targetUserId;
-        String amount;
-        // Allow withdrawing from another user for mock/testing: WITHDRAW <userId> <amount>
-        if (args.length == 2) {
-            targetUserId = args[0];
-            amount = args[1];
-        } else {
-            // Single argument: withdraw from current logged-in user
-            targetUserId = user.getId();
-            amount = args[0];
-        }
+        String targetUserId = user.getId();
+        String amount = args[0];
 
         WithdrawRequestDTO request = new WithdrawRequestDTO(targetUserId, Double.parseDouble(amount));
         ApiResponseDTO response = userController.withdraw(request);
@@ -311,6 +291,10 @@ public class ClientHandler implements Runnable {
                     .append(nullToEmpty(bid.getBidId()))
                     .append(",")
                     .append(nullToEmpty(bid.getAuctionId()))
+                    .append(",")
+                    .append(escapeCsvField(bid.getItemType()))
+                    .append(",")
+                    .append(escapeCsvField(bid.getItemName()))
                     .append(",")
                     .append(nullToEmpty(bid.getBidderUsername()))
                     .append(",")
@@ -576,7 +560,8 @@ public class ClientHandler implements Runnable {
 
     private String startAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
-        requireCurrentSeller();
+        Seller seller = requireCurrentSeller();
+        requireOwnedAuction(seller, auctionId, "start");
 
         ApiResponseDTO response = auctionController.startAuction(auctionId);
         if (!response.isSuccess()) {
@@ -589,7 +574,8 @@ public class ClientHandler implements Runnable {
 
     private String endAuction(String payload) {
         String auctionId = requirePayload(payload, "Auction id");
-        requireCurrentSeller();
+        Seller seller = requireCurrentSeller();
+        requireOwnedAuction(seller, auctionId, "end");
 
         ApiResponseDTO response = auctionController.endAuction(auctionId);
         if (!response.isSuccess()) {
@@ -627,8 +613,8 @@ public class ClientHandler implements Runnable {
                 + "LOGIN username password;"
                 + "REGISTER_BIDDER username password email;"
                 + "REGISTER_SELLER username password email;"
-                + "DEPOSIT amount;" // For mock: DEPOSIT userId amount is also supported
-                + "WITHDRAW amount;" // For mock: WITHDRAW userId amount is also supported
+                + "DEPOSIT amount;"
+                + "WITHDRAW amount;"
                 + "GET_BALANCE;"
                 + "LIST_AUCTIONS;"
                 + "LIST_MY_AUCTIONS;"
@@ -692,6 +678,17 @@ public class ClientHandler implements Runnable {
             throw new UserAuthException("Current user is not a seller");
         }
         return (Seller) user;
+    }
+
+    private Auction requireOwnedAuction(Seller seller, String auctionId, String action) {
+        Auction auction = auctionService.getAuctionById(auctionId);
+        if (auction == null || auction.getItem() == null) {
+            throw new AuctionNotFoundException("Auction not found");
+        }
+        if (!seller.getId().equals(auction.getItem().getSellerId())) {
+            throw new UserAuthException("Cannot " + action + " another seller's auction");
+        }
+        return auction;
     }
 
 

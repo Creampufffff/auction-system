@@ -62,8 +62,10 @@ public class AccountController {
 
         // Bid history table columns
         if (bidHistoryTable != null) {
-            colBidId.setCellValueFactory(new PropertyValueFactory<>("bidId"));
-            colAuctionId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
+            colBidId.setText("Lo\u1ea1i s\u1ea3n ph\u1ea9m");
+            colAuctionId.setText("T\u00ean s\u1ea3n ph\u1ea9m");
+            colBidId.setCellValueFactory(new PropertyValueFactory<>("itemType"));
+            colAuctionId.setCellValueFactory(new PropertyValueFactory<>("itemName"));
             colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
             colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
         }

@@ -144,6 +144,7 @@ public class ProductManagementController {
                 minIncrementField
         );
 
+        updateTypeSpecificFields(auctionTypeBox.getValue(), conditionLabel, warrantyLabel, warrantyField);
         auctionTypeBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             String selectedType = newValue == null ? "ART" : newValue;
             if ("ELECTRONICS".equals(selectedType)) {
@@ -156,9 +157,8 @@ public class ProductManagementController {
                 warrantyField.setPromptText("V\u00ed d\u1ee5: Toyota");
             } else {
                 conditionLabel.setText("T\u00e1c gi\u1ea3:");
-                warrantyLabel.setText("Th\u00f4ng tin ph\u1ee5:");
-                warrantyField.setPromptText("C\u00f3 th\u1ec3 b\u1ecf tr\u1ed1ng");
             }
+            updateTypeSpecificFields(selectedType, conditionLabel, warrantyLabel, warrantyField);
         });
 
         grid.add(new Label("T\u00ean s\u1ea3n ph\u1ea9m:"), 0, 0);
@@ -312,6 +312,24 @@ public class ProductManagementController {
             control.getStyleClass().add("product-dialog-input");
             control.setMaxWidth(Double.MAX_VALUE);
         }
+    }
+
+    private void updateTypeSpecificFields(
+            String auctionType,
+            Label conditionLabel,
+            Label warrantyLabel,
+            TextField warrantyField
+    ) {
+        boolean isArt = auctionType == null || "ART".equals(auctionType);
+        if (isArt) {
+            conditionLabel.setText("T\u00e1c gi\u1ea3:");
+            warrantyField.clear();
+        }
+
+        warrantyLabel.setVisible(!isArt);
+        warrantyLabel.setManaged(!isArt);
+        warrantyField.setVisible(!isArt);
+        warrantyField.setManaged(!isArt);
     }
 
     private boolean validateAuctionDialogInput(

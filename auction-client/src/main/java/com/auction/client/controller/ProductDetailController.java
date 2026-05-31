@@ -19,8 +19,11 @@ public class ProductDetailController {
     @FXML private Label productNameLabel;
     @FXML private Label categoryLabel;
     @FXML private Label startingPriceLabel;
+    @FXML private Label conditionTitleLabel;
     @FXML private Label conditionLabel;
+    @FXML private Label specsTitleLabel;
     @FXML private Label specsLabel;
+    @FXML private Label warrantyTitleLabel;
     @FXML private Label warrantyLabel;
     @FXML private Label endTimeLabel;
 
@@ -38,9 +41,7 @@ public class ProductDetailController {
         productNameLabel.setText(currentAuction.getName());
         categoryLabel.setText("Ma phien: " + currentAuction.getAuctionId());
         startingPriceLabel.setText("$" + String.format("%.2f", currentAuction.getCurrentPrice()));
-        conditionLabel.setText(hasText(currentAuction.getCondition()) ? currentAuction.getCondition() : "N/A");
-        specsLabel.setText(hasText(currentAuction.getDescription()) ? currentAuction.getDescription() : "Khong co mo ta chi tiet.");
-        warrantyLabel.setText(hasText(currentAuction.getWarranty()) ? currentAuction.getWarranty() : "Khong co thong tin.");
+        applyTechnicalDetails();
         endTimeLabel.setText(hasText(currentAuction.getEndDateTime())
                 ? "Ket thuc: " + currentAuction.getEndDateTime()
                 : "Chua co thoi gian ket thuc");
@@ -105,5 +106,29 @@ public class ProductDetailController {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private void applyTechnicalDetails() {
+        String itemType = currentAuction.getItemType() == null ? "ART" : currentAuction.getItemType();
+        boolean isArt = "ART".equalsIgnoreCase(itemType);
+        boolean isElectronics = "ELECTRONICS".equalsIgnoreCase(itemType);
+        boolean isVehicle = "VEHICLE".equalsIgnoreCase(itemType);
+
+        conditionTitleLabel.setText(isArt ? "T\u00e1c gi\u1ea3:" : "T\u00ecnh tr\u1ea1ng:");
+        conditionLabel.setText(hasText(currentAuction.getCondition()) ? currentAuction.getCondition() : "N/A");
+
+        specsTitleLabel.setText("M\u00f4 t\u1ea3:");
+        specsLabel.setText(hasText(currentAuction.getDescription()) ? currentAuction.getDescription() : "Kh\u00f4ng c\u00f3 m\u00f4 t\u1ea3 chi ti\u1ebft.");
+
+        boolean showWarranty = !isArt && hasText(currentAuction.getWarranty());
+        warrantyTitleLabel.setVisible(showWarranty);
+        warrantyTitleLabel.setManaged(showWarranty);
+        warrantyLabel.setVisible(showWarranty);
+        warrantyLabel.setManaged(showWarranty);
+
+        if (showWarranty) {
+            warrantyTitleLabel.setText(isElectronics ? "B\u1ea3o h\u00e0nh:" : isVehicle ? "H\u00e3ng xe:" : "Th\u00f4ng tin:");
+            warrantyLabel.setText(currentAuction.getWarranty());
+        }
     }
 }

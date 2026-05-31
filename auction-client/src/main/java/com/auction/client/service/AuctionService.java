@@ -321,7 +321,7 @@ public class AuctionService {
 
     private BidHistoryDTO parseBidHistoryRecord(String record) {
         String[] fields = record.split(",", -1);
-        if (fields.length < 5) {
+        if (fields.length < 7) {
             return null;
         }
 
@@ -329,9 +329,11 @@ public class AuctionService {
             return new BidHistoryDTO(
                     fields[0],
                     fields[1],
-                    fields[2],
-                    Double.parseDouble(fields[3]),
-                    fields[4]
+                    emptyToNull(fields[2]),
+                    emptyToNull(fields[3]),
+                    fields[4],
+                    Double.parseDouble(fields[5]),
+                    fields[6]
             );
         } catch (NumberFormatException e) {
             return null;

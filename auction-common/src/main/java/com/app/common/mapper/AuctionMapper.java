@@ -71,13 +71,19 @@ public class AuctionMapper {
         
         Bidder bidder = bid.getBidder();
         String bidderUsername = bidder != null ? bidder.getUsername() : "Unknown";
+        Auction auction = bid.getAuction();
+        Item item = auction == null ? null : auction.getItem();
+        String itemType = resolveItemType(item);
+        String itemName = item == null ? "" : item.getName();
         
         return new BidHistoryDTO(
             bid.getId(),
-            bid.getAuction().getId(),
+            auction == null ? "" : auction.getId(),
+            itemType,
+            itemName,
             bidderUsername,
             bid.getBidAmount(),
-            bid.getCreatedAt() != null ? bid.getCreatedAt() : bid.getId()
+            bid.getCreatedAt() != null ? bid.getCreatedAt() : ""
         );
     }
 
@@ -92,6 +98,19 @@ public class AuctionMapper {
             }
         }
         return dtos;
+    }
+
+    private static String resolveItemType(Item item) {
+        if (item instanceof Electronics) {
+            return "ELECTRONICS";
+        }
+        if (item instanceof Vehicle) {
+            return "VEHICLE";
+        }
+        if (item instanceof Art) {
+            return "ART";
+        }
+        return "";
     }
 }
 

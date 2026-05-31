@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AccountService {
-
     public BalanceResponseDTO getBalance() {
         try {
             return parseBalanceResponse(SocketClientService.sendSessionCommand("GET_BALANCE"));
@@ -106,7 +105,7 @@ public class AccountService {
 
     private BidHistoryDTO parseBidHistoryRecord(String record) {
         String[] fields = record.split(",", -1);
-        if (fields.length < 5) {
+        if (fields.length < 7) {
             return null;
         }
 
@@ -114,13 +113,19 @@ public class AccountService {
             return new BidHistoryDTO(
                     fields[0],
                     fields[1],
-                    fields[2],
-                    Double.parseDouble(fields[3]),
-                    fields[4]
+                    emptyToNull(fields[2]),
+                    emptyToNull(fields[3]),
+                    fields[4],
+                    Double.parseDouble(fields[5]),
+                    fields[6]
             );
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private String emptyToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private BalanceResponseDTO createBalanceResponse(String userId, String balanceValue, String message) {

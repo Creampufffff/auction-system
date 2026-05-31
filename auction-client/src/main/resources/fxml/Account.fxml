@@ -166,8 +166,8 @@
                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                 </columnResizePolicy>
                 <columns>
-                    <TableColumn fx:id="colBidId"     text="Mã đặt giá"/>
-                    <TableColumn fx:id="colAuctionId" text="Mã phiên"/>
+                    <TableColumn fx:id="colBidId"     text="Loại sản phẩm"/>
+                    <TableColumn fx:id="colAuctionId" text="Tên sản phẩm"/>
                     <TableColumn fx:id="colBidAmount" text="Số tiền đặt"/>
                     <TableColumn fx:id="colBidTime"   text="Thời gian"/>
                 </columns>

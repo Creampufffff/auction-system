@@ -55,13 +55,13 @@
                         <ColumnConstraints hgrow="ALWAYS"/>
                     </columnConstraints>
 
-                    <Label text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="0"/>
+                    <Label fx:id="conditionTitleLabel" text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="0"/>
                     <Label fx:id="conditionLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                    <Label text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="1"/>
+                    <Label fx:id="specsTitleLabel" text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="1"/>
                     <Label fx:id="specsLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                    <Label text="Bảo hành:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
+                    <Label fx:id="warrantyTitleLabel" text="Bảo hành:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
                     <Label fx:id="warrantyLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
                 </GridPane>
                 <Region VBox.vgrow="ALWAYS"/>
