@@ -27,16 +27,32 @@
                     onAction="#handleCurrentAuctions"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
-            <Button text="Kho hàng"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-auction"/>
+                </graphic>
+            </Button>
+
+            <Button fx:id="productsSidebarButton"
+                    text="Kho hàng"
+                    onAction="#handleSidebarProducts"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
+                    styleClass="sidebar-button, active-tab">
+                <graphic>
+                    <Region styleClass="icon-style, icon-warehouse"/>
+                </graphic>
+            </Button>
+
             <Button text="Tài khoản"
                     onAction="#handleSidebarAccount"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-account"/>
+                </graphic>
+            </Button>
         </VBox>
 
         <Region VBox.vgrow="ALWAYS"/>
@@ -76,4 +92,3 @@
         </HBox>
     </VBox>
 </HBox>
-

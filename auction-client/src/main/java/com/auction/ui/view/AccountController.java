@@ -137,6 +137,16 @@ public class AccountController {
         }
         NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
     }
+    @FXML
+    private void handleCurrentAuctions(ActionEvent event) {
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarAccount(ActionEvent event) {
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
+    }
+
 
     @FXML
     private void handleLogout(ActionEvent event) {

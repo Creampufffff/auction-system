@@ -29,24 +29,32 @@
                     onAction="#handleCurrentAuctions"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>
+                    styleClass="sidebar-button, active-tab">
+                <graphic>
+                    <Region styleClass="icon-style, icon-auction"/>
+                </graphic>
+            </Button>
+
             <Button fx:id="productsSidebarButton"
                     text="Kho hàng"
                     onAction="#handleSidebarProducts"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
-            <Button fx:id="bidHistorySidebarButton"
-                    text="Lịch sử đặt giá"
-                    onAction="#handleSidebarBidHistory"
-                    maxWidth="Infinity"
-                    alignment="CENTER_LEFT"
-                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-warehouse"/>
+                </graphic>
+            </Button>
+
             <Button text="Tài khoản"
                     onAction="#handleSidebarAccount"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
-                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-account"/>
+                </graphic>
+            </Button>
         </VBox>
 
         <Region VBox.vgrow="ALWAYS"/>
@@ -89,10 +97,8 @@
                        style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #d0d5dd; -fx-border-radius: 6; -fx-padding: 10 13;"/>
         </HBox>
 
-        <!-- 3 stat boxes -->
         <HBox spacing="14">
 
-            <!-- Ô 1: Tổng tất cả phiên -->
             <VBox spacing="8"
                   HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
@@ -105,7 +111,6 @@
                        style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
             </VBox>
 
-            <!-- Ô 2: Phiên đang mở (OPEN + RUNNING) -->
             <VBox spacing="8"
                   HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
@@ -118,7 +123,6 @@
                        style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
             </VBox>
 
-            <!-- Ô 3: Số dư tài khoản (separate ID from sidebar label) -->
             <VBox spacing="8"
                   HBox.hgrow="ALWAYS"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
@@ -185,7 +189,6 @@
         <HBox spacing="12" alignment="CENTER_RIGHT">
             <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- Phân trang -->
             <Button fx:id="previousPageButton"
                     text="← Trang trước"
                     onAction="#handlePreviousPage"
@@ -217,4 +220,3 @@
         </HBox>
     </VBox>
 </HBox>
-

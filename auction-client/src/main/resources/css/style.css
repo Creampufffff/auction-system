@@ -9,7 +9,7 @@
 .title-label {
     -fx-font-size: 28px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1a237e; /* Màu xanh đậm UET */
+    -fx-text-fill: #1a237e;
 }
 
 .subtitle-label {
@@ -28,7 +28,6 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 10;
-    /* Thêm hiệu ứng mượt khi focus */
     -fx-transition: all 0.3s ease-in-out;
 }
 
@@ -94,7 +93,7 @@
     -fx-background-color: #172033;
 }
 
-/* --- FIX TRIỆT ĐỂ NÚT QUAY LẠI: KHÔNG CÒN VIỀN XÁM --- */
+/* --- FIX NÚT QUAY LẠI: KHÔNG CÒN VIỀN XÁM --- */
 .btn-back-outline {
     -fx-background-color: rgba(255, 255, 255, 0.03) !important;
     -fx-border-color: rgba(255, 255, 255, 0.2) !important;
@@ -106,15 +105,12 @@
     -fx-font-weight: bold !important;
     -fx-padding: 8 15 !important;
     -fx-cursor: hand !important;
-
-    /* XÓA BỎ HOÀN TOÀN FOCUS RING VÀ VIỀN XÁM MẶC ĐỊNH */
     -fx-background-insets: 0 !important;
     -fx-focus-color: transparent !important;
     -fx-faint-focus-color: transparent !important;
     -fx-effect: null !important;
 }
 
-/* Ép trạng thái khi nút được focus (mới vào màn hình) phải giống trạng thái bình thường */
 .btn-back-outline:focused {
     -fx-background-insets: 0 !important;
     -fx-background-color: rgba(255, 255, 255, 0.03) !important;
@@ -122,13 +118,12 @@
 }
 
 .btn-back-outline:hover {
-    -fx-background-color: #2d6cdf !important; /* Đổi sang xanh UET khi di chuột */
+    -fx-background-color: #2d6cdf !important;
     -fx-text-fill: white !important;
     -fx-border-color: #2d6cdf !important;
     -fx-effect: dropshadow(three-pass-box, rgba(45, 108, 223, 0.4), 8, 0, 0, 0);
 }
 
-/* Loại bỏ class thừa để tránh xung đột */
 .btn-back-modern {
     -fx-display: none;
 }
@@ -407,7 +402,7 @@
 }
 
 /* ============================================================
-   ADDITIONAL UTILITIES
+   ADDITIONAL UTILITIES & SIDEBAR ICONS
    ============================================================ */
 
 .custom-separator {
@@ -424,6 +419,68 @@
     -fx-text-fill: #172033;
     -fx-font-weight: bold;
     -fx-font-size: 14px;
+}
+
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #c7d0dd;
+    -fx-padding: 11 14;
+    -fx-background-radius: 6;
+    -fx-graphic-text-gap: 12px;
+    -fx-alignment: center-left;
+    -fx-transition: transform 0.22s ease-out, background-color 0.22s ease-out;
+}
+
+.sidebar-button:hover {
+    -fx-translate-y: -2px;
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.22), 10, 0, 0, 4);
+}
+
+.sidebar-button:hover .icon-style {
+    -fx-background-color: #ffffff !important;
+}
+
+.sidebar-button:armed {
+    -fx-translate-y: 0px !important;
+}
+
+.icon-style {
+    -fx-pref-width: 16px;
+    -fx-pref-height: 16px;
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+    -fx-background-color: #c7d0dd;
+}
+
+/* --- LOGIC ACTIVE TAB (MÀU XANH KHI CLICK) --- */
+.sidebar-button.active-tab {
+    -fx-background-color: #2d6cdf !important;
+    -fx-text-fill: #ffffff !important;
+    -fx-font-weight: bold !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(45, 108, 223, 0.4), 10, 0, 0, 0);
+}
+
+.sidebar-button.active-tab .icon-style {
+    -fx-background-color: #ffffff !important;
+}
+
+/* Icon Paths */
+.icon-auction {
+    -fx-shape: "M22 6.5c0-.83-.67-1.5-1.5-1.5h-3.72l-1.92-1.92c-.3-.3-.7-.48-1.14-.48h-3.44c-.44 0-.84.18-1.14.48L7.22 5H3.5C2.67 5 2 5.67 2 6.5S2.67 8 3.5 8h17c.83 0 1.5-.67 1.5-1.5zM4.5 10c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5h15c.83 0 1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5h-15z";
+}
+
+.icon-warehouse {
+    -fx-shape: "M12 3L2 12h3v8h14v-8h3L12 3zm1 15h-2v-2h2v2zm0-4h-2v-2h2v2z";
+}
+
+.icon-history {
+    -fx-shape: "M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z";
+}
+
+.icon-account {
+    -fx-shape: "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z";
 }
 
 /* ============================================================

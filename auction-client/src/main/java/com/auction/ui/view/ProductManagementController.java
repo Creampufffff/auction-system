@@ -3,6 +3,7 @@ package com.auction.ui.view;
 import com.auction.domain.model.Product;
 import com.auction.domain.model.ProductDataManager;
 import com.auction.application.service.AuctionService;
+import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
 import com.app.common.dto.AuctionListDTO;
 import com.app.common.enums.Status;
@@ -804,6 +805,21 @@ public class ProductManagementController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    @FXML
+    private void handleSidebarProducts(ActionEvent event) {
+        if (!SessionManager.hasRole("Seller")) {
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarBidHistory(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
     }
 
     @FXML
