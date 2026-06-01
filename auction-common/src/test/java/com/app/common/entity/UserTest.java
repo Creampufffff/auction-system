@@ -146,4 +146,130 @@ public class UserTest {
 
         assertEquals("Insufficient balance", exception.getMessage());
     }
+    // =========================================================================
+    // 4. TEST LOGIC GIỮ TIỀN ĐẶT GIÁ (RESERVE LOGIC)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Giữ tiền (reserve): Trừ balance và cộng vào heldBalance khi số dư hợp lệ")
+    void reserve_ValidAmount_ShouldTransferFromBalanceToHeldBalance() {
+        // Given
+        user.setBalance(500.0);
+
+        // When
+        user.reserve(200.0);
+
+        // Then
+        assertEquals(300.0, user.getBalance(), "Balance khả dụng phải bị trừ 200$");
+        assertEquals(200.0, user.getHeldBalance(), "Tiền bị giữ (heldBalance) phải tăng thêm 200$");
+    }
+
+    @Test
+    @DisplayName("Giữ tiền (reserve): Bắt lỗi khi số tiền giữ <= 0")
+    void reserve_ZeroOrNegativeAmount_ShouldThrowIllegalArgumentException() {
+        user.setBalance(100.0);
+
+        assertThrows(IllegalArgumentException.class, () -> user.reserve(0.0), "Không thể giữ 0$");
+        assertThrows(IllegalArgumentException.class, () -> user.reserve(-50.0), "Không thể giữ số tiền âm");
+    }
+
+    @Test
+    @DisplayName("Giữ tiền (reserve): Bắt lỗi khi số dư khả dụng không đủ")
+    void reserve_InsufficientBalance_ShouldThrowIllegalArgumentException() {
+        user.setBalance(100.0);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            user.reserve(150.0);
+        });
+        assertEquals("Insufficient balance to reserve", exception.getMessage());
+    }
+
+    // =========================================================================
+    // 5. TEST LOGIC HOÀN TRẢ TIỀN BỊ GIỮ (RELEASE HELD LOGIC)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Hoàn trả tiền (releaseHeld): Trừ heldBalance và trả lại vào balance")
+    void releaseHeld_ValidAmount_ShouldTransferFromHeldBalanceToBalance() {
+        // Given
+        user.setBalance(100.0);
+        user.setHeldBalance(300.0); // Đang bị giữ 300$
+
+        // When (Bị outbid, trả lại 300$)
+        user.releaseHeld(300.0);
+
+        // Then
+        assertEquals(400.0, user.getBalance(), "Số dư khả dụng phải được cộng lại 300$");
+        assertEquals(0.0, user.getHeldBalance(), "Tiền bị giữ phải về 0$");
+    }
+
+    @Test
+    @DisplayName("Hoàn trả tiền (releaseHeld): Bắt lỗi khi số tiền hoàn <= 0")
+    void releaseHeld_ZeroOrNegativeAmount_ShouldThrowIllegalArgumentException() {
+        user.setHeldBalance(100.0);
+        assertThrows(IllegalArgumentException.class, () -> user.releaseHeld(0.0));
+        assertThrows(IllegalArgumentException.class, () -> user.releaseHeld(-10.0));
+    }
+
+    @Test
+    @DisplayName("Hoàn trả tiền (releaseHeld): Bắt lỗi khi hoàn trả nhiều hơn số tiền đang bị giữ")
+    void releaseHeld_AmountExceedsHeldBalance_ShouldThrowIllegalArgumentException() {
+        user.setHeldBalance(100.0);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            user.releaseHeld(150.0);
+        });
+        assertEquals("Insufficient held balance", exception.getMessage());
+    }
+
+    // =========================================================================
+    // 6. TEST LOGIC TIÊU HAO TIỀN BỊ GIỮ (CONSUME HELD LOGIC)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Tiêu hao (consumeHeld): Trừ hẳn số tiền bị giữ khi người dùng thắng đấu giá")
+    void consumeHeld_ValidAmount_ShouldDecreaseHeldBalanceOnly() {
+        // Given
+        user.setBalance(200.0);
+        user.setHeldBalance(500.0); // Đang bị giữ 500$ cho một phiên đấu giá
+
+        // When (Thắng đấu giá, trừ hẳn 500$)
+        user.consumeHeld(500.0);
+
+        // Then
+        assertEquals(200.0, user.getBalance(), "Balance khả dụng không thay đổi");
+        assertEquals(0.0, user.getHeldBalance(), "Tiền bị giữ đã bị trừ sạch");
+    }
+
+    @Test
+    @DisplayName("Tiêu hao (consumeHeld): Bắt lỗi khi số tiền <= 0")
+    void consumeHeld_ZeroOrNegativeAmount_ShouldThrowIllegalArgumentException() {
+        user.setHeldBalance(100.0);
+        assertThrows(IllegalArgumentException.class, () -> user.consumeHeld(0.0));
+        assertThrows(IllegalArgumentException.class, () -> user.consumeHeld(-10.0));
+    }
+
+    @Test
+    @DisplayName("Tiêu hao (consumeHeld): Bắt lỗi khi trừ nhiều hơn số tiền đang bị giữ")
+    void consumeHeld_AmountExceedsHeldBalance_ShouldThrowIllegalArgumentException() {
+        user.setHeldBalance(100.0);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            user.consumeHeld(150.0);
+        });
+        assertEquals("Insufficient held balance", exception.getMessage());
+    }
+
+    // =========================================================================
+    // 7. TEST SETTER BỔ SUNG
+    // =========================================================================
+
+    @Test
+    @DisplayName("Cập nhật số tiền giữ (setHeldBalance): Bắt lỗi khi gán số âm")
+    void setHeldBalance_NegativeAmount_ShouldThrowIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            user.setHeldBalance(-1.0);
+        });
+        assertEquals("Held balance cannot be negative", exception.getMessage());
+    }
 }
