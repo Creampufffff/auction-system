@@ -252,13 +252,15 @@ class UserServiceImplTest {
     void withdraw_SaveFails_ThrowsIllegalStateException() {
         User user = new Bidder("tam", "pass", "email");
         user.setId("u1");
+        user.setBalance(200.0); // <--- BÍ QUYẾT LÀ ĐÂY: Phải nạp tiền thì mới qua được bước kiểm tra số dư!
 
         when(userDAO.findById("u1")).thenReturn(user);
         when(userDAO.updateBalance(any(User.class))).thenReturn(false);
 
+        // Trả lại kỳ vọng là IllegalStateException
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> userService.withdraw("u1", 50.0)
+                () -> userService.withdraw("u1", 100.0)
         );
         assertEquals("Failed to update balance", exception.getMessage());
     }
