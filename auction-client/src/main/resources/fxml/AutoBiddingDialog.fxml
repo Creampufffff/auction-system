@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.ui.view.AutoBiddingController"
+      spacing="16"
+      prefWidth="600" prefHeight="500"
+      style="-fx-padding: 24; -fx-background-color: #f3f6fb;">
+
+    <VBox spacing="4">
+        <Label text="ĐẶT GIÁ TỰ ĐỘNG (AUTO-BID)" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <Label text="Hệ thống sẽ tự động đặt giá thay bạn lên tới mức tối đa" style="-fx-font-size: 12px;"/>
+    </VBox>
+
+    <VBox spacing="12" style="-fx-background-color: white; -fx-border-color: #cccccc; -fx-padding: 16;">
+        <Label text="THÔNG TIN PHIÊN ĐẤU GIÁ" style="-fx-font-weight: bold; -fx-font-size: 12px;"/>
+
+        <GridPane vgap="10" hgap="12">
+            <columnConstraints>
+                <ColumnConstraints prefWidth="140"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Sản phẩm:" GridPane.rowIndex="0"/>
+            <Label fx:id="auctionNameLabel" text="N/A" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="Giá hiện tại:" GridPane.rowIndex="1"/>
+            <Label fx:id="currentPriceLabel" text="0.00" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="Mức tăng tối thiểu:" GridPane.rowIndex="2"/>
+            <Label fx:id="minIncrementLabel" text="0.00" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <Label text="Số dư tài khoản:" GridPane.rowIndex="3"/>
+            <Label fx:id="userBalanceLabel" text="0.00" style="-fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        </GridPane>
+    </VBox>
+
+    <VBox spacing="8">
+        <Label text="GIA TU DONG TOI DA" style="-fx-font-weight: bold;"/>
+        <TextField fx:id="maxBidAmountField"
+                   promptText="Nhap gia toi da ban muon dat tu dong"
+                   style="-fx-padding: 10; -fx-border-radius: 4;"/>
+        <Label fx:id="errorLabel" text="" style="-fx-text-fill: red; -fx-font-size: 11px;"/>
+    </VBox>
+
+    <VBox spacing="4" style="-fx-background-color: #fff5f5; -fx-padding: 12; -fx-border-color: #ffcccc;">
+        <Label text="Info: Cach hoat dong" style="-fx-font-weight: bold;"/>
+        <Label text="Khi co bid moi tu nguoi khac, he thong se tu dong dat gia thay ban" wrapText="true"/>
+        <Label text="Gia se duoc tang tung buoc cho den khi vuot qua gia toi da" wrapText="true"/>
+        <Label text="Neu ban bi vuot qua, ban se nhan duoc thong bao" wrapText="true"/>
+    </VBox>
+
+    <!-- Removed stretch Region to keep buttons visible on smaller dialogs -->
+    <HBox spacing="12" alignment="CENTER_RIGHT">
+        <Button text="Hủy" onAction="#handleCancel" style="-fx-padding: 10 20;"/>
+        <Button text="Đặt Auto-Bid" onAction="#handleSetAutoBid" style="-fx-padding: 10 24; -fx-font-weight: bold;"/>
+    </HBox>
+
+</VBox>
+

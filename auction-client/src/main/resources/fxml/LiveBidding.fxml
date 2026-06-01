@@ -71,6 +71,9 @@
                     <TextField fx:id="bidAmountField" promptText="Nhập mức giá..." style="-fx-padding: 12; -fx-background-radius: 8;"/>
                     <Button text="XÁC NHẬN ĐẶT GIÁ" onAction="#handlePlaceBid" maxWidth="Infinity"
                             style="-fx-background-color: #2d6cdf; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 8;"/>
+                    <Separator style="-fx-opacity: 0.3;"/>
+                    <Button fx:id="autoBidButton" text="🤖 ĐẶT GIÁ TỰ ĐỘNG (AUTO-BID)" onAction="#handleOpenAutoBiddingDialog" maxWidth="Infinity"
+                            style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 8;"/>
                 </VBox>
             </VBox>
 

@@ -8,6 +8,7 @@ import com.auction.domain.model.Product;
 import com.auction.domain.model.ProductDataManager;
 import com.auction.application.service.AccountService;
 import com.auction.application.service.AuctionService;
+import com.auction.application.service.AutoBidService;
 import com.auction.application.service.PeriodicUpdateService;
 import com.auction.shared.session.SessionManager;
 import javafx.application.Platform;
@@ -17,6 +18,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -37,6 +39,7 @@ public class LiveBiddingController {
     @FXML private TextField bidAmountField;
     @FXML private ListView<String> bidHistoryList;
     @FXML private Button backButton;
+    @FXML private Button autoBidButton;
 
     private Product currentProduct;
     private Timer timer;
@@ -45,6 +48,7 @@ public class LiveBiddingController {
     private static LiveBiddingController activeController;
     private final AuctionService auctionService = new AuctionService();
     private final AccountService accountService = new AccountService();
+    private final AutoBidService autoBidService = new AutoBidService();
 
     @FXML
     public void initialize() {
@@ -103,19 +107,24 @@ public class LiveBiddingController {
             return;
         }
 
+        // Fetch history from server off the FX thread (network IO)
         List<BidHistoryDTO> serverHistory = auctionService.getBidHistory(currentProduct.getId());
-        bidHistory.clear();
 
-        if (serverHistory.isEmpty()) {
-            updateLeadingBidder(null);
-            bidHistory.add("ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
-            return;
-        }
+        // Update UI-bound collections and controls on the JavaFX Application Thread
+        Platform.runLater(() -> {
+            bidHistory.clear();
 
-        updateLeadingBidder(serverHistory.get(0));
-        for (BidHistoryDTO bid : serverHistory) {
-            bidHistory.add(formatBidHistoryLine(bid));
-        }
+            if (serverHistory == null || serverHistory.isEmpty()) {
+                updateLeadingBidder(null);
+                bidHistory.add("ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
+                return;
+            }
+
+            updateLeadingBidder(serverHistory.get(0));
+            for (BidHistoryDTO bid : serverHistory) {
+                bidHistory.add(formatBidHistoryLine(bid));
+            }
+        });
     }
 
     private void updateLeadingBidder(BidHistoryDTO highestBid) {
@@ -193,6 +202,45 @@ public class LiveBiddingController {
         }
     }
 
+    @FXML
+    private void handleOpenAutoBiddingDialog() {
+        if (currentProduct == null) {
+            showAlert("Lỗi", "Không có sản phẩm nào được chọn");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/AutoBiddingDialog.fxml"));
+            Parent root = loader.load();
+            AutoBiddingController controller = loader.getController();
+
+            // Set auction info
+            controller.setAuctionInfo(
+                    currentProduct.getId(),
+                    currentProduct.getName(),
+                    currentProduct.getPrice(),
+                    5.0, // minIncrement - should be fetched from server
+                    ProductDataManager.getInstance().getUserBalance()
+            );
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Đặt Giá Tự Động");
+            Scene scene = new Scene(root);
+            dialogStage.setScene(scene);
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+            dialogStage.setResizable(false);
+            dialogStage.sizeToScene();
+            dialogStage.showAndWait();
+
+            // Refresh bid history after setting auto-bid
+            Platform.runLater(this::refreshBidHistoryFromServer);
+        } catch (Exception e) {
+            System.err.println("Error opening auto-bidding dialog: " + e.getMessage());
+            e.printStackTrace();
+            showAlert("Lỗi", "Không thể mở dialog đặt giá tự động");
+        }
+    }
+
     public void setProduct(Product product) {
         stopTimer();
         this.currentProduct = product;
@@ -204,7 +252,24 @@ public class LiveBiddingController {
         currentPriceLabel.setText("$" + String.format("%.2f", savedPrice));
         this.currentProduct.setPrice(savedPrice);
 
-        this.timeLeft = calculateSecondsRemaining(product.getEndDateTime());
+        // Ensure we have an endDateTime. If missing, try fetching full auction detail from server.
+        String endDt = product.getEndDateTime();
+        if (endDt == null || endDt.isBlank()) {
+            try {
+                AuctionListDTO full = auctionService.getAuctionById(product.getId());
+                if (full != null && full.getEndDateTime() != null && !full.getEndDateTime().isBlank()) {
+                    this.currentProduct.setEndDateTime(full.getEndDateTime());
+                    endDt = full.getEndDateTime();
+                }
+            } catch (Exception ex) {
+                System.err.println("[LiveBiddingController] Warning: cannot fetch auction detail: " + ex.getMessage());
+            }
+        }
+
+        this.timeLeft = calculateSecondsRemaining(endDt);
+
+        // Debug logging to help diagnose missing time/countdown issues
+        System.out.println("[LiveBiddingController] AuctionId=" + product.getId() + " endDateTime='" + endDt + "' parsedSeconds=" + (timeLeft == Long.MAX_VALUE ? "UNKNOWN" : timeLeft));
 
         this.bidHistory = ProductDataManager.getInstance().getHistoryForProduct(product.getId());
         this.bidHistory.clear();

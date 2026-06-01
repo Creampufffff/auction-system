@@ -21,6 +21,7 @@ public class PeriodicUpdateService {
     private static final long AUCTION_LIST_REFRESH_INTERVAL = 15000; // 15 giây
     private static final long HEARTBEAT_INTERVAL = 60000; // 1 phút
     private static final long BID_HISTORY_SYNC_INTERVAL = 10000; // 10 giây
+    private static final long STATUS_REFRESH_INTERVAL = 10000; // 10 giây - Refresh trạng thái ProductDetail
 
     private PeriodicUpdateService() {
     }
@@ -181,6 +182,37 @@ public class PeriodicUpdateService {
         if (timer != null) {
             timer.cancel();
             System.out.println("[PeriodicUpdateService] Stopped periodic bid history sync");
+        }
+    }
+
+    /**
+     * Bắt đầu periodic status refresh cho ProductDetail
+     */
+    public void startPeriodicStatusRefresh(Runnable refreshTask) {
+        stopPeriodicStatusRefresh();
+        Timer timer = new Timer("periodic-status-refresh", true);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    refreshTask.run();
+                } catch (Exception e) {
+                    System.err.println("Error in periodic status refresh: " + e.getMessage());
+                }
+            }
+        }, STATUS_REFRESH_INTERVAL, STATUS_REFRESH_INTERVAL);
+        activeTimers.put("statusRefresh", timer);
+        System.out.println("[PeriodicUpdateService] Started periodic status refresh (interval: " + STATUS_REFRESH_INTERVAL + "ms)");
+    }
+
+    /**
+     * Dừng periodic status refresh
+     */
+    public void stopPeriodicStatusRefresh() {
+        Timer timer = activeTimers.remove("statusRefresh");
+        if (timer != null) {
+            timer.cancel();
+            System.out.println("[PeriodicUpdateService] Stopped periodic status refresh");
         }
     }
 
