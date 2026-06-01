@@ -22,6 +22,8 @@ public class ProductDataManager {
     private final ObservableList<Product> myProductList;
     private final ObservableList<AuctionListDTO> serverAuctionList;
     private AuctionListDTO selectedAuction;
+    private String productDetailReturnPath = "/fxml/AuctionList.fxml";
+    private String productDetailReturnTitle = "UET Auction System";
 
     private final Map<String, ObservableList<String>> historyMap;
     private final Map<String, Double> currentPriceMap;
@@ -85,6 +87,8 @@ public class ProductDataManager {
         currentPriceMap.clear();
         timeLeftMap.clear();
         selectedAuction = null;
+        productDetailReturnPath = "/fxml/AuctionList.fxml";
+        productDetailReturnTitle = "UET Auction System";
         currentPage = 1;
         searchKeyword = "";
         statusFilter = "ALL";
@@ -166,6 +170,23 @@ public class ProductDataManager {
     public AuctionListDTO getSelectedAuction() { return selectedAuction; }
     public void setSelectedAuction(AuctionListDTO auction) { this.selectedAuction = auction; }
 
+    public String getProductDetailReturnPath() {
+        return productDetailReturnPath;
+    }
+
+    public String getProductDetailReturnTitle() {
+        return productDetailReturnTitle;
+    }
+
+    public void setProductDetailReturnTarget(String fxmlPath, String title) {
+        this.productDetailReturnPath = fxmlPath == null || fxmlPath.isBlank()
+                ? "/fxml/AuctionList.fxml"
+                : fxmlPath;
+        this.productDetailReturnTitle = title == null || title.isBlank()
+                ? "UET Auction System"
+                : title;
+    }
+
     public boolean isEnded(String auctionId) {
         return serverAuctionList.stream()
                 .filter(a -> a.getAuctionId().equals(auctionId))
@@ -194,7 +215,18 @@ public class ProductDataManager {
         return leadingUserMap.getOrDefault(auctionId, defaultUser);
     }
 
+    public boolean hasLeadingUser(String auctionId) {
+        return auctionId != null && leadingUserMap.containsKey(auctionId);
+    }
+
     public void setLeadingUser(String auctionId, String userName) {
+        if (auctionId == null || auctionId.isBlank()) {
+            return;
+        }
+        if (userName == null || userName.isBlank()) {
+            leadingUserMap.remove(auctionId);
+            return;
+        }
         leadingUserMap.put(auctionId, userName);
     }
     public void handleSomeoneElseLeading(String auctionId, double newPrice) {

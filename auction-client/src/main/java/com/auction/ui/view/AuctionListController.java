@@ -41,6 +41,7 @@ public class AuctionListController {
     @FXML private TextField searchField;
     @FXML private Button previousPageButton;
     @FXML private Button nextPageButton;
+    @FXML private Button joinBiddingButton;
     @FXML private Button productsSidebarButton;
     @FXML private Button bidHistorySidebarButton;
     @FXML private Label pageInfoLabel;
@@ -59,6 +60,7 @@ public class AuctionListController {
         configureAuctionTableVisuals();
 
         configureSidebarForRole();
+        configureSellerActions();
         configureFilters();
         loadAuctions();
 
@@ -88,6 +90,16 @@ public class AuctionListController {
             bidHistorySidebarButton.setVisible(isBidder);
             bidHistorySidebarButton.setManaged(isBidder);
         }
+    }
+
+    private void configureSellerActions() {
+        if (joinBiddingButton == null) {
+            return;
+        }
+
+        boolean isSeller = SessionManager.hasRole("Seller");
+        joinBiddingButton.setVisible(!isSeller);
+        joinBiddingButton.setManaged(!isSeller);
     }
 
     private void configureFilters() {
@@ -338,6 +350,7 @@ public class AuctionListController {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             ProductDataManager.getInstance().setSelectedAuction(selected);
+            ProductDataManager.getInstance().setProductDetailReturnTarget("/fxml/AuctionList.fxml", "UET Auction System");
             NavigationService.getInstance().navigateTo("/fxml/ProductDetail.fxml", "Chi tiết sản phẩm", 1280, 800);
         } else {
             if (messageLabel != null) messageLabel.setText("Vui lòng chọn sản phẩm trên bảng!");

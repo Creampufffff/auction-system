@@ -1,10 +1,12 @@
 package com.auction.ui.view;
 
 import com.app.common.dto.AuctionListDTO;
+import com.app.common.dto.BidHistoryDTO;
 import com.auction.application.service.AuctionService;
 import com.auction.application.service.PeriodicUpdateService;
 import com.auction.domain.model.Product;
 import com.auction.domain.model.ProductDataManager;
+import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -12,12 +14,15 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class ProductDetailController {
     private AuctionListDTO currentAuction;
@@ -33,6 +38,10 @@ public class ProductDetailController {
     @FXML private Label specsLabel;
     @FXML private Label warrantyLabel;
     @FXML private Label endTimeLabel;
+    @FXML private Label winnerTitleLabel;
+    @FXML private Label winnerLabel;
+    @FXML private Button joinAuctionButton;
+    @FXML private Button deleteProductButton;
     @FXML private ImageView productImageView;
     @FXML private Label productImagePlaceholder;
 
@@ -43,11 +52,12 @@ public class ProductDetailController {
             return;
         }
 
-        AuctionListDTO detailed = auctionService.getAuctionById(selected.getAuctionId());
-        currentAuction = detailed != null ? detailed : selected;
+        currentAuction = selected;
         ProductDataManager.getInstance().setSelectedAuction(currentAuction);
 
+        configureActionsForRole();
         updateDetailDisplay(currentAuction);
+        loadDetailFromServerAsync(currentAuction.getAuctionId());
         startPeriodicStatusRefresh();
     }
 
@@ -60,6 +70,7 @@ public class ProductDetailController {
         startingPriceLabel.setText("$" + String.format("%.2f", auction.getCurrentPrice()));
         itemTypeLabel.setText(hasText(auction.getItemType()) ? auction.getItemType() : "N/A");
         statusLabel.setText(auction.getAuctionStatus() != null ? auction.getAuctionStatus().name() : "N/A");
+        updateWinnerDisplay(auction);
         startTimeLabel.setText(hasText(auction.getStartDateTime()) ? auction.getStartDateTime() : "Chưa có thời gian bắt đầu");
         endTimeLabel.setText(hasText(auction.getEndDateTime())
                 ? auction.getEndDateTime()
@@ -69,6 +80,105 @@ public class ProductDetailController {
         specsLabel.setText(hasText(auction.getDescription()) ? auction.getDescription() : "Không có mô tả chi tiết.");
         warrantyLabel.setText(hasText(auction.getWarranty()) ? auction.getWarranty() : "Không có thông tin thêm.");
         updateProductImage(auction.getImageBlob());
+    }
+
+    private void configureActionsForRole() {
+        boolean isSeller = SessionManager.hasRole("Seller");
+        if (joinAuctionButton != null) {
+            joinAuctionButton.setVisible(!isSeller);
+            joinAuctionButton.setManaged(!isSeller);
+        }
+        if (deleteProductButton != null) {
+            deleteProductButton.setVisible(isSeller);
+            deleteProductButton.setManaged(isSeller);
+        }
+    }
+
+    private void updateWinnerDisplay(AuctionListDTO auction) {
+        if (winnerTitleLabel == null || winnerLabel == null) {
+            return;
+        }
+
+        boolean isSeller = SessionManager.hasRole("Seller");
+        winnerTitleLabel.setVisible(isSeller);
+        winnerTitleLabel.setManaged(isSeller);
+        winnerLabel.setVisible(isSeller);
+        winnerLabel.setManaged(isSeller);
+        if (!isSeller) {
+            return;
+        }
+
+        boolean isFinished = auction.getAuctionStatus() != null
+                && "FINISHED".equals(auction.getAuctionStatus().name());
+        winnerTitleLabel.setText(isFinished ? "Người thắng:" : "Người đang dẫn đầu:");
+        String bidderUsername = getCachedOrDtoHighestBidder(auction);
+        winnerLabel.setText(hasText(bidderUsername) ? bidderUsername : "Đang tải...");
+    }
+
+    private String getCachedOrDtoHighestBidder(AuctionListDTO auction) {
+        ProductDataManager manager = ProductDataManager.getInstance();
+        if (manager.hasLeadingUser(auction.getAuctionId())) {
+            return manager.getLeadingUser(auction.getAuctionId(), null);
+        }
+
+        String bidderUsername = auction.getHighestBidderUsername();
+        if (hasText(bidderUsername)) {
+            manager.setLeadingUser(auction.getAuctionId(), bidderUsername);
+        }
+        return bidderUsername;
+    }
+
+    private void loadDetailFromServerAsync(String auctionId) {
+        if (!hasText(auctionId)) {
+            return;
+        }
+
+        CompletableFuture
+                .supplyAsync(() -> {
+                    AuctionListDTO detail = auctionService.getAuctionById(auctionId);
+                    if (detail == null) {
+                        detail = currentAuction;
+                    }
+                    if (SessionManager.hasRole("Seller") && detail != null && !hasText(getCachedOrDtoHighestBidder(detail))) {
+                        String bidderUsername = resolveHighestBidderFromHistory(auctionId);
+                        detail.setHighestBidderUsername(bidderUsername);
+                        ProductDataManager.getInstance().setLeadingUser(auctionId, bidderUsername);
+                    }
+                    return detail;
+                })
+                .thenAccept(detail -> {
+                    if (detail == null) {
+                        return;
+                    }
+                    Platform.runLater(() -> {
+                        currentAuction = detail;
+                        ProductDataManager.getInstance().setSelectedAuction(currentAuction);
+                        updateDetailDisplay(currentAuction);
+                    });
+                })
+                .exceptionally(error -> {
+                    Platform.runLater(() -> {
+                        if (winnerLabel != null) {
+                            winnerLabel.setText("Chưa có");
+                        }
+                    });
+                    return null;
+                });
+    }
+
+    private String resolveHighestBidderFromHistory(String auctionId) {
+        if (!hasText(auctionId)) {
+            return null;
+        }
+
+        List<BidHistoryDTO> bids = auctionService.getBidHistory(auctionId);
+        if (bids == null || bids.isEmpty()) {
+            return null;
+        }
+
+        String bidderUsername = bids.get(0).getBidderUsername();
+        ProductDataManager.getInstance().setLeadingUser(auctionId, bidderUsername);
+        return bidderUsername;
     }
 
     private void updateProductImage(byte[] imageBlob) {
@@ -103,6 +213,9 @@ public class ProductDetailController {
                 AuctionListDTO updated = auctionService.getAuctionById(currentAuction.getAuctionId());
                 if (updated != null) {
                     Platform.runLater(() -> {
+                        if (!hasText(updated.getHighestBidderUsername())) {
+                            updated.setHighestBidderUsername(currentAuction.getHighestBidderUsername());
+                        }
                         currentAuction = updated;
                         updateDetailDisplay(updated);
                         System.out.println("[ProductDetailController] Status refreshed to: " + updated.getAuctionStatus());
@@ -122,7 +235,13 @@ public class ProductDetailController {
     @FXML
     private void handleBack(ActionEvent event) {
         stopPeriodicStatusRefresh();
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System");
+        ProductDataManager manager = ProductDataManager.getInstance();
+        NavigationService.getInstance().navigateTo(
+                manager.getProductDetailReturnPath(),
+                manager.getProductDetailReturnTitle(),
+                1280,
+                800
+        );
     }
 
     @FXML

@@ -31,7 +31,8 @@
                 <Label fx:id="categoryLabel" wrapText="true" style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Tham gia đấu giá" onAction="#handleJoinAuction"
+            <Button fx:id="joinAuctionButton"
+                    text="Tham gia đấu giá" onAction="#handleJoinAuction"
                     style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 20;"/>
         </HBox>
 
@@ -70,27 +71,32 @@
                     <Label text="Trạng thái:" style="-fx-text-fill: #667085;" GridPane.rowIndex="1"/>
                     <Label fx:id="statusLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                    <Label text="Ngày bắt đầu:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
-                    <Label fx:id="startTimeLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    <Label fx:id="winnerTitleLabel" text="Người thắng / dẫn đầu:" style="-fx-text-fill: #667085;" GridPane.rowIndex="2"/>
+                    <Label fx:id="winnerLabel" style="-fx-font-weight: bold; -fx-text-fill: #2563eb;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-                    <Label text="Ngày kết thúc:" style="-fx-text-fill: #667085;" GridPane.rowIndex="3"/>
-                    <Label fx:id="endTimeLabel" style="-fx-font-weight: bold; -fx-text-fill: #d92d20;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                    <Label text="Ngày bắt đầu:" style="-fx-text-fill: #667085;" GridPane.rowIndex="3"/>
+                    <Label fx:id="startTimeLabel" style="-fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-                    <Label text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="4"/>
-                    <Label fx:id="conditionLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                    <Label text="Ngày kết thúc:" style="-fx-text-fill: #667085;" GridPane.rowIndex="4"/>
+                    <Label fx:id="endTimeLabel" style="-fx-font-weight: bold; -fx-text-fill: #d92d20;" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-                    <Label text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="5"/>
-                    <Label fx:id="specsLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                    <Label text="Tình trạng:" style="-fx-text-fill: #667085;" GridPane.rowIndex="5"/>
+                    <Label fx:id="conditionLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
-                    <Label text="Bảo hành / thông tin thêm:" style="-fx-text-fill: #667085;" GridPane.rowIndex="6"/>
-                    <Label fx:id="warrantyLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+                    <Label text="Mô tả:" style="-fx-text-fill: #667085;" GridPane.rowIndex="6"/>
+                    <Label fx:id="specsLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+                    <Label text="Bảo hành / thông tin thêm:" style="-fx-text-fill: #667085;" GridPane.rowIndex="7"/>
+                    <Label fx:id="warrantyLabel" wrapText="true" style="-fx-font-weight: bold;" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
                 </GridPane>
 
                 <Region VBox.vgrow="ALWAYS"/>
                 <Separator style="-fx-opacity: 0.5;"/>
                 <HBox spacing="15" alignment="CENTER_RIGHT">
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Button text="Xóa sản phẩm" onAction="#handleDeleteProduct"
+                    <Button fx:id="deleteProductButton"
+                            text="Xóa sản phẩm" onAction="#handleDeleteProduct"
+                            styleClass="danger-action-button"
                             style="-fx-background-color: #fef3f2; -fx-text-fill: #d92d20; -fx-border-color: #fda29b; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-padding: 8 16;"/>
                 </HBox>
             </VBox>

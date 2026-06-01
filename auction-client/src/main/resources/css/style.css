@@ -68,6 +68,24 @@
    SECTION 2: LIVE BIDDING & DASHBOARD SYSTEM
    ============================================================ */
 
+.button {
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.button:hover {
+    -fx-background-color: #eef4ff;
+    -fx-border-color: #172033;
+    -fx-border-width: 1.2px;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(three-pass-box, rgba(45, 108, 223, 0.18), 8, 0, 0, 1) !important;
+}
+
+.button:armed {
+    -fx-translate-y: 1px;
+}
+
 .live-root {
     -fx-background-color: #f3f6fb;
 }
@@ -224,6 +242,7 @@
 
 .primary-action-button:hover {
     -fx-background-color: #2459c6;
+    -fx-border-color: #2d6cdf;
 }
 
 .danger-action-button {
@@ -238,8 +257,26 @@
 }
 
 .danger-action-button:hover {
-    -fx-background-color: #ffe4e1;
+    -fx-background-color: #b42318 !important;
     -fx-border-color: #f04438;
+    -fx-text-fill: #ffffff !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(240, 68, 56, 0.18), 8, 0, 0, 1) !important;
+}
+
+.success-action-button {
+    -fx-background-color: #12a594;
+    -fx-background-radius: 8;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-padding: 9 14;
+    -fx-cursor: hand;
+}
+
+.success-action-button:hover {
+    -fx-background-color: #e6f7f4;
+    -fx-border-color: #12a594;
+    -fx-text-fill: #087d70;
+    -fx-effect: dropshadow(three-pass-box, rgba(18, 165, 148, 0.18), 8, 0, 0, 1) !important;
 }
 
 .auction-table {

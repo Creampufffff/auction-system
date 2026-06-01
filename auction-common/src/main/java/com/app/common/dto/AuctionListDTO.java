@@ -20,6 +20,7 @@ public class AuctionListDTO implements Serializable {
     private String warranty;
     private String startDateTime;
     private String endDateTime;
+    private String highestBidderUsername;
     private byte[] imageBlob;
 
     public AuctionListDTO() {

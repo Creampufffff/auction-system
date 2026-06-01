@@ -209,7 +209,8 @@
                     prefWidth="120"
                     style="-fx-background-color: white; -fx-border-color: #b8c2d6; -fx-border-radius: 6; -fx-background-radius: 6; -fx-text-fill: #344054; -fx-font-weight: bold; -fx-padding: 11 14;"/>
 
-            <Button text="Tham gia"
+            <Button fx:id="joinBiddingButton"
+                    text="Tham gia"
                     onAction="#handleJoinBidding"
                     prefWidth="120"
                     style="-fx-background-color: #2d6cdf; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 14;"/>

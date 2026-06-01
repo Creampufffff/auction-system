@@ -435,6 +435,10 @@ public class AuctionService {
                 if (fields.length >= 12) {
                     auction.setImageBlob(decodeImage(fields[11]));
                 }
+                if (fields.length >= 13) {
+                    auction.setHighestBidderUsername(emptyToNull(fields[11]));
+                    auction.setImageBlob(decodeImage(fields[12]));
+                }
             } else {
                 auction.setItemType("ART");
                 auction.setName(fields[2]);

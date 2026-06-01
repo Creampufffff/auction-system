@@ -59,6 +59,7 @@
             <Button fx:id="uploadButton"
                     text="Upload"
                     onAction="#handleUploadImage"
+                    styleClass="success-action-button"
                     style="-fx-background-color: #12a594; -fx-text-fill: white; -fx-padding: 10 30;"/>
             <Label fx:id="uploadStatusLabel"
                    text=""
@@ -88,6 +89,7 @@
                 style="-fx-background-color: white; -fx-border-color: #b8c2d6; -fx-border-radius: 6; -fx-padding: 10 20; -fx-text-fill: #344054;"/>
         <Button text="Đóng"
                 onAction="#handleClose"
+                styleClass="danger-action-button"
                 style="-fx-background-color: #d92d20; -fx-text-fill: white; -fx-padding: 10 20;"/>
     </HBox>
 

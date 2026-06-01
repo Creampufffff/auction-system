@@ -4,6 +4,8 @@ import com.auction.domain.model.Product;
 import com.auction.domain.model.ProductDataManager;
 import com.auction.application.service.AuctionService;
 import com.auction.ui.navigation.NavigationService;
+import com.app.common.dto.AuctionListDTO;
+import com.app.common.enums.Status;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -29,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class ProductManagementController {
     private static final DateTimeFormatter AUCTION_DATE_TIME_FORMATTER =
@@ -36,6 +39,7 @@ public class ProductManagementController {
 
     @FXML private TableView<Product> myProductsTable;
     @FXML private Label titleLabel;
+    @FXML private Label subtitleLabel;
 
     private final ObservableList<Product> productData = ProductDataManager.getInstance().getProductList();
     private final AuctionService auctionService = new AuctionService();
@@ -61,7 +65,7 @@ public class ProductManagementController {
         configureProductTableVisuals(typeCol, nameCol, priceCol, statusCol);
         myProductsTable.getColumns().setAll(typeCol, nameCol, priceCol, statusCol);
         myProductsTable.setItems(productData);
-        loadMyProductsFromServer();
+        loadMyProductsFromServerAsync();
 
         if (backButton != null) {
             // Ốp style xanh đen UET và khử viền xám triệt để
@@ -624,9 +628,33 @@ public class ProductManagementController {
         alert.showAndWait();
     }
 
-    private void loadMyProductsFromServer() {
+    private void loadMyProductsFromServerAsync() {
+        if (subtitleLabel != null) {
+            subtitleLabel.setText("Đang tải kho hàng...");
+        }
+
+        CompletableFuture
+                .supplyAsync(this::loadMyProductsFromServer)
+                .thenAccept(products -> javafx.application.Platform.runLater(() -> {
+                    productData.setAll(products);
+                    if (subtitleLabel != null) {
+                        subtitleLabel.setText("Quản lý các sản phẩm và phiên đấu giá của bạn.");
+                    }
+                }))
+                .exceptionally(error -> {
+                    javafx.application.Platform.runLater(() -> {
+                        if (subtitleLabel != null) {
+                            subtitleLabel.setText("Không thể tải kho hàng từ server.");
+                        }
+                        System.err.println("Cannot load seller products: " + error.getMessage());
+                    });
+                    return null;
+                });
+    }
+
+    private List<Product> loadMyProductsFromServer() {
         try {
-            List<Product> products = auctionService.getMyAuctions()
+            return auctionService.getMyAuctions()
                     .stream()
                     .map(auction -> new Product(
                             auction.getAuctionId(),
@@ -640,9 +668,48 @@ public class ProductManagementController {
                             auction.getEndDateTime()
                     ))
                     .collect(java.util.stream.Collectors.toList());
-            productData.setAll(products);
         } catch (IllegalStateException e) {
-            System.err.println("Cannot load seller products: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    @FXML
+    private void handleViewDetail(ActionEvent event) {
+        Product selected = myProductsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showDialogError("Vui lòng chọn một sản phẩm để xem chi tiết.");
+            return;
+        }
+
+        ProductDataManager.getInstance().setSelectedAuction(toAuctionSummary(selected));
+        ProductDataManager.getInstance().setProductDetailReturnTarget("/fxml/ProductManagement.fxml", "Quản lý sản phẩm");
+        NavigationService.getInstance().navigateTo("/fxml/ProductDetail.fxml", "Chi tiết sản phẩm", 1280, 800);
+    }
+
+    private AuctionListDTO toAuctionSummary(Product product) {
+        AuctionListDTO auction = new AuctionListDTO();
+        auction.setAuctionId(product.getId());
+        auction.setItemId(product.getId());
+        auction.setItemType(product.getType());
+        auction.setName(product.getName());
+        auction.setCurrentPrice(product.getPrice());
+        auction.setAuctionStatus(parseStatus(product.getStatus()));
+        auction.setCondition(product.getCondition());
+        auction.setDescription(product.getDescription());
+        auction.setWarranty(product.getWarranty());
+        auction.setEndDateTime(product.getEndDateTime());
+        return auction;
+    }
+
+    private Status parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return Status.OPEN;
+        }
+
+        try {
+            return Status.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            return Status.OPEN;
         }
     }
 

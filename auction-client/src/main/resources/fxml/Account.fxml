@@ -95,6 +95,7 @@
                         onAction="#handleLogout"
                         maxWidth="Infinity"
                         alignment="CENTER"
+                        styleClass="danger-action-button"
                         style="-fx-background-color: #d92d20; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 14;"/>
             </VBox>
 
@@ -122,11 +123,13 @@
                             onAction="#handleDeposit"
                             HBox.hgrow="ALWAYS"
                             maxWidth="Infinity"
+                            styleClass="success-action-button"
                             style="-fx-background-color: #12a594; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 0;"/>
                     <Button text="Rút tiền"
                             onAction="#handleWithdraw"
                             HBox.hgrow="ALWAYS"
                             maxWidth="Infinity"
+                            styleClass="danger-action-button"
                             style="-fx-background-color: #d92d20; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 0;"/>
                 </HBox>
                 <Label fx:id="actionMessageLabel"

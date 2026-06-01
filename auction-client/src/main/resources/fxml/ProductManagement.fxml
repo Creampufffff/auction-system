@@ -67,6 +67,8 @@
         </VBox>
 
         <HBox spacing="12" alignment="CENTER_RIGHT">
+            <Button text="Xem chi tiết" onAction="#handleViewDetail" prefWidth="140"
+                    styleClass="auction-filter-button"/>
             <Button text="Chỉnh sửa" onAction="#handleEditProduct" prefWidth="140"
                     styleClass="auction-filter-button"/>
             <Button text="Xóa sản phẩm" onAction="#handleDeleteProduct" prefWidth="140"
