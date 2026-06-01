@@ -10,7 +10,7 @@
       prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
 
-    <VBox prefWidth="230"
+    <VBox prefWidth="250"
           spacing="22"
           style="-fx-background-color: #172033;">
         <padding>
@@ -33,6 +33,12 @@
             <Button fx:id="productsSidebarButton"
                     text="Kho hàng"
                     onAction="#handleSidebarProducts"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
+            <Button fx:id="bidHistorySidebarButton"
+                    text="Lịch sử đặt giá"
+                    onAction="#handleSidebarBidHistory"
                     maxWidth="Infinity"
                     alignment="CENTER_LEFT"
                     style="-fx-background-color: transparent; -fx-text-fill: #c7d0dd; -fx-padding: 11 14;"/>
@@ -143,6 +149,22 @@
                 <Label fx:id="messageLabel"
                        text=""
                        style="-fx-text-fill: #d92d20; -fx-font-weight: bold; -fx-font-size: 13px;"/>
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <ComboBox fx:id="statusFilterBox"
+                          prefWidth="170"
+                          styleClass="auction-filter-control"/>
+                <ComboBox fx:id="typeFilterBox"
+                          prefWidth="170"
+                          styleClass="auction-filter-control"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="sortFilterBox"
+                          prefWidth="190"
+                          styleClass="auction-filter-control"/>
+                <Button text="Xóa lọc"
+                        onAction="#handleResetFilters"
+                        styleClass="auction-filter-button"/>
             </HBox>
 
             <TableView fx:id="auctionTable"

@@ -518,9 +518,12 @@ public class LiveBiddingController {
 
             Parent root = FXMLLoader.load(resource);
             Stage stage = (Stage) productNameLabel.getScene().getWindow();
-            Scene scene = new Scene(root, 1040, 660);
+            Scene scene = new Scene(root, 1280, 800);
+            String css = getClass().getResource("/css/style.css").toExternalForm();
+            scene.getStylesheets().add(css);
             stage.setTitle("UET Auction System");
             stage.setScene(scene);
+            stage.setMaximized(true);
             stage.show();
         } catch (Exception e) {
             throw new IllegalStateException("Không thể chuyển sang màn hình danh sách đấu giá.", e);

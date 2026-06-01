@@ -55,7 +55,7 @@ public class LoginController {
         messageLabel.setText("Đăng nhập thành công! Đang vào hệ thống...");
 
         // Chuyển sang Dashboard (Kích thước chuẩn cho bảng đấu giá)
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1280, 800);
     }
 
     @FXML

@@ -14,7 +14,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,6 +54,7 @@ public class ProductManagementController {
         TableColumn<Product, String> statusCol = new TableColumn<>("Tr\u1ea1ng th\u00e1i");
         statusCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
+        configureProductTableVisuals(typeCol, nameCol, priceCol, statusCol);
         myProductsTable.getColumns().setAll(typeCol, nameCol, priceCol, statusCol);
         myProductsTable.setItems(productData);
         loadMyProductsFromServer();
@@ -86,30 +89,131 @@ public class ProductManagementController {
         }
     }
 
+    private void configureProductTableVisuals(
+            TableColumn<Product, String> typeCol,
+            TableColumn<Product, String> nameCol,
+            TableColumn<Product, Number> priceCol,
+            TableColumn<Product, String> statusCol
+    ) {
+        if (!myProductsTable.getStyleClass().contains("auction-table")) {
+            myProductsTable.getStyleClass().add("auction-table");
+        }
+        myProductsTable.setFixedCellSize(48);
+
+        typeCol.getStyleClass().add("centered-table-column");
+        nameCol.getStyleClass().add("centered-table-column");
+        priceCol.getStyleClass().add("centered-table-column");
+        statusCol.getStyleClass().add("centered-table-column");
+
+        typeCol.setCellFactory(column -> centeredTextCell());
+        nameCol.setCellFactory(column -> centeredTextCell());
+        priceCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number price, boolean empty) {
+                super.updateItem(price, empty);
+                if (empty || price == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                setText(null);
+                Label label = new Label("$" + String.format("%.2f", price.doubleValue()));
+                label.setMaxWidth(Double.MAX_VALUE);
+                label.setAlignment(javafx.geometry.Pos.CENTER);
+                label.setStyle("-fx-text-fill: #2563eb; -fx-font-weight: bold;");
+                setGraphic(centeredContent(label));
+            }
+        });
+        statusCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                getStyleClass().removeAll("status-running", "status-open", "status-finished", "status-canceled");
+                if (empty || status == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                setText(null);
+                Label badge = new Label(formatProductStatus(status));
+                badge.setAlignment(javafx.geometry.Pos.CENTER);
+                badge.getStyleClass().add("status-badge");
+                badge.getStyleClass().add(statusStyleClass(status));
+                setGraphic(centeredContent(badge));
+            }
+        });
+    }
+
+    private TableCell<Product, String> centeredTextCell() {
+        return new TableCell<>() {
+            @Override
+            protected void updateItem(String text, boolean empty) {
+                super.updateItem(text, empty);
+                if (empty || text == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                setText(null);
+                Label label = new Label(text);
+                label.setWrapText(true);
+                label.setMaxWidth(Double.MAX_VALUE);
+                label.setAlignment(javafx.geometry.Pos.CENTER);
+                label.getStyleClass().add("auction-main-cell-label");
+                setGraphic(centeredContent(label));
+            }
+        };
+    }
+
+    private HBox centeredContent(javafx.scene.Node node) {
+        HBox box = new HBox(node);
+        box.setAlignment(javafx.geometry.Pos.CENTER);
+        box.setFillHeight(false);
+        box.setMinHeight(48);
+        box.setPrefHeight(48);
+        box.setMaxHeight(48);
+        box.setMaxWidth(Double.MAX_VALUE);
+        return box;
+    }
+
+    private String formatProductStatus(String status) {
+        return switch (status) {
+            case "RUNNING" -> "\u0110ang di\u1ec5n ra";
+            case "OPEN" -> "S\u1eafp di\u1ec5n ra";
+            case "FINISHED" -> "\u0110\u00e3 k\u1ebft th\u00fac";
+            case "CANCELED" -> "\u0110\u00e3 h\u1ee7y";
+            default -> status;
+        };
+    }
+
+    private String statusStyleClass(String status) {
+        return switch (status) {
+            case "RUNNING" -> "status-running";
+            case "OPEN" -> "status-open";
+            case "FINISHED" -> "status-finished";
+            case "CANCELED" -> "status-canceled";
+            default -> "status-open";
+        };
+    }
+
     @FXML
     private void handleAddProduct(ActionEvent event) {
         Dialog<Product> dialog = new Dialog<>();
         dialog.setTitle("\u0110\u0103ng s\u1ea3n ph\u1ea9m m\u1edbi");
-        dialog.setHeaderText("\u0110i\u1ec1n chi ti\u1ebft k\u1ef9 thu\u1eadt cho s\u1ea3n ph\u1ea9m");
+        dialog.setHeaderText(null);
 
         ButtonType postButtonType = new ButtonType("\u0110\u0103ng b\u00e0i", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(postButtonType, ButtonType.CANCEL);
         dialog.getDialogPane().getStyleClass().add("product-dialog-pane");
-        dialog.getDialogPane().setPrefWidth(560);
+        dialog.getDialogPane().setPrefWidth(820);
+        dialog.getDialogPane().setMinWidth(820);
+        dialog.getDialogPane().setPrefHeight(700);
+        dialog.getDialogPane().setMinHeight(700);
         String dialogCss = getClass().getResource("/css/style.css").toExternalForm();
         dialog.getDialogPane().getStylesheets().add(dialogCss);
-
-        GridPane grid = new GridPane();
-        grid.getStyleClass().add("product-dialog-grid");
-        grid.setHgap(14);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(4, 8, 2, 8));
-        ColumnConstraints labelColumn = new ColumnConstraints();
-        labelColumn.setMinWidth(150);
-        labelColumn.setPrefWidth(160);
-        ColumnConstraints inputColumn = new ColumnConstraints();
-        inputColumn.setHgrow(Priority.ALWAYS);
-        grid.getColumnConstraints().addAll(labelColumn, inputColumn);
 
         TextField nameField = new TextField();
         TextField priceField = new TextField();
@@ -119,7 +223,7 @@ public class ProductManagementController {
         auctionTypeBox.setMaxWidth(Double.MAX_VALUE);
         TextField conditionField = new TextField();
         TextArea descriptionArea = new TextArea();
-        descriptionArea.setPrefRowCount(3);
+        descriptionArea.setPrefRowCount(2);
         TextField warrantyField = new TextField();
         DatePicker startDatePicker = new DatePicker(LocalDate.now());
         DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
@@ -128,6 +232,10 @@ public class ProductManagementController {
         TextField minIncrementField = new TextField("1");
         Label conditionLabel = new Label("T\u00e1c gi\u1ea3:");
         Label warrantyLabel = new Label("Th\u00f4ng tin ph\u1ee5:");
+        nameField.setPromptText("Nh\u1eadp t\u00ean s\u1ea3n ph\u1ea9m");
+        priceField.setPromptText("Nh\u1eadp gi\u00e1 kh\u1edfi \u0111i\u1ec3m");
+        conditionField.setPromptText("Nh\u1eadp t\u00ean t\u00e1c gi\u1ea3 (n\u1ebfu c\u00f3)");
+        descriptionArea.setPromptText("Nh\u1eadp m\u00f4 t\u1ea3 chi ti\u1ebft v\u1ec1 s\u1ea3n ph\u1ea9m...");
         warrantyField.setPromptText("C\u00f3 th\u1ec3 b\u1ecf tr\u1ed1ng");
         startTimeField.setPromptText("HH:mm");
         endTimeField.setPromptText("HH:mm");
@@ -162,30 +270,68 @@ public class ProductManagementController {
             updateTypeSpecificFields(selectedType, conditionLabel, warrantyLabel, warrantyField);
         });
 
-        grid.add(new Label("T\u00ean s\u1ea3n ph\u1ea9m:"), 0, 0);
-        grid.add(nameField, 1, 0);
-        grid.add(new Label("Lo\u1ea1i auction:"), 0, 1);
-        grid.add(auctionTypeBox, 1, 1);
-        grid.add(new Label("Gi\u00e1 kh\u1edfi \u0111i\u1ec3m ($):"), 0, 2);
-        grid.add(priceField, 1, 2);
-        grid.add(conditionLabel, 0, 3);
-        grid.add(conditionField, 1, 3);
-        grid.add(new Label("M\u00f4 t\u1ea3 chi ti\u1ebft:"), 0, 4);
-        grid.add(descriptionArea, 1, 4);
-        grid.add(warrantyLabel, 0, 5);
-        grid.add(warrantyField, 1, 5);
-        grid.add(new Label("Ng\u00e0y b\u1eaft \u0111\u1ea7u:"), 0, 6);
-        grid.add(startDatePicker, 1, 6);
-        grid.add(new Label("Gi\u1edd b\u1eaft \u0111\u1ea7u:"), 0, 7);
-        grid.add(startTimeField, 1, 7);
-        grid.add(new Label("Ng\u00e0y k\u1ebft th\u00fac:"), 0, 8);
-        grid.add(endDatePicker, 1, 8);
-        grid.add(new Label("Gi\u1edd k\u1ebft th\u00fac:"), 0, 9);
-        grid.add(endTimeField, 1, 9);
-        grid.add(new Label("B\u01b0\u1edbc gi\u00e1 t\u1ed1i thi\u1ec3u:"), 0, 10);
-        grid.add(minIncrementField, 1, 10);
+        VBox headerText = new VBox(4,
+                styledLabel("\u0110\u0103ng s\u1ea3n ph\u1ea9m m\u1edbi", "product-dialog-title"),
+                styledLabel("\u0110i\u1ec1n th\u00f4ng tin chi ti\u1ebft \u0111\u1ec3 t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1", "product-dialog-subtitle")
+        );
+        Label headerIcon = styledLabel("\u2696", "product-dialog-header-icon");
+        HBox header = new HBox(16, headerIcon, headerText);
+        header.getStyleClass().add("product-dialog-custom-header");
 
-        dialog.getDialogPane().setContent(grid);
+        VBox basicFields = new VBox(12,
+                dialogField("T\u00ean s\u1ea3n ph\u1ea9m *", nameField),
+                dialogField("Lo\u1ea1i auction *", auctionTypeBox),
+                dialogField("Gi\u00e1 kh\u1edfi \u0111i\u1ec3m ($) *", priceField),
+                dialogField(conditionLabel, conditionField)
+        );
+        basicFields.setPrefWidth(540);
+
+        VBox imageBox = new VBox(10,
+                styledLabel("\u25a3", "product-dialog-upload-icon"),
+                styledLabel("Th\u00eam \u1ea3nh s\u1ea3n ph\u1ea9m", "product-dialog-upload-title"),
+                styledLabel("K\u00e9o th\u1ea3 ho\u1eb7c nh\u1ea5n \u0111\u1ec3 ch\u1ecdn", "product-dialog-upload-help"),
+                styledLabel("JPG, PNG (t\u1ed1i \u0111a 5MB)", "product-dialog-upload-note")
+        );
+        imageBox.getStyleClass().add("product-dialog-upload-box");
+        HBox basicRow = new HBox(28, basicFields, imageBox);
+
+        VBox basicSection = new VBox(16,
+                sectionTitle("Th\u00f4ng tin c\u01a1 b\u1ea3n"),
+                basicRow,
+                dialogField("M\u00f4 t\u1ea3 chi ti\u1ebft", descriptionArea),
+                dialogField(warrantyLabel, warrantyField)
+        );
+
+        GridPane timeGrid = new GridPane();
+        timeGrid.setHgap(28);
+        timeGrid.setVgap(12);
+        ColumnConstraints leftTimeColumn = new ColumnConstraints();
+        leftTimeColumn.setHgrow(Priority.ALWAYS);
+        ColumnConstraints rightTimeColumn = new ColumnConstraints();
+        rightTimeColumn.setHgrow(Priority.ALWAYS);
+        timeGrid.getColumnConstraints().addAll(leftTimeColumn, rightTimeColumn);
+        timeGrid.add(dialogField("Ng\u00e0y b\u1eaft \u0111\u1ea7u *", startDatePicker), 0, 0);
+        timeGrid.add(dialogField("Ng\u00e0y k\u1ebft th\u00fac *", endDatePicker), 1, 0);
+        timeGrid.add(dialogField("Gi\u1edd b\u1eaft \u0111\u1ea7u *", startTimeField), 0, 1);
+        timeGrid.add(dialogField("Gi\u1edd k\u1ebft th\u00fac *", endTimeField), 1, 1);
+
+        VBox timeSection = new VBox(14, sectionTitle("Th\u1eddi gian \u0111\u1ea5u gi\u00e1"), timeGrid);
+        timeSection.getStyleClass().add("product-dialog-section");
+
+        VBox incrementSection = new VBox(10, dialogField("B\u01b0\u1edbc gi\u00e1 t\u1ed1i thi\u1ec3u ($) *", minIncrementField));
+        incrementSection.getStyleClass().add("product-dialog-section");
+
+        VBox body = new VBox(16, basicSection, timeSection, incrementSection);
+        body.getStyleClass().add("product-dialog-body");
+
+        VBox shell = new VBox(header, body);
+        shell.getStyleClass().add("product-dialog-shell");
+        ScrollPane scrollPane = new ScrollPane(shell);
+        scrollPane.getStyleClass().add("product-dialog-scroll");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        dialog.getDialogPane().setContent(scrollPane);
         Button postButton = (Button) dialog.getDialogPane().lookupButton(postButtonType);
         postButton.getStyleClass().add("product-dialog-primary-button");
         postButton.addEventFilter(ActionEvent.ACTION, actionEvent -> {
@@ -313,6 +459,32 @@ public class ProductManagementController {
             control.getStyleClass().add("product-dialog-input");
             control.setMaxWidth(Double.MAX_VALUE);
         }
+    }
+
+    private VBox dialogField(String labelText, Control control) {
+        return dialogField(styledLabel(labelText, "product-dialog-field-label"), control);
+    }
+
+    private VBox dialogField(Label label, Control control) {
+        label.getStyleClass().add("product-dialog-field-label");
+        control.setMaxWidth(Double.MAX_VALUE);
+        VBox box = new VBox(7, label, control);
+        box.getStyleClass().add("product-dialog-field");
+        return box;
+    }
+
+    private HBox sectionTitle(String text) {
+        Label icon = styledLabel("\u25a3", "product-dialog-section-icon");
+        Label title = styledLabel(text, "product-dialog-section-title");
+        HBox box = new HBox(10, icon, title);
+        box.getStyleClass().add("product-dialog-section-title-row");
+        return box;
+    }
+
+    private Label styledLabel(String text, String styleClass) {
+        Label label = new Label(text);
+        label.getStyleClass().add(styleClass);
+        return label;
     }
 
     private void updateTypeSpecificFields(
@@ -510,7 +682,7 @@ public class ProductManagementController {
             // Lấy Stage từ nút bấm
             Stage stage = (Stage) backButton.getScene().getWindow();
 
-            Scene scene = new Scene(root, 1040, 660);
+            Scene scene = new Scene(root, 1280, 800);
 
             // Nạp file CSS tổng vào Scene mới
             String css = getClass().getResource("/css/style.css").toExternalForm();
@@ -518,6 +690,7 @@ public class ProductManagementController {
 
             stage.setTitle("UET Auction System");
             stage.setScene(scene);
+            stage.setMaximized(true);
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
@@ -526,13 +699,12 @@ public class ProductManagementController {
 
     @FXML
     private void handleCurrentAuctions(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System", 1280, 800);
     }
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
     }
 
 }
-

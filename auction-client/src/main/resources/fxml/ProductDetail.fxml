@@ -8,7 +8,7 @@
       prefWidth="1040" prefHeight="660"
       style="-fx-background-color: #f3f6fb;">
 
-    <VBox prefWidth="230" spacing="22" style="-fx-background-color: #172033;">
+    <VBox prefWidth="250" spacing="22" style="-fx-background-color: #172033;">
         <padding><Insets top="28" right="18" bottom="24" left="18"/></padding>
         <VBox spacing="2">
             <Label text="THÔNG TIN" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>

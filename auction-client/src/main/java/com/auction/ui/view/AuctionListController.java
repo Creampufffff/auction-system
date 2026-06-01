@@ -8,6 +8,7 @@ import com.auction.application.service.AuctionService;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -15,6 +16,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 public class AuctionListController {
@@ -40,7 +42,11 @@ public class AuctionListController {
     @FXML private Button previousPageButton;
     @FXML private Button nextPageButton;
     @FXML private Button productsSidebarButton;
+    @FXML private Button bidHistorySidebarButton;
     @FXML private Label pageInfoLabel;
+    @FXML private ComboBox<FilterOption> statusFilterBox;
+    @FXML private ComboBox<FilterOption> typeFilterBox;
+    @FXML private ComboBox<FilterOption> sortFilterBox;
 
     private final AuctionService auctionService = new AuctionService();
 
@@ -50,8 +56,10 @@ public class AuctionListController {
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         priceColumn.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("auctionStatus"));
+        configureAuctionTableVisuals();
 
         configureSidebarForRole();
+        configureFilters();
         loadAuctions();
 
         auctionTable.refresh();
@@ -75,6 +83,148 @@ public class AuctionListController {
             productsSidebarButton.setVisible(isSeller);
             productsSidebarButton.setManaged(isSeller);
         }
+        if (bidHistorySidebarButton != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            bidHistorySidebarButton.setVisible(isBidder);
+            bidHistorySidebarButton.setManaged(isBidder);
+        }
+    }
+
+    private void configureFilters() {
+        if (statusFilterBox != null) {
+            statusFilterBox.setItems(FXCollections.observableArrayList(
+                    new FilterOption("ALL", "Tất cả trạng thái"),
+                    new FilterOption("OPEN", "Sắp diễn ra"),
+                    new FilterOption("RUNNING", "Đang diễn ra"),
+                    new FilterOption("FINISHED", "Đã kết thúc"),
+                    new FilterOption("CANCELED", "Đã hủy")
+            ));
+            statusFilterBox.getSelectionModel().selectFirst();
+            statusFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+                ProductDataManager.getInstance().setStatusFilter(newVal == null ? "ALL" : newVal.value());
+                refreshTablePage();
+            });
+        }
+
+        if (typeFilterBox != null) {
+            typeFilterBox.setItems(FXCollections.observableArrayList(
+                    new FilterOption("ALL", "Tất cả danh mục"),
+                    new FilterOption("ART", "Nghệ thuật"),
+                    new FilterOption("ELECTRONICS", "Điện tử"),
+                    new FilterOption("VEHICLE", "Xe cộ")
+            ));
+            typeFilterBox.getSelectionModel().selectFirst();
+            typeFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+                ProductDataManager.getInstance().setTypeFilter(newVal == null ? "ALL" : newVal.value());
+                refreshTablePage();
+            });
+        }
+
+        if (sortFilterBox != null) {
+            sortFilterBox.setItems(FXCollections.observableArrayList(
+                    new FilterOption("NEWEST", "Sắp xếp: Mới nhất"),
+                    new FilterOption("ENDING_SOON", "Sắp kết thúc"),
+                    new FilterOption("PRICE_ASC", "Giá thấp đến cao"),
+                    new FilterOption("PRICE_DESC", "Giá cao đến thấp"),
+                    new FilterOption("NAME_ASC", "Tên A-Z")
+            ));
+            sortFilterBox.getSelectionModel().selectFirst();
+            sortFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+                ProductDataManager.getInstance().setSortMode(newVal == null ? "NEWEST" : newVal.value());
+                refreshTablePage();
+            });
+        }
+    }
+
+    private void configureAuctionTableVisuals() {
+        auctionTable.getStyleClass().add("auction-table");
+        auctionTable.setFixedCellSize(48);
+        idColumn.getStyleClass().add("centered-table-column");
+        nameColumn.getStyleClass().add("centered-table-column");
+        priceColumn.getStyleClass().add("centered-table-column");
+        statusColumn.getStyleClass().add("centered-table-column");
+
+        idColumn.setCellFactory(column -> centeredTextCell());
+        nameColumn.setCellFactory(column -> centeredTextCell());
+
+        priceColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double price, boolean empty) {
+                super.updateItem(price, empty);
+                if (empty || price == null) {
+                    setText(null);
+                    setGraphic(null);
+                    setStyle("");
+                    return;
+                }
+                setText(null);
+                Label label = new Label("$" + String.format("%.2f", price));
+                label.setMaxWidth(Double.MAX_VALUE);
+                label.setAlignment(javafx.geometry.Pos.CENTER);
+                label.setStyle("-fx-text-fill: #2563eb; -fx-font-weight: bold;");
+                setGraphic(centeredContent(label));
+            }
+        });
+
+        statusColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Object status, boolean empty) {
+                super.updateItem(status, empty);
+                getStyleClass().removeAll("status-running", "status-open", "status-finished", "status-canceled");
+                if (empty || status == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                setText(null);
+                String value = status.toString();
+                Label badge = new Label(formatStatus(value));
+                badge.setAlignment(javafx.geometry.Pos.CENTER);
+                badge.getStyleClass().add("status-badge");
+                badge.getStyleClass().add(switch (value) {
+                    case "RUNNING" -> "status-running";
+                    case "OPEN" -> "status-open";
+                    case "FINISHED" -> "status-finished";
+                    case "CANCELED" -> "status-canceled";
+                    default -> "status-open";
+                });
+                setGraphic(centeredContent(badge));
+            }
+        });
+    }
+
+    private TableCell<AuctionListDTO, String> centeredTextCell() {
+        return new TableCell<>() {
+            @Override
+            protected void updateItem(String text, boolean empty) {
+                super.updateItem(text, empty);
+                if (empty || text == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                setText(null);
+                Label label = new Label(text);
+                label.setWrapText(true);
+                label.setMaxWidth(Double.MAX_VALUE);
+                label.setAlignment(javafx.geometry.Pos.CENTER);
+                label.getStyleClass().add("auction-main-cell-label");
+                setGraphic(centeredContent(label));
+            }
+        };
+    }
+
+    private HBox centeredContent(javafx.scene.Node node) {
+        HBox box = new HBox(node);
+        box.setAlignment(javafx.geometry.Pos.CENTER);
+        box.setFillHeight(false);
+        box.setMinHeight(48);
+        box.setPrefHeight(48);
+        box.setMaxHeight(48);
+        box.setMaxWidth(Double.MAX_VALUE);
+        return box;
     }
 
     private void loadAuctions() {
@@ -166,11 +316,29 @@ public class AuctionListController {
     }
 
     @FXML
+    private void handleResetFilters(ActionEvent event) {
+        ProductDataManager.getInstance().resetAuctionFilters();
+        if (searchField != null) {
+            searchField.clear();
+        }
+        if (statusFilterBox != null) {
+            statusFilterBox.getSelectionModel().selectFirst();
+        }
+        if (typeFilterBox != null) {
+            typeFilterBox.getSelectionModel().selectFirst();
+        }
+        if (sortFilterBox != null) {
+            sortFilterBox.getSelectionModel().selectFirst();
+        }
+        refreshTablePage();
+    }
+
+    @FXML
     private void handleViewDetail(ActionEvent event) {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             ProductDataManager.getInstance().setSelectedAuction(selected);
-            NavigationService.getInstance().navigateTo("/fxml/ProductDetail.fxml", "Chi tiết sản phẩm", 1040, 660);
+            NavigationService.getInstance().navigateTo("/fxml/ProductDetail.fxml", "Chi tiết sản phẩm", 1280, 800);
         } else {
             if (messageLabel != null) messageLabel.setText("Vui lòng chọn sản phẩm trên bảng!");
         }
@@ -212,13 +380,14 @@ public class AuctionListController {
                 controller.setProduct(productModel);
 
                 Stage stage = (Stage) auctionTable.getScene().getWindow();
-                Scene scene = new Scene(root, 1040, 660);
+                Scene scene = new Scene(root, 1280, 800);
 
                 String css = getClass().getResource("/css/style.css").toExternalForm();
                 scene.getStylesheets().add(css);
 
                 stage.setTitle("Đấu giá trực tiếp");
                 stage.setScene(scene);
+                stage.setMaximized(true);
                 stage.show();
 
             } catch (Exception e) {
@@ -237,12 +406,20 @@ public class AuctionListController {
             }
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1280, 800);
     }
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarBidHistory(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
     }
 
     @FXML
@@ -264,6 +441,35 @@ public class AuctionListController {
     private void handleNextPage(ActionEvent event) {
         ProductDataManager.getInstance().nextPage();
         refreshTablePage();
+    }
+
+    private String formatStatus(String status) {
+        return switch (status) {
+            case "RUNNING" -> "Đang diễn ra";
+            case "OPEN" -> "Sắp diễn ra";
+            case "FINISHED" -> "Đã kết thúc";
+            case "CANCELED" -> "Đã hủy";
+            default -> status;
+        };
+    }
+
+    private static class FilterOption {
+        private final String value;
+        private final String label;
+
+        private FilterOption(String value, String label) {
+            this.value = value;
+            this.label = label;
+        }
+
+        private String value() {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 }
 

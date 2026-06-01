@@ -1,53 +1,37 @@
 package com.auction.ui.view;
 
 import com.app.common.dto.BalanceResponseDTO;
-import com.app.common.dto.BidHistoryDTO;
-import com.auction.domain.model.ProductDataManager;
 import com.auction.application.service.AccountService;
+import com.auction.domain.model.ProductDataManager;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 
 public class AccountController {
 
-    // --- Profile section ---
     @FXML private Label usernameLabel;
     @FXML private Label roleLabel;
     @FXML private Label userIdLabel;
     @FXML private Label sidebarRoleLabel;
     @FXML private Label sidebarBalanceLabel;
     @FXML private Button productsSidebarButton;
+    @FXML private Button bidHistorySidebarButton;
 
-    // --- Balance section ---
     @FXML private Label balanceLabel;
     @FXML private Label balanceMessageLabel;
 
-    // --- Deposit / Withdraw ---
     @FXML private TextField amountField;
     @FXML private Label actionMessageLabel;
-
-    // --- Bid history table ---
-    @FXML private VBox bidHistoryCard;
-    @FXML private TableView<BidHistoryDTO> bidHistoryTable;
-    @FXML private TableColumn<BidHistoryDTO, String> colBidId;
-    @FXML private TableColumn<BidHistoryDTO, String> colAuctionId;
-    @FXML private TableColumn<BidHistoryDTO, String> colBidTime;
-    @FXML private TableColumn<BidHistoryDTO, Double> colBidAmount;
-
-    // --- Message / status ---
-    @FXML private Label messageLabel;
 
     private final AccountService accountService = new AccountService();
 
     @FXML
     public void initialize() {
-        // Profile
         usernameLabel.setText(SessionManager.getCurrentUsername());
         roleLabel.setText(SessionManager.getCurrentUserRole());
         userIdLabel.setText("ID: " + SessionManager.getCurrentUserId());
@@ -55,24 +39,8 @@ public class AccountController {
             sidebarRoleLabel.setText("Role: " + SessionManager.getCurrentUserRole());
         }
         configureSidebarForRole();
-        configureBidHistoryForRole();
 
-        // Bid history table columns
-        if (bidHistoryTable != null) {
-            colBidId.setText("Lo\u1ea1i s\u1ea3n ph\u1ea9m");
-            colAuctionId.setText("T\u00ean s\u1ea3n ph\u1ea9m");
-            colBidId.setCellValueFactory(new PropertyValueFactory<>("itemType"));
-            colAuctionId.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-            colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
-            colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
-        }
-
-        Platform.runLater(() -> {
-            loadBalance();
-            if (SessionManager.hasRole("Bidder")) {
-                loadBidHistory();
-            }
-        });
+        Platform.runLater(this::loadBalance);
     }
 
     private void configureSidebarForRole() {
@@ -81,13 +49,10 @@ public class AccountController {
             productsSidebarButton.setVisible(isSeller);
             productsSidebarButton.setManaged(isSeller);
         }
-    }
-
-    private void configureBidHistoryForRole() {
-        if (bidHistoryCard != null) {
+        if (bidHistorySidebarButton != null) {
             boolean isBidder = SessionManager.hasRole("Bidder");
-            bidHistoryCard.setVisible(isBidder);
-            bidHistoryCard.setManaged(isBidder);
+            bidHistorySidebarButton.setVisible(isBidder);
+            bidHistorySidebarButton.setManaged(isBidder);
         }
     }
 
@@ -122,13 +87,6 @@ public class AccountController {
         }
     }
 
-    private void loadBidHistory() {
-        bidHistoryTable.setItems(
-                FXCollections.observableArrayList(accountService.getBidHistory())
-        );
-        bidHistoryTable.refresh();
-    }
-
     @FXML
     private void handleDeposit(ActionEvent event) {
         double amount = parseAmount();
@@ -160,17 +118,8 @@ public class AccountController {
     }
 
     @FXML
-    private void handleRefreshHistory(ActionEvent event) {
-        if (!SessionManager.hasRole("Bidder")) {
-            return;
-        }
-        loadBidHistory();
-        if (messageLabel != null) messageLabel.setText("Đã làm mới lịch sử đặt giá.");
-    }
-
-    @FXML
     private void handleBack(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1280, 800);
     }
 
     @FXML
@@ -178,7 +127,15 @@ public class AccountController {
         if (!SessionManager.hasRole("Seller")) {
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1040, 660);
+        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarBidHistory(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
     }
 
     @FXML
@@ -187,8 +144,6 @@ public class AccountController {
         ProductDataManager.getInstance().resetSessionState();
         NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Đăng nhập");
     }
-
-    // --- Helpers ---
 
     private void updateBalanceLabels(double balance) {
         ProductDataManager.getInstance().setUserBalance(balance);
@@ -228,4 +183,3 @@ public class AccountController {
         }
     }
 }
-

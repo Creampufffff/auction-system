@@ -123,7 +123,8 @@ public class ProductDetailController {
 
             Stage stage = (Stage) productNameLabel.getScene().getWindow();
             stage.setTitle("Dau gia truc tiep");
-            stage.setScene(new Scene(root, 1040, 660));
+            stage.setScene(new Scene(root, 1280, 800));
+            stage.setMaximized(true);
         } catch (Exception e) {
             e.printStackTrace();
         }

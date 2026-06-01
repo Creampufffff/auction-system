@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,9 @@ public class ProductDataManager {
     private static final int ITEMS_PER_PAGE = 10;
     private int currentPage = 1;
     private String searchKeyword = "";
+    private String statusFilter = "ALL";
+    private String typeFilter = "ALL";
+    private String sortMode = "NEWEST";
     private List<AuctionListDTO> filteredAuctionList = List.of();
 
     private Timer globalTimer;
@@ -83,6 +87,9 @@ public class ProductDataManager {
         selectedAuction = null;
         currentPage = 1;
         searchKeyword = "";
+        statusFilter = "ALL";
+        typeFilter = "ALL";
+        sortMode = "NEWEST";
         filteredAuctionList = List.of();
     }
 
@@ -243,16 +250,89 @@ public class ProductDataManager {
         applyFilter();
     }
 
+    public void setStatusFilter(String statusFilter) {
+        this.statusFilter = normalizeFilter(statusFilter);
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void setTypeFilter(String typeFilter) {
+        this.typeFilter = normalizeFilter(typeFilter);
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void setSortMode(String sortMode) {
+        this.sortMode = sortMode == null || sortMode.isBlank() ? "NEWEST" : sortMode;
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void resetAuctionFilters() {
+        searchKeyword = "";
+        statusFilter = "ALL";
+        typeFilter = "ALL";
+        sortMode = "NEWEST";
+        currentPage = 1;
+        applyFilter();
+    }
+
     private void applyFilter() {
+        filteredAuctionList = serverAuctionList.stream()
+                .filter(this::matchesSearch)
+                .filter(this::matchesStatus)
+                .filter(this::matchesType)
+                .sorted(getAuctionComparator())
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesSearch(AuctionListDTO auction) {
         if (searchKeyword.isEmpty()) {
-            filteredAuctionList = new java.util.ArrayList<>(serverAuctionList);
-        } else {
-            filteredAuctionList = serverAuctionList.stream()
-                    .filter(a -> a.getName().toLowerCase().contains(searchKeyword) ||
-                               a.getItemType().toLowerCase().contains(searchKeyword) ||
-                               a.getAuctionId().toLowerCase().contains(searchKeyword))
-                    .collect(Collectors.toList());
+            return true;
         }
+        return safeLower(auction.getName()).contains(searchKeyword)
+                || safeLower(auction.getItemType()).contains(searchKeyword)
+                || safeLower(auction.getAuctionId()).contains(searchKeyword);
+    }
+
+    private boolean matchesStatus(AuctionListDTO auction) {
+        if ("ALL".equals(statusFilter)) {
+            return true;
+        }
+        return auction.getAuctionStatus() != null && auction.getAuctionStatus().name().equals(statusFilter);
+    }
+
+    private boolean matchesType(AuctionListDTO auction) {
+        if ("ALL".equals(typeFilter)) {
+            return true;
+        }
+        return typeFilter.equalsIgnoreCase(auction.getItemType());
+    }
+
+    private Comparator<AuctionListDTO> getAuctionComparator() {
+        return switch (sortMode) {
+            case "PRICE_ASC" -> Comparator.comparingDouble(AuctionListDTO::getCurrentPrice);
+            case "PRICE_DESC" -> Comparator.comparingDouble(AuctionListDTO::getCurrentPrice).reversed();
+            case "ENDING_SOON" -> Comparator.comparing(this::parseEndDateTimeForSort, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "NAME_ASC" -> Comparator.comparing(a -> safeLower(a.getName()));
+            default -> Comparator.comparing(this::parseStartDateTimeForSort, Comparator.nullsLast(Comparator.reverseOrder()));
+        };
+    }
+
+    private LocalDateTime parseStartDateTimeForSort(AuctionListDTO auction) {
+        return parseEndDateTime(auction.getStartDateTime());
+    }
+
+    private LocalDateTime parseEndDateTimeForSort(AuctionListDTO auction) {
+        return parseEndDateTime(auction.getEndDateTime());
+    }
+
+    private String normalizeFilter(String value) {
+        return value == null || value.isBlank() ? "ALL" : value;
+    }
+
+    private String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase();
     }
 
     public ObservableList<AuctionListDTO> getPagedAuctions() {
@@ -305,6 +385,18 @@ public class ProductDataManager {
 
     public String getSearchKeyword() {
         return searchKeyword;
+    }
+
+    public String getStatusFilter() {
+        return statusFilter;
+    }
+
+    public String getTypeFilter() {
+        return typeFilter;
+    }
+
+    public String getSortMode() {
+        return sortMode;
     }
 }
 

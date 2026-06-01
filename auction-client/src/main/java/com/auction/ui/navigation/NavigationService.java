@@ -19,8 +19,8 @@ public class NavigationService {
     private Stage primaryStage;
 
     // Default dimensions for different screen types
-    private static final double DEFAULT_WIDTH = 1040;
-    private static final double DEFAULT_HEIGHT = 660;
+    private static final double DEFAULT_WIDTH = 1280;
+    private static final double DEFAULT_HEIGHT = 800;
     private static final double AUTH_WIDTH = 800;
     private static final double AUTH_HEIGHT = 600;
     private static final String CSS_PATH = "/css/style.css";
@@ -42,7 +42,7 @@ public class NavigationService {
     }
 
     /**
-     * Navigate to a scene with default dimensions (1040x660).
+     * Navigate to a scene with default dimensions (1280x800).
      *
      * @param fxmlPath the FXML resource path (e.g., "/fxml/AuctionList.fxml")
      * @param title    the window title
@@ -73,6 +73,10 @@ public class NavigationService {
      * @param centerOnScreen whether to center the window on screen
      */
     public void navigateTo(String fxmlPath, String title, double width, double height, boolean centerOnScreen) {
+        navigateTo(fxmlPath, title, width, height, centerOnScreen, true);
+    }
+
+    private void navigateTo(String fxmlPath, String title, double width, double height, boolean centerOnScreen, boolean maximize) {
         try {
             if (primaryStage == null) {
                 throw new IllegalStateException("Primary stage not set. Call setPrimaryStage() first.");
@@ -94,6 +98,11 @@ public class NavigationService {
 
             primaryStage.setTitle(title);
             primaryStage.setScene(scene);
+            primaryStage.setMaximized(maximize);
+            if (!maximize) {
+                primaryStage.setWidth(width);
+                primaryStage.setHeight(height);
+            }
 
             if (centerOnScreen) {
                 primaryStage.centerOnScreen();
@@ -110,6 +119,7 @@ public class NavigationService {
                 fallbackRoot.setStyle("-fx-padding: 24; -fx-alignment: center; -fx-background-color: white;");
                 primaryStage.setTitle(title);
                 primaryStage.setScene(new Scene(fallbackRoot, width, height));
+                primaryStage.setMaximized(maximize);
                 primaryStage.show();
             }
         }
@@ -122,7 +132,7 @@ public class NavigationService {
      * @param title    the window title
      */
     public void navigateToAuth(String fxmlPath, String title) {
-        navigateTo(fxmlPath, title, AUTH_WIDTH, AUTH_HEIGHT, true);
+        navigateTo(fxmlPath, title, AUTH_WIDTH, AUTH_HEIGHT, true, false);
     }
 
     /**
@@ -152,4 +162,3 @@ public class NavigationService {
         }
     }
 }
-
