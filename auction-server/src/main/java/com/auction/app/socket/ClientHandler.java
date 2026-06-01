@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Base64;
 import java.util.List;
 
 public class ClientHandler implements Runnable {
@@ -117,6 +118,7 @@ public class ClientHandler implements Runnable {
                 case "CREATE_ART_AUCTION" -> createArtAuction(payload);
                 case "CREATE_ELECTRONICS_AUCTION" -> createElectronicsAuction(payload);
                 case "CREATE_VEHICLE_AUCTION" -> createVehicleAuction(payload);
+                case "UPLOAD_IMAGE" -> uploadImage(payload);
                 case "UPDATE_AUCTION" -> updateAuction(payload);
                 case "DELETE_AUCTION" -> deleteAuction(payload);
                 case "START_AUCTION" -> startAuction(payload);
@@ -237,7 +239,7 @@ public class ClientHandler implements Runnable {
 
         StringBuilder response = new StringBuilder("OK|AUCTIONS");
         for (AuctionListDTO auction : auctions) {
-            response.append("|").append(formatAuctionDTO(auction));
+            response.append("|").append(formatAuctionDTO(auction, false));
         }
         return response.toString();
     }
@@ -252,7 +254,7 @@ public class ClientHandler implements Runnable {
 
         StringBuilder response = new StringBuilder("OK|MY_AUCTIONS");
         for (AuctionListDTO auction : auctions) {
-            response.append("|").append(formatAuctionDTO(auction));
+            response.append("|").append(formatAuctionDTO(auction, false));
         }
         return response.toString();
     }
@@ -265,7 +267,7 @@ public class ClientHandler implements Runnable {
             return "ERR|AUCTION_NOT_FOUND";
         }
 
-        return "OK|AUCTION|" + formatAuctionDTO(auction);
+        return "OK|AUCTION|" + formatAuctionDTO(auction, true);
     }
 
     private String getBidHistory(String payload) {
@@ -359,11 +361,12 @@ public class ClientHandler implements Runnable {
 
     private String createArtAuction(String payload) {
         String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
-        if (rawArgs.length != 7) {
+        if (rawArgs.length != 7 && rawArgs.length != 8) {
             throw new IllegalArgumentException("Requires name|description|startDate|endDate|startPrice|minIncrement|author");
         }
 
         Seller seller = requireCurrentSeller();
+        byte[] imageBlob = decodeOptionalImage(rawArgs, 7);
 
         CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
             rawArgs[0],                              // itemName
@@ -375,7 +378,8 @@ public class ClientHandler implements Runnable {
             rawArgs[2],                              // startDateTime
             rawArgs[3],                              // endDateTime
             seller.getId(),                          // sellerId
-            "ART"                                    // itemType
+            "ART",                                   // itemType
+            imageBlob
         );
 
         ApiResponseDTO response = auctionController.createAuction(request);
@@ -395,6 +399,7 @@ public class ClientHandler implements Runnable {
         }
 
         Seller seller = requireCurrentSeller();
+        byte[] imageBlob = decodeOptionalImage(rawArgs, 7);
 
         CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
             rawArgs[0],                              // itemName
@@ -406,7 +411,8 @@ public class ClientHandler implements Runnable {
             rawArgs[2],                              // startDateTime
             rawArgs[3],                              // endDateTime
             seller.getId(),                          // sellerId
-            "ELECTRONICS"                            // itemType
+            "ELECTRONICS",                           // itemType
+            imageBlob
         );
 
         ApiResponseDTO response = auctionController.createAuction(request);
@@ -425,6 +431,7 @@ public class ClientHandler implements Runnable {
         }
 
         Seller seller = requireCurrentSeller();
+        byte[] imageBlob = decodeOptionalImage(rawArgs, 7);
 
         CreateAuctionRequestDTO request = new CreateAuctionRequestDTO(
             rawArgs[0],                              // itemName
@@ -436,7 +443,8 @@ public class ClientHandler implements Runnable {
             rawArgs[2],                              // startDateTime
             rawArgs[3],                              // endDateTime
             seller.getId(),                          // sellerId
-            "VEHICLE"                                // itemType
+            "VEHICLE",                               // itemType
+            imageBlob
         );
 
         ApiResponseDTO response = auctionController.createAuction(request);
@@ -446,6 +454,27 @@ public class ClientHandler implements Runnable {
 
         String auctionId = response.getMessage().split("ID: ")[1];
         return "OK|CREATE_VEHICLE_AUCTION|" + auctionId + "|Item created";
+    }
+
+    private String uploadImage(String payload) {
+        String[] rawArgs = requirePayload(payload, "Payload").split("\\|", -1);
+        if (rawArgs.length != 2) {
+            throw new IllegalArgumentException("Requires auctionId|base64ImageData");
+        }
+
+        Seller seller = requireCurrentSeller();
+        Auction existing = requireOwnedAuction(seller, rawArgs[0], "upload image for");
+        byte[] imageBlob = decodeOptionalImage(rawArgs, 1);
+        if (imageBlob == null || imageBlob.length == 0) {
+            throw new IllegalArgumentException("Image data cannot be empty");
+        }
+
+        existing.getItem().setImageBlob(imageBlob);
+        ApiResponseDTO response = auctionController.updateAuction(existing);
+        if (!response.isSuccess()) {
+            return "ERR|UPLOAD_IMAGE_FAILED|" + response.getMessage();
+        }
+        return "OK|UPLOAD_IMAGE|" + rawArgs[0];
     }
 
     private String updateAuction(String payload) {
@@ -526,7 +555,19 @@ public class ClientHandler implements Runnable {
         item.setId(oldItem.getId());
         item.setSellerId(sellerId);
         item.setHighestCurrentPrice(oldItem.getHighestCurrentPrice());
+        item.setImageBlob(oldItem.getImageBlob());
         return item;
+    }
+
+    private byte[] decodeOptionalImage(String[] rawArgs, int index) {
+        if (rawArgs.length <= index || rawArgs[index] == null || rawArgs[index].isBlank()) {
+            return null;
+        }
+        try {
+            return Base64.getDecoder().decode(rawArgs[index]);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Image data must be valid base64");
+        }
     }
 
     private String resolveItemType(Item item) {
@@ -586,8 +627,8 @@ public class ClientHandler implements Runnable {
         return "OK|END_AUCTION|" + auctionId;
     }
 
-    private String formatAuctionDTO(AuctionListDTO auction) {
-        return auction.getAuctionId()
+    private String formatAuctionDTO(AuctionListDTO auction, boolean includeImage) {
+        String record = auction.getAuctionId()
                 + "," + auction.getItemId()
                 + "," + auction.getItemType()
                 + "," + auction.getName()
@@ -598,6 +639,14 @@ public class ClientHandler implements Runnable {
                 + "," + escapeCsvField(auction.getCondition())
                 + "," + escapeCsvField(auction.getDescription())
                 + "," + escapeCsvField(auction.getWarranty());
+        if (!includeImage) {
+            return record;
+        }
+        return record + "," + encodeOptionalImage(auction.getImageBlob());
+    }
+
+    private String encodeOptionalImage(byte[] imageBlob) {
+        return imageBlob == null || imageBlob.length == 0 ? "" : Base64.getEncoder().encodeToString(imageBlob);
     }
 
     private String nullToEmpty(String value) {
@@ -624,6 +673,7 @@ public class ClientHandler implements Runnable {
                 + "CREATE_ART_AUCTION name|description|startDate|endDate|startPrice|minIncrement|author;"
                 + "CREATE_ELECTRONICS_AUCTION name|description|startDate|endDate|startPrice|minIncrement|warrantyMonths;"
                 + "CREATE_VEHICLE_AUCTION name|description|startDate|endDate|startPrice|minIncrement|brand;"
+                + "UPLOAD_IMAGE auctionId|base64ImageData;"
                 + "UPDATE_AUCTION auctionId|name;"
                 + "DELETE_AUCTION auctionId;"
                 + "START_AUCTION auctionId;"

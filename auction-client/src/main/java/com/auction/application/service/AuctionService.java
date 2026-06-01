@@ -9,6 +9,7 @@ import com.auction.shared.session.SessionManager;
 import com.auction.application.service.SocketClientService;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class AuctionService {
@@ -20,6 +21,19 @@ public class AuctionService {
             double startPrice,
             String minIncrement,
             String author
+    ) {
+        return createArtAuction(name, description, startDate, endDate, startPrice, minIncrement, author, null);
+    }
+
+    public String createArtAuction(
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String author,
+            byte[] imageBlob
     ) {
         if (!SessionManager.hasRole("Seller")) {
             return "ERR|Chỉ Seller mới được tạo phiên.";
@@ -33,7 +47,8 @@ public class AuctionService {
                 endDate,
                 String.valueOf(startPrice),
                 minIncrement,
-                author
+                author,
+                encodeImage(imageBlob)
         );
         String command = "CREATE_ART_AUCTION " + payload;
         try {
@@ -52,6 +67,19 @@ public class AuctionService {
             String minIncrement,
             String warrantyMonths
     ) {
+        return createElectronicsAuction(name, description, startDate, endDate, startPrice, minIncrement, warrantyMonths, null);
+    }
+
+    public String createElectronicsAuction(
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String warrantyMonths,
+            byte[] imageBlob
+    ) {
         return createAuction(
                 "CREATE_ELECTRONICS_AUCTION",
                 name,
@@ -60,7 +88,8 @@ public class AuctionService {
                 endDate,
                 startPrice,
                 minIncrement,
-                warrantyMonths
+                warrantyMonths,
+                imageBlob
         );
     }
 
@@ -73,6 +102,19 @@ public class AuctionService {
             String minIncrement,
             String brand
     ) {
+        return createVehicleAuction(name, description, startDate, endDate, startPrice, minIncrement, brand, null);
+    }
+
+    public String createVehicleAuction(
+            String name,
+            String description,
+            String startDate,
+            String endDate,
+            double startPrice,
+            String minIncrement,
+            String brand,
+            byte[] imageBlob
+    ) {
         return createAuction(
                 "CREATE_VEHICLE_AUCTION",
                 name,
@@ -81,7 +123,8 @@ public class AuctionService {
                 endDate,
                 startPrice,
                 minIncrement,
-                brand
+                brand,
+                imageBlob
         );
     }
 
@@ -93,7 +136,8 @@ public class AuctionService {
             String endDate,
             double startPrice,
             String minIncrement,
-            String typeSpecificValue
+            String typeSpecificValue,
+            byte[] imageBlob
     ) {
         if (!SessionManager.hasRole("Seller")) {
             return "ERR|Chỉ Seller mới được tạo phiên.";
@@ -107,7 +151,8 @@ public class AuctionService {
                 endDate,
                 String.valueOf(startPrice),
                 minIncrement,
-                typeSpecificValue
+                typeSpecificValue,
+                encodeImage(imageBlob)
         );
         String command = commandName + " " + payload;
         try {
@@ -115,6 +160,10 @@ public class AuctionService {
         } catch (Exception e) {
             return "ERR|Không thể gửi yêu cầu tới server.";
         }
+    }
+
+    private String encodeImage(byte[] imageBlob) {
+        return imageBlob == null || imageBlob.length == 0 ? "" : Base64.getEncoder().encodeToString(imageBlob);
     }
 
     public List<AuctionListDTO> getActiveAuctions() {
@@ -206,6 +255,21 @@ public class AuctionService {
             return SocketClientService.sendSessionCommand("DELETE_AUCTION " + auctionId);
         } catch (Exception e) {
             return "ERR|Không thể gửi yêu cầu xóa phiên tới server.";
+        }
+    }
+
+    public String uploadAuctionImage(String auctionId, byte[] imageBlob) {
+        if (!SessionManager.hasRole("Seller")) {
+            return "ERR|Chỉ Seller mới được upload ảnh.";
+        }
+        if (isBlank(auctionId) || imageBlob == null || imageBlob.length == 0) {
+            return "ERR|Thông tin ảnh không hợp lệ.";
+        }
+
+        try {
+            return SocketClientService.sendSessionCommand("UPLOAD_IMAGE " + auctionId + "|" + encodeImage(imageBlob));
+        } catch (Exception e) {
+            return "ERR|Không thể gửi ảnh tới server.";
         }
     }
 
@@ -368,6 +432,9 @@ public class AuctionService {
                     auction.setDescription(emptyToNull(fields[9]));
                     auction.setWarranty(emptyToNull(fields[10]));
                 }
+                if (fields.length >= 12) {
+                    auction.setImageBlob(decodeImage(fields[11]));
+                }
             } else {
                 auction.setItemType("ART");
                 auction.setName(fields[2]);
@@ -382,6 +449,17 @@ public class AuctionService {
 
     private String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private byte[] decodeImage(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Base64.getDecoder().decode(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private PlaceBidResponseDTO parsePlaceBidResponse(String response, double amount) {

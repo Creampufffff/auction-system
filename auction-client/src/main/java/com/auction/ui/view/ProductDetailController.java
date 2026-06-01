@@ -13,7 +13,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
+
+import java.io.ByteArrayInputStream;
 
 public class ProductDetailController {
     private AuctionListDTO currentAuction;
@@ -29,6 +33,8 @@ public class ProductDetailController {
     @FXML private Label specsLabel;
     @FXML private Label warrantyLabel;
     @FXML private Label endTimeLabel;
+    @FXML private ImageView productImageView;
+    @FXML private Label productImagePlaceholder;
 
     @FXML
     public void initialize() {
@@ -37,7 +43,8 @@ public class ProductDetailController {
             return;
         }
 
-        currentAuction = selected;
+        AuctionListDTO detailed = auctionService.getAuctionById(selected.getAuctionId());
+        currentAuction = detailed != null ? detailed : selected;
         ProductDataManager.getInstance().setSelectedAuction(currentAuction);
 
         updateDetailDisplay(currentAuction);
@@ -61,6 +68,26 @@ public class ProductDetailController {
         conditionLabel.setText(hasText(auction.getCondition()) ? auction.getCondition() : "N/A");
         specsLabel.setText(hasText(auction.getDescription()) ? auction.getDescription() : "Không có mô tả chi tiết.");
         warrantyLabel.setText(hasText(auction.getWarranty()) ? auction.getWarranty() : "Không có thông tin thêm.");
+        updateProductImage(auction.getImageBlob());
+    }
+
+    private void updateProductImage(byte[] imageBlob) {
+        if (imageBlob == null || imageBlob.length == 0) {
+            productImageView.setImage(null);
+            productImagePlaceholder.setVisible(true);
+            return;
+        }
+
+        Image image = new Image(new ByteArrayInputStream(imageBlob));
+        if (image.isError()) {
+            productImageView.setImage(null);
+            productImagePlaceholder.setVisible(true);
+            productImagePlaceholder.setText("[ KHÔNG THỂ HIỂN THỊ ẢNH ]");
+            return;
+        }
+
+        productImageView.setImage(image);
+        productImagePlaceholder.setVisible(false);
     }
 
     /**

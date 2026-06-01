@@ -17,7 +17,11 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -286,13 +290,17 @@ public class ProductManagementController {
         );
         basicFields.setPrefWidth(540);
 
+        final byte[][] selectedImageBlob = new byte[1][];
+        Label imageUploadTitle = styledLabel("Th\u00eam \u1ea3nh s\u1ea3n ph\u1ea9m", "product-dialog-upload-title");
+        Label imageUploadHelp = styledLabel("K\u00e9o th\u1ea3 ho\u1eb7c nh\u1ea5n \u0111\u1ec3 ch\u1ecdn", "product-dialog-upload-help");
         VBox imageBox = new VBox(10,
                 styledLabel("\u25a3", "product-dialog-upload-icon"),
-                styledLabel("Th\u00eam \u1ea3nh s\u1ea3n ph\u1ea9m", "product-dialog-upload-title"),
-                styledLabel("K\u00e9o th\u1ea3 ho\u1eb7c nh\u1ea5n \u0111\u1ec3 ch\u1ecdn", "product-dialog-upload-help"),
+                imageUploadTitle,
+                imageUploadHelp,
                 styledLabel("JPG, PNG (t\u1ed1i \u0111a 5MB)", "product-dialog-upload-note")
         );
         imageBox.getStyleClass().add("product-dialog-upload-box");
+        imageBox.setOnMouseClicked(mouseEvent -> chooseProductImage(dialog, selectedImageBlob, imageUploadTitle, imageUploadHelp));
         HBox basicRow = new HBox(28, basicFields, imageBox);
 
         VBox basicSection = new VBox(16,
@@ -387,7 +395,8 @@ public class ProductManagementController {
                         endDate,
                         newProduct.getPrice(),
                         minIncrement,
-                        extra
+                        extra,
+                        selectedImageBlob[0]
                 );
                 case "VEHICLE" -> auctionService.createVehicleAuction(
                         name,
@@ -396,7 +405,8 @@ public class ProductManagementController {
                         endDate,
                         newProduct.getPrice(),
                         minIncrement,
-                        extra
+                        extra,
+                        selectedImageBlob[0]
                 );
                 default -> auctionService.createArtAuction(
                         name,
@@ -405,7 +415,8 @@ public class ProductManagementController {
                         endDate,
                         newProduct.getPrice(),
                         minIncrement,
-                        condition
+                        condition,
+                        selectedImageBlob[0]
                 );
             };
 
@@ -446,6 +457,37 @@ public class ProductManagementController {
             ProductDataManager.getInstance().pushToGlobalAuction(newProduct);
         });
 
+    }
+
+    private void chooseProductImage(
+            Dialog<?> dialog,
+            byte[][] selectedImageBlob,
+            Label imageUploadTitle,
+            Label imageUploadHelp
+    ) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Ch\u1ecdn \u1ea3nh s\u1ea3n ph\u1ea9m");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("\u1ea2nh JPG/PNG", "*.jpg", "*.jpeg", "*.png")
+        );
+
+        File selectedFile = fileChooser.showOpenDialog(dialog.getDialogPane().getScene().getWindow());
+        if (selectedFile == null) {
+            return;
+        }
+
+        if (selectedFile.length() > 5L * 1024L * 1024L) {
+            showDialogError("\u1ea2nh kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 5MB.");
+            return;
+        }
+
+        try {
+            selectedImageBlob[0] = Files.readAllBytes(selectedFile.toPath());
+            imageUploadTitle.setText(selectedFile.getName());
+            imageUploadHelp.setText("\u0110\u00e3 ch\u1ecdn " + selectedImageBlob[0].length / 1024 + " KB");
+        } catch (IOException e) {
+            showDialogError("Kh\u00f4ng th\u1ec3 \u0111\u1ecdc file \u1ea3nh: " + e.getMessage());
+        }
     }
 
     // Escape any '|' characters in text fields to avoid breaking pipe-separated protocol

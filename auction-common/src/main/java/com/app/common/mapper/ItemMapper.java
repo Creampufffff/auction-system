@@ -47,6 +47,7 @@ public class ItemMapper {
 
         if (item != null) {
             item.setSellerId(dto.getSellerId());
+            item.setImageBlob(dto.getImageBlob());
         }
 
         return item;

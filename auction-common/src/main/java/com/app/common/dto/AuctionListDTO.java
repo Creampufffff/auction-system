@@ -20,6 +20,7 @@ public class AuctionListDTO implements Serializable {
     private String warranty;
     private String startDateTime;
     private String endDateTime;
+    private byte[] imageBlob;
 
     public AuctionListDTO() {
     }
@@ -51,6 +52,24 @@ public class AuctionListDTO implements Serializable {
             String startDateTime,
             String endDateTime
     ) {
+        this(auctionId, itemId, itemType, name, currentPrice, auctionStatus, condition, description, warranty,
+                startDateTime, endDateTime, null);
+    }
+
+    public AuctionListDTO(
+            String auctionId,
+            String itemId,
+            String itemType,
+            String name,
+            double currentPrice,
+            Status auctionStatus,
+            String condition,
+            String description,
+            String warranty,
+            String startDateTime,
+            String endDateTime,
+            byte[] imageBlob
+    ) {
         this.auctionId = auctionId;
         this.itemId = itemId;
         this.itemType = itemType;
@@ -62,6 +81,7 @@ public class AuctionListDTO implements Serializable {
         this.warranty = warranty;
         this.startDateTime = startDateTime;
         this.endDateTime = endDateTime;
+        this.imageBlob = imageBlob;
     }
 
 }

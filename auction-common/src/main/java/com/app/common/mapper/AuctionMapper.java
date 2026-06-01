@@ -37,7 +37,8 @@ public class AuctionMapper {
             item.getDescription(),
             warranty,
             item.getStartDateString(),
-            item.getEndDateString()
+            item.getEndDateString(),
+            item.getImageBlob()
         );
     }
 

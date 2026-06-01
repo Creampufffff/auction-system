@@ -10,6 +10,7 @@ abstract public class Item extends BaseEntity {
     private String startDateString;
     private double highestCurrentPrice;
     private String sellerId;
+    private byte[] imageBlob;
 
     public Item(String description, String name, String startDateString, String endDateString, double startPrice, double minIncreasement) {
         this.description = description;
@@ -66,6 +67,14 @@ abstract public class Item extends BaseEntity {
 
     public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
+    }
+
+    public byte[] getImageBlob() {
+        return imageBlob;
+    }
+
+    public void setImageBlob(byte[] imageBlob) {
+        this.imageBlob = imageBlob;
     }
 }
 

@@ -29,6 +29,7 @@ public class ItemDAOImpl implements ItemDAO {
                    i.start_price,
                    i.min_increment,
                    i.highest_current_price,
+                   i.image_blob,
                    a.author,
                    e.warranty_months,
                    v.brand
@@ -100,9 +101,9 @@ public class ItemDAOImpl implements ItemDAO {
         String sql = """
                 INSERT INTO items (
                     id, seller_id, type, name, description, start_date, end_date,
-                    start_price, min_increment, highest_current_price
+                    start_price, min_increment, highest_current_price, image_blob
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     seller_id = VALUES(seller_id),
                     type = VALUES(type),
@@ -112,7 +113,8 @@ public class ItemDAOImpl implements ItemDAO {
                     end_date = VALUES(end_date),
                     start_price = VALUES(start_price),
                     min_increment = VALUES(min_increment),
-                    highest_current_price = VALUES(highest_current_price)
+                    highest_current_price = VALUES(highest_current_price),
+                    image_blob = VALUES(image_blob)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -126,6 +128,7 @@ public class ItemDAOImpl implements ItemDAO {
             statement.setDouble(8, entity.getStartPrice());
             statement.setDouble(9, entity.getMinIncreasement());
             statement.setDouble(10, entity.getHighestCurrentPrice());
+            statement.setBytes(11, entity.getImageBlob());
             statement.executeUpdate();
         }
 
@@ -245,6 +248,7 @@ public class ItemDAOImpl implements ItemDAO {
         item.setId(resultSet.getString("id"));
         item.setHighestCurrentPrice(resultSet.getDouble("highest_current_price"));
         item.setSellerId(resultSet.getString("seller_id"));
+        item.setImageBlob(resultSet.getBytes("image_blob"));
 
         return item;
     }

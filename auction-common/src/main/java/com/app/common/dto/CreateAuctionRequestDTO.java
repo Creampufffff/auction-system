@@ -19,6 +19,7 @@ public class CreateAuctionRequestDTO implements Serializable {
     private String endDateTime;
     private String sellerId;
     private String itemType; // "ART", "ELECTRONICS", "VEHICLE"
+    private byte[] imageBlob;
 
     public CreateAuctionRequestDTO() {}
 
@@ -26,6 +27,14 @@ public class CreateAuctionRequestDTO implements Serializable {
                                   String warranty, double startPrice, double minIncrement,
                                   String startDateTime, String endDateTime, String sellerId,
                                   String itemType) {
+        this(itemName, description, condition, warranty, startPrice, minIncrement,
+                startDateTime, endDateTime, sellerId, itemType, null);
+    }
+
+    public CreateAuctionRequestDTO(String itemName, String description, String condition,
+                                  String warranty, double startPrice, double minIncrement,
+                                  String startDateTime, String endDateTime, String sellerId,
+                                  String itemType, byte[] imageBlob) {
         this.itemName = itemName;
         this.description = description;
         this.condition = condition; // author for art
@@ -36,6 +45,7 @@ public class CreateAuctionRequestDTO implements Serializable {
         this.endDateTime = endDateTime;
         this.sellerId = sellerId;
         this.itemType = itemType;
+        this.imageBlob = imageBlob;
     }
 
 }
