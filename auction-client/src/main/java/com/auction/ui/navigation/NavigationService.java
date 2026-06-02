@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.scene.image.Image;
 
 import java.net.URL;
 
@@ -24,6 +25,7 @@ public class NavigationService {
     private static final double AUTH_WIDTH = 800;
     private static final double AUTH_HEIGHT = 600;
     private static final String CSS_PATH = "/css/style.css";
+    private static final String ICON_PATH = "/images/icon.png";
 
     private NavigationService() {}
 
@@ -88,16 +90,37 @@ public class NavigationService {
             }
 
             Parent root = FXMLLoader.load(fxmlUrl);
-            Scene scene = new Scene(root, width, height);
 
-            // Apply CSS if available
+            // Tái sử dụng Scene hiện tại của Stage để tránh hiện tượng flick hoặc mất cấu hình cửa sổ
+            Scene scene = primaryStage.getScene();
+            if (scene == null) {
+                scene = new Scene(root, width, height);
+                primaryStage.setScene(scene);
+            } else {
+                scene.setRoot(root);
+            }
+
+            // Đồng bộ nạp tập trung CSS tổng cho mọi màn hình điều hướng qua Service
             URL cssUrl = getClass().getResource(CSS_PATH);
             if (cssUrl != null) {
-                scene.getStylesheets().add(cssUrl.toExternalForm());
+                String cssExternal = cssUrl.toExternalForm();
+                if (!scene.getStylesheets().contains(cssExternal)) {
+                    scene.getStylesheets().add(cssExternal);
+                }
+            }
+
+            // Đồng bộ nạp Icon tùy biến ngăn lỗi quay về biểu tượng mặc định khi đổi Scene
+            try {
+                URL iconUrl = getClass().getResource(ICON_PATH);
+                if (iconUrl != null) {
+                    primaryStage.getIcons().clear();
+                    primaryStage.getIcons().add(new Image(iconUrl.toExternalForm()));
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi nạp icon ứng dụng tập trung: " + e.getMessage());
             }
 
             primaryStage.setTitle(title);
-            primaryStage.setScene(scene);
             primaryStage.setMaximized(maximize);
             if (!maximize) {
                 primaryStage.setWidth(width);

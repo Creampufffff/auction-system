@@ -99,41 +99,56 @@
 
         <HBox spacing="14">
 
-            <VBox spacing="8"
-                  HBox.hgrow="ALWAYS"
+            <HBox HBox.hgrow="ALWAYS"
+                  alignment="CENTER_LEFT"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
-                <Label text="TỔNG PHIÊN"
-                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
-                <Label fx:id="totalSessionsLabel"
-                       text="--"
-                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
-                <Label text="Tất cả phiên"
-                       style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
-            </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="TỔNG PHIÊN"
+                           style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                    <Label fx:id="totalSessionsLabel"
+                           text="--"
+                           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                    <Label text="Tất cả phiên"
+                           style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
+                </VBox>
+                <StackPane styleClass="stat-icon-container" style="-fx-background-color: #eef4ff;">
+                    <Region styleClass="icon-style, icon-stat-total" style="-fx-background-color: #2d6cdf; -fx-pref-width: 22px; -fx-pref-height: 22px;"/>
+                </StackPane>
+            </HBox>
 
-            <VBox spacing="8"
-                  HBox.hgrow="ALWAYS"
+            <HBox HBox.hgrow="ALWAYS"
+                  alignment="CENTER_LEFT"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
-                <Label text="ĐANG MỞ"
-                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
-                <Label fx:id="onlineUsersLabel"
-                       text="--"
-                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #12a594;"/>
-                <Label text="Phiên đang mở"
-                       style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
-            </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="ĐANG MỞ"
+                           style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                    <Label fx:id="onlineUsersLabel"
+                           text="--"
+                           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #12a594;"/>
+                    <Label text="Phiên đang mở"
+                           style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
+                </VBox>
+                <StackPane styleClass="stat-icon-container" style="-fx-background-color: #e6f7f4;">
+                    <Region styleClass="icon-style, icon-stat-open" style="-fx-background-color: #12a594; -fx-pref-width: 22px; -fx-pref-height: 22px;"/>
+                </StackPane>
+            </HBox>
 
-            <VBox spacing="8"
-                  HBox.hgrow="ALWAYS"
+            <HBox HBox.hgrow="ALWAYS"
+                  alignment="CENTER_LEFT"
                   style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
-                <Label text="TÀI KHOẢN"
-                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
-                <Label fx:id="statBalanceLabel"
-                       text="--"
-                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;"/>
-                <Label text="Số dư hiện tại"
-                       style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
-            </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="TÀI KHOẢN"
+                           style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                    <Label fx:id="statBalanceLabel"
+                           text="--"
+                           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;"/>
+                    <Label text="Số dư hiện tại"
+                           style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
+                </VBox>
+                <StackPane styleClass="stat-icon-container" style="-fx-background-color: #eef4ff;">
+                    <Region styleClass="icon-style, icon-stat-wallet" style="-fx-background-color: #2d6cdf; -fx-pref-width: 22px; -fx-pref-height: 22px;"/>
+                </StackPane>
+            </HBox>
 
         </HBox>
 
@@ -183,6 +198,13 @@
                     <TableColumn fx:id="priceColumn" text="Giá hiện tại"/>
                     <TableColumn fx:id="statusColumn" text="Trạng thái"/>
                 </columns>
+                <placeholder>
+                    <VBox alignment="CENTER" spacing="12" style="-fx-padding: 40 0;">
+                        <Region styleClass="icon-style, icon-auction" style="-fx-pref-width: 54px; -fx-pref-height: 54px; -fx-background-color: #98a2b3;"/>
+                        <Label text="Không tìm thấy phiên đấu giá phù hợp" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #475467;"/>
+                        <Label text="Hãy thử thay đổi từ khóa tìm kiếm hoặc điều chỉnh lại bộ lọc xem sao." style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+                    </VBox>
+                </placeholder>
             </TableView>
         </VBox>
 

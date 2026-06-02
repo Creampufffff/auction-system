@@ -150,7 +150,8 @@ public class AuctionListController {
 
     private void configureAuctionTableVisuals() {
         auctionTable.getStyleClass().add("auction-table");
-        auctionTable.setFixedCellSize(48);
+        // Đặt kích thước cell lên 54px giúp bảng giãn đều hàng, giảm bớt khoảng trống thừa thãi bên dưới đáy
+        auctionTable.setFixedCellSize(54);
         idColumn.getStyleClass().add("centered-table-column");
         nameColumn.getStyleClass().add("centered-table-column");
         priceColumn.getStyleClass().add("centered-table-column");
@@ -270,7 +271,7 @@ public class AuctionListController {
         if (previousPageButton != null) {
             previousPageButton.setDisable(currentPage <= 1);
         }
-        if (nextPageButton != null) {
+        if (nameColumn != null && nextPageButton != null) {
             nextPageButton.setDisable(currentPage >= totalPages);
         }
     }
@@ -329,7 +330,12 @@ public class AuctionListController {
 
     @FXML
     private void handleResetFilters(ActionEvent event) {
+        ProductDataManager.getInstance().setSearchKeyword("");
+        ProductDataManager.getInstance().setStatusFilter("ALL");
+        ProductDataManager.getInstance().setTypeFilter("ALL");
+        ProductDataManager.getInstance().setSortMode("NEWEST");
         ProductDataManager.getInstance().resetAuctionFilters();
+
         if (searchField != null) {
             searchField.clear();
         }
@@ -350,7 +356,7 @@ public class AuctionListController {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             ProductDataManager.getInstance().setSelectedAuction(selected);
-            ProductDataManager.getInstance().setProductDetailReturnTarget("/fxml/AuctionList.fxml", "UET Auction System");
+            ProductDataManager.getInstance().setProductDetailReturnTarget("/fxml/AuctionList.fxml", "Auction System");
             NavigationService.getInstance().navigateTo("/fxml/ProductDetail.fxml", "Chi tiết sản phẩm", 1280, 800);
         } else {
             if (messageLabel != null) messageLabel.setText("Vui lòng chọn sản phẩm trên bảng!");
@@ -361,6 +367,15 @@ public class AuctionListController {
     private void handleJoinBidding(ActionEvent event) {
         AuctionListDTO selected = auctionTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
+            // Bảo vệ nghiêm ngặt: Seller tuyệt đối không được tham gia đặt giá phiên đấu giá công khai
+            if (SessionManager.hasRole("Seller")) {
+                if (messageLabel != null) {
+                    messageLabel.setText("Tài khoản người bán không có quyền tham gia đấu giá!");
+                    messageLabel.setStyle("-fx-text-fill: #ff4d4d;");
+                }
+                return;
+            }
+
             if (ProductDataManager.getInstance().isEnded(selected.getAuctionId())) {
                 if (messageLabel != null) {
                     messageLabel.setText("Phiên đấu giá '" + selected.getName() + "' đã kết thúc!");
@@ -372,40 +387,24 @@ public class AuctionListController {
 
             ProductDataManager.getInstance().setSelectedAuction(selected);
 
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LiveBidding.fxml"));
-                Parent root = loader.load();
+            // Khởi tạo model dữ liệu cho màn hình LiveBidding
+            Product productModel = new Product(
+                    selected.getAuctionId(),
+                    selected.getItemType(),
+                    selected.getName(),
+                    ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
+                    selected.getAuctionStatus().toString(),
+                    "New",
+                    "No description",
+                    "No warranty",
+                    selected.getEndDateTime()
+            );
 
-                LiveBiddingController controller = loader.getController();
+            // Lưu trữ đối tượng tạm để controller đích có thể chủ động cấu hình thay vì bóc tách FXML thủ công phá vỡ cấu trúc Stage
+            ProductDataManager.getInstance().setLiveBiddingProductData(productModel);
 
-                Product productModel = new Product(
-                        selected.getAuctionId(),
-                        selected.getItemType(),
-                        selected.getName(),
-                        ProductDataManager.getInstance().getCurrentPrice(selected.getAuctionId(), selected.getCurrentPrice()),
-                        selected.getAuctionStatus().toString(),
-                        "New",
-                        "No description",
-                        "No warranty",
-                        selected.getEndDateTime()
-                );
-
-                controller.setProduct(productModel);
-
-                Stage stage = (Stage) auctionTable.getScene().getWindow();
-                Scene scene = new Scene(root, 1280, 800);
-
-                String css = getClass().getResource("/css/style.css").toExternalForm();
-                scene.getStylesheets().add(css);
-
-                stage.setTitle("Đấu giá trực tiếp");
-                stage.setScene(scene);
-                stage.setMaximized(true);
-                stage.show();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            // Ép đi qua bộ xử lý tập trung của NavigationService giúp giữ nguyên Icon và định dạng Scene đồng bộ
+            NavigationService.getInstance().navigateTo("/fxml/LiveBidding.fxml", "Đấu giá trực tiếp", 1280, 800);
         } else {
             if (messageLabel != null) messageLabel.setText("Vui lòng chọn phiên để tham gia!");
         }
@@ -424,15 +423,18 @@ public class AuctionListController {
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "Tài khoản", 1280, 800);
     }
 
     @FXML
     private void handleSidebarBidHistory(ActionEvent event) {
         if (!SessionManager.hasRole("Bidder")) {
+            if (messageLabel != null) {
+                messageLabel.setText("Quyền truy cập chỉ dành cho người đấu giá.");
+            }
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "Lịch sử đặt giá", 1280, 800);
     }
 
     @FXML
@@ -441,7 +443,6 @@ public class AuctionListController {
         ProductDataManager.getInstance().resetSessionState();
         NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Đăng nhập");
     }
-
 
     // [MỚI] Phương thức xử lý phân trang
     @FXML
@@ -485,4 +486,3 @@ public class AuctionListController {
         }
     }
 }
-

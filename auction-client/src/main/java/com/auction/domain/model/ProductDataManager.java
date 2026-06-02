@@ -23,19 +23,22 @@ public class ProductDataManager {
     private final ObservableList<AuctionListDTO> serverAuctionList;
     private AuctionListDTO selectedAuction;
     private String productDetailReturnPath = "/fxml/AuctionList.fxml";
-    private String productDetailReturnTitle = "UET Auction System";
+    private String productDetailReturnTitle = "Auction System";
+
+    // Thực thể lưu trữ tạm thời phục vụ chuyển màn sang LiveBidding không vỡ Stage
+    private Product liveBiddingProductData;
 
     private final Map<String, ObservableList<String>> historyMap;
     private final Map<String, Double> currentPriceMap;
     private final Map<String, Integer> timeLeftMap;
     private final Map<String, Boolean> dialogShownMap = new HashMap<>();
 
-    // --- [MỚI] LOGIC VÍ TIỀN & SESSION ---
+    // --- LOGIC VÍ TIỀN & SESSION ---
     private double userBalance = 5000.0;
     private final Map<String, Double> userHeldMoneyMap = new HashMap<>();
     private final Map<String, String> leadingUserMap = new HashMap<>();
 
-    // --- [MỚI] LOGIC PHÂN TRANG & TÌM KIẾM ---
+    // --- LOGIC PHÂN TRANG & TÌM KIẾM ---
     private static final int ITEMS_PER_PAGE = 10;
     private int currentPage = 1;
     private String searchKeyword = "";
@@ -62,7 +65,7 @@ public class ProductDataManager {
         return instance;
     }
 
-    // --- [MỚI] HÀM TRỢ GIÚP VÍ TIỀN ---
+    // --- HÀM TRỢ GIÚP VÍ TIỀN ---
     public double getUserBalance() { return userBalance; }
     public void setUserBalance(double balance) {
         this.userBalance = balance;
@@ -72,6 +75,15 @@ public class ProductDataManager {
     public void refundBalance(double amount) { this.userBalance += amount; }
     public double getHeldMoney(String auctionId) { return userHeldMoneyMap.getOrDefault(auctionId, 0.0); }
     public void setHeldMoney(String auctionId, double amount) { userHeldMoneyMap.put(auctionId, amount); }
+
+    // --- GETTER / SETTER CHO LIVE BIDDING TRANSITION ---
+    public Product getLiveBiddingProductData() {
+        return liveBiddingProductData;
+    }
+
+    public void setLiveBiddingProductData(Product product) {
+        this.liveBiddingProductData = product;
+    }
 
     public void syncBalanceFromSession() {
         if (SessionManager.isLoggedIn()) {
@@ -87,8 +99,9 @@ public class ProductDataManager {
         currentPriceMap.clear();
         timeLeftMap.clear();
         selectedAuction = null;
+        liveBiddingProductData = null;
         productDetailReturnPath = "/fxml/AuctionList.fxml";
-        productDetailReturnTitle = "UET Auction System";
+        productDetailReturnTitle = "Auction System";
         currentPage = 1;
         searchKeyword = "";
         statusFilter = "ALL";
@@ -103,8 +116,8 @@ public class ProductDataManager {
             @Override
             public void run() {
                 for (String auctionId : timeLeftMap.keySet()) {
-                    int currentTime = timeLeftMap.get(auctionId);
-                    if (currentTime > 0) {
+                    Integer currentTime = timeLeftMap.get(auctionId);
+                    if (currentTime != null && currentTime > 0) {
                         timeLeftMap.put(auctionId, currentTime - 1);
                     }
                 }
@@ -125,7 +138,6 @@ public class ProductDataManager {
 
     public void setCurrentPrice(String auctionId, double price) {
         currentPriceMap.put(auctionId, price);
-        // TWEAK: Tìm và cập nhật giá trực tiếp vào danh sách trên bảng
         serverAuctionList.stream()
                 .filter(a -> a.getAuctionId().equals(auctionId))
                 .findFirst()
@@ -183,7 +195,7 @@ public class ProductDataManager {
                 ? "/fxml/AuctionList.fxml"
                 : fxmlPath;
         this.productDetailReturnTitle = title == null || title.isBlank()
-                ? "UET Auction System"
+                ? "Auction System"
                 : title;
     }
 
@@ -199,9 +211,7 @@ public class ProductDataManager {
         serverAuctionList.stream()
                 .filter(a -> a.getAuctionId().equals(auctionId))
                 .findFirst()
-                .ifPresent(a -> {
-                    a.setAuctionStatus(Status.FINISHED);
-                });
+                .ifPresent(a -> a.setAuctionStatus(Status.FINISHED));
     }
 
     public void updateAuctionEndDate(String auctionId, String endDateTime) {
@@ -232,15 +242,14 @@ public class ProductDataManager {
     public void handleSomeoneElseLeading(String auctionId, double newPrice) {
         double myHeld = getHeldMoney(auctionId);
         if (myHeld > 0) {
-            refundBalance(myHeld); // Trả lại tiền vào ví vì mình không còn dẫn đầu
-            setHeldMoney(auctionId, 0.0); // Reset số dư đang giữ tại sàn này
+            refundBalance(myHeld);
+            setHeldMoney(auctionId, 0.0);
         }
         setCurrentPrice(auctionId, newPrice);
     }
     public void deleteProductAndAuction(String auctionId) {
         myProductList.removeIf(p -> p.getId().equals(auctionId));
         serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
-        // Dọn dẹp luôn trạng thái dialog
         dialogShownMap.remove(auctionId);
     }
 
@@ -275,7 +284,7 @@ public class ProductDataManager {
         }
     }
 
-    // --- [MỚI] PHƯƠNG THỨC TÌM KIẾM VÀ PHÂN TRANG ---
+    // --- PHƯƠNG THỨC TÌM KIẾM VÀ PHÂN TRANG ---
     public void setSearchKeyword(String keyword) {
         this.searchKeyword = keyword.toLowerCase().trim();
         this.currentPage = 1;
@@ -431,4 +440,3 @@ public class ProductDataManager {
         return sortMode;
     }
 }
-

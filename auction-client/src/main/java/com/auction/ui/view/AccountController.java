@@ -119,12 +119,15 @@ public class AccountController {
 
     @FXML
     private void handleBack(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "Dashboard", 1280, 800);
     }
 
     @FXML
     private void handleSidebarProducts(ActionEvent event) {
         if (!SessionManager.hasRole("Seller")) {
+            if (actionMessageLabel != null) {
+                setActionMessage("Chỉ seller mới được quản lý sản phẩm.", true);
+            }
             return;
         }
         NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1280, 800);
@@ -133,20 +136,23 @@ public class AccountController {
     @FXML
     private void handleSidebarBidHistory(ActionEvent event) {
         if (!SessionManager.hasRole("Bidder")) {
+            if (actionMessageLabel != null) {
+                setActionMessage("Quyền truy cập chỉ dành cho người đấu giá.", true);
+            }
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "Lịch sử đặt giá", 1280, 800);
     }
+
     @FXML
     private void handleCurrentAuctions(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "Auction System", 1280, 800);
     }
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "Tài khoản", 1280, 800);
     }
-
 
     @FXML
     private void handleLogout(ActionEvent event) {

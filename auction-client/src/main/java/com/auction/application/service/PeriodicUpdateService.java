@@ -229,4 +229,3 @@ public class PeriodicUpdateService {
         System.out.println("[PeriodicUpdateService] Stopped all timers");
     }
 }
-

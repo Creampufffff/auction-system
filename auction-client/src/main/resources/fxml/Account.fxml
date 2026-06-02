@@ -46,6 +46,17 @@
                 </graphic>
             </Button>
 
+            <Button fx:id="bidHistorySidebarButton"
+                    text="Lịch sử đặt giá"
+                    onAction="#handleSidebarBidHistory"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-history"/>
+                </graphic>
+            </Button>
+
             <Button text="Tài khoản"
                     onAction="#handleSidebarAccount"
                     maxWidth="Infinity"

@@ -56,6 +56,22 @@
         </VBox>
 
         <Region VBox.vgrow="ALWAYS"/>
+
+        <VBox spacing="10">
+            <VBox spacing="6"
+                  style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
+                <Label text="Tài khoản"
+                       style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
+
+                <Label fx:id="accountRoleLabel"
+                       text="Role: "
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+                <Label fx:id="accountBalanceLabel"
+                       text="Đang tải..."
+                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            </VBox>
+        </VBox>
     </VBox>
 
     <VBox spacing="18" HBox.hgrow="ALWAYS">
@@ -79,6 +95,16 @@
                 <columnResizePolicy>
                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                 </columnResizePolicy>
+
+                <placeholder>
+                    <VBox alignment="CENTER" spacing="14" style="-fx-padding: 40 0;">
+                        <Region styleClass="icon-style, icon-warehouse" style="-fx-pref-width: 54px; -fx-pref-height: 54px; -fx-background-color: #98a2b3;"/>
+                        <VBox alignment="CENTER" spacing="4">
+                            <Label text="Kho hàng của bạn hiện đang trống" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #344054;"/>
+                            <Label text="Hãy nhấn nút '+ Đăng sản phẩm' ở góc trên bên phải để tạo phiên đấu giá đầu tiên." style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+                        </VBox>
+                    </VBox>
+                </placeholder>
             </TableView>
         </VBox>
 

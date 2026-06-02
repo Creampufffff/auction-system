@@ -42,6 +42,10 @@ public class ProductManagementController {
     @FXML private Label titleLabel;
     @FXML private Label subtitleLabel;
 
+    // BỔ SUNG: Khai báo các Label điều khiển thông tin tài khoản đồng bộ với file FXML mới
+    @FXML private Label accountRoleLabel;
+    @FXML private Label accountBalanceLabel;
+
     private final ObservableList<Product> productData = ProductDataManager.getInstance().getProductList();
     private final AuctionService auctionService = new AuctionService();
 
@@ -49,18 +53,21 @@ public class ProductManagementController {
 
     @FXML
     public void initialize() {
-        titleLabel.setText("Kho h\u00e0ng c\u1ee7a t\u00f4i");
+        titleLabel.setText("Kho hàng của tôi");
 
-        TableColumn<Product, String> typeCol = new TableColumn<>("Lo\u1ea1i s\u1ea3n ph\u1ea9m");
+        // BỔ SUNG: Cập nhật thông tin tài khoản và số dư ngay khi màn hình khởi tạo
+        refreshAccountSidebarInfo();
+
+        TableColumn<Product, String> typeCol = new TableColumn<>("Loại sản phẩm");
         typeCol.setCellValueFactory(cellData -> cellData.getValue().typeProperty());
 
-        TableColumn<Product, String> nameCol = new TableColumn<>("T\u00ean s\u1ea3n ph\u1ea9m");
+        TableColumn<Product, String> nameCol = new TableColumn<>("Tên sản phẩm");
         nameCol.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
 
-        TableColumn<Product, Number> priceCol = new TableColumn<>("Gi\u00e1 ($)");
+        TableColumn<Product, Number> priceCol = new TableColumn<>("Giá ($)");
         priceCol.setCellValueFactory(cellData -> cellData.getValue().priceProperty());
 
-        TableColumn<Product, String> statusCol = new TableColumn<>("Tr\u1ea1ng th\u00e1i");
+        TableColumn<Product, String> statusCol = new TableColumn<>("Trạng thái");
         statusCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
         configureProductTableVisuals(typeCol, nameCol, priceCol, statusCol);
@@ -69,7 +76,7 @@ public class ProductManagementController {
         loadMyProductsFromServerAsync();
 
         if (backButton != null) {
-            // Ốp style xanh đen UET và khử viền xám triệt để
+            // Ốp style xanh đen hệ thống và khử viền xám triệt để
             String normalStyle =
                     "-fx-background-color: rgba(255, 255, 255, 0.05) !important;" +
                             "-fx-background-insets: 0 !important;" +
@@ -95,6 +102,28 @@ public class ProductManagementController {
             ));
 
             backButton.setOnMouseExited(e -> backButton.setStyle(normalStyle));
+        }
+    }
+
+    // BỔ SUNG: Hàm trợ giúp lấy thông tin mới nhất từ SessionManager và ProductDataManager để đẩy lên UI Sidebar
+    private void refreshAccountSidebarInfo() {
+        // Đồng bộ số dư từ SessionManager vào ProductDataManager trước
+        ProductDataManager.getInstance().syncBalanceFromSession();
+
+        if (accountRoleLabel != null) {
+            if (SessionManager.isLoggedIn() && SessionManager.getCurrentUser() != null) {
+                // Hiển thị tên Role thực tế của người dùng
+                String roleName = SessionManager.hasRole("Seller") ? "Seller" : "Bidder";
+                accountRoleLabel.setText("Role: " + roleName);
+            } else {
+                accountRoleLabel.setText("Vai trò: Khách");
+            }
+        }
+
+        if (accountBalanceLabel != null) {
+            // Lấy trực tiếp số dư định dạng tiền tệ từ ProductDataManager vừa được sync
+            double balance = ProductDataManager.getInstance().getUserBalance();
+            accountBalanceLabel.setText("Vĩ: $" + String.format("%.2f", balance));
         }
     }
 
@@ -190,10 +219,10 @@ public class ProductManagementController {
 
     private String formatProductStatus(String status) {
         return switch (status) {
-            case "RUNNING" -> "\u0110ang di\u1ec5n ra";
-            case "OPEN" -> "S\u1eafp di\u1ec5n ra";
-            case "FINISHED" -> "\u0110\u00e3 k\u1ebft th\u00fac";
-            case "CANCELED" -> "\u0110\u00e3 h\u1ee7y";
+            case "RUNNING" -> "Đang diễn ra";
+            case "OPEN" -> "Sắp diễn ra";
+            case "FINISHED" -> "Đã kết thúc";
+            case "CANCELED" -> "Đã hủy";
             default -> status;
         };
     }
@@ -211,10 +240,10 @@ public class ProductManagementController {
     @FXML
     private void handleAddProduct(ActionEvent event) {
         Dialog<Product> dialog = new Dialog<>();
-        dialog.setTitle("\u0110\u0103ng s\u1ea3n ph\u1ea9m m\u1edbi");
+        dialog.setTitle("Đăng sản phẩm mới");
         dialog.setHeaderText(null);
 
-        ButtonType postButtonType = new ButtonType("\u0110\u0103ng b\u00e0i", ButtonBar.ButtonData.OK_DONE);
+        ButtonType postButtonType = new ButtonType("Đăng bài", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(postButtonType, ButtonType.CANCEL);
         dialog.getDialogPane().getStyleClass().add("product-dialog-pane");
         dialog.getDialogPane().setPrefWidth(820);
@@ -239,13 +268,13 @@ public class ProductManagementController {
         TextField startTimeField = new TextField("09:00");
         TextField endTimeField = new TextField("18:00");
         TextField minIncrementField = new TextField("1");
-        Label conditionLabel = new Label("T\u00e1c gi\u1ea3:");
-        Label warrantyLabel = new Label("Th\u00f4ng tin ph\u1ee5:");
-        nameField.setPromptText("Nh\u1eadp t\u00ean s\u1ea3n ph\u1ea9m");
-        priceField.setPromptText("Nh\u1eadp gi\u00e1 kh\u1edfi \u0111i\u1ec3m");
-        conditionField.setPromptText("Nh\u1eadp t\u00ean t\u00e1c gi\u1ea3 (n\u1ebfu c\u00f3)");
-        descriptionArea.setPromptText("Nh\u1eadp m\u00f4 t\u1ea3 chi ti\u1ebft v\u1ec1 s\u1ea3n ph\u1ea9m...");
-        warrantyField.setPromptText("C\u00f3 th\u1ec3 b\u1ecf tr\u1ed1ng");
+        Label conditionLabel = new Label("Tác giả:");
+        Label warrantyLabel = new Label("Thông tin phụ:");
+        nameField.setPromptText("Nhập tên sản phẩm");
+        priceField.setPromptText("Nhập giá khởi điểm");
+        conditionField.setPromptText("Nhập tên tác giả (nếu có)");
+        descriptionArea.setPromptText("Nhập mô tả chi tiết về sản phẩm...");
+        warrantyField.setPromptText("Có thể bỏ trống");
         startTimeField.setPromptText("HH:mm");
         endTimeField.setPromptText("HH:mm");
         styleProductDialogControls(
@@ -266,52 +295,52 @@ public class ProductManagementController {
         auctionTypeBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             String selectedType = newValue == null ? "ART" : newValue;
             if ("ELECTRONICS".equals(selectedType)) {
-                conditionLabel.setText("T\u00ecnh tr\u1ea1ng:");
-                warrantyLabel.setText("B\u1ea3o h\u00e0nh (th\u00e1ng):");
-                warrantyField.setPromptText("V\u00ed d\u1ee5: 12");
+                conditionLabel.setText("Tình trạng:");
+                warrantyLabel.setText("Bảo hành (tháng):");
+                warrantyField.setPromptText("Ví dụ: 12");
             } else if ("VEHICLE".equals(selectedType)) {
-                conditionLabel.setText("T\u00ecnh tr\u1ea1ng:");
-                warrantyLabel.setText("H\u00e3ng xe:");
-                warrantyField.setPromptText("V\u00ed d\u1ee5: Toyota");
+                conditionLabel.setText("Tình trạng:");
+                warrantyLabel.setText("Hãng xe:");
+                warrantyField.setPromptText("Ví dụ: Toyota");
             } else {
-                conditionLabel.setText("T\u00e1c gi\u1ea3:");
+                conditionLabel.setText("Tác giả:");
             }
             updateTypeSpecificFields(selectedType, conditionLabel, warrantyLabel, warrantyField);
         });
 
         VBox headerText = new VBox(4,
-                styledLabel("\u0110\u0103ng s\u1ea3n ph\u1ea9m m\u1edbi", "product-dialog-title"),
-                styledLabel("\u0110i\u1ec1n th\u00f4ng tin chi ti\u1ebft \u0111\u1ec3 t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1", "product-dialog-subtitle")
+                styledLabel("Đăng sản phẩm mới", "product-dialog-title"),
+                styledLabel("Điền thông tin chi tiết để tạo phiên đấu giá", "product-dialog-subtitle")
         );
-        Label headerIcon = styledLabel("\u2696", "product-dialog-header-icon");
+        Label headerIcon = styledLabel("⚖", "product-dialog-header-icon");
         HBox header = new HBox(16, headerIcon, headerText);
         header.getStyleClass().add("product-dialog-custom-header");
 
         VBox basicFields = new VBox(12,
-                dialogField("T\u00ean s\u1ea3n ph\u1ea9m *", nameField),
-                dialogField("Lo\u1ea1i auction *", auctionTypeBox),
-                dialogField("Gi\u00e1 kh\u1edfi \u0111i\u1ec3m ($) *", priceField),
+                dialogField("Tên sản phẩm *", nameField),
+                dialogField("Loại auction *", auctionTypeBox),
+                dialogField("Giá khởi điểm ($) *", priceField),
                 dialogField(conditionLabel, conditionField)
         );
         basicFields.setPrefWidth(540);
 
         final byte[][] selectedImageBlob = new byte[1][];
-        Label imageUploadTitle = styledLabel("Th\u00eam \u1ea3nh s\u1ea3n ph\u1ea9m", "product-dialog-upload-title");
-        Label imageUploadHelp = styledLabel("K\u00e9o th\u1ea3 ho\u1eb7c nh\u1ea5n \u0111\u1ec3 ch\u1ecdn", "product-dialog-upload-help");
+        Label imageUploadTitle = styledLabel("Thêm ảnh sản phẩm", "product-dialog-upload-title");
+        Label imageUploadHelp = styledLabel("Kéo thả hoặc nhấn để chọn", "product-dialog-upload-help");
         VBox imageBox = new VBox(10,
-                styledLabel("\u25a3", "product-dialog-upload-icon"),
+                styledLabel("❑", "product-dialog-upload-icon"),
                 imageUploadTitle,
                 imageUploadHelp,
-                styledLabel("JPG, PNG (t\u1ed1i \u0111a 5MB)", "product-dialog-upload-note")
+                styledLabel("JPG, PNG (tối đa 5MB)", "product-dialog-upload-note")
         );
         imageBox.getStyleClass().add("product-dialog-upload-box");
         imageBox.setOnMouseClicked(mouseEvent -> chooseProductImage(dialog, selectedImageBlob, imageUploadTitle, imageUploadHelp));
         HBox basicRow = new HBox(28, basicFields, imageBox);
 
         VBox basicSection = new VBox(16,
-                sectionTitle("Th\u00f4ng tin c\u01a1 b\u1ea3n"),
+                sectionTitle("Thông tin cơ bản"),
                 basicRow,
-                dialogField("M\u00f4 t\u1ea3 chi ti\u1ebft", descriptionArea),
+                dialogField("Mô tả chi tiết", descriptionArea),
                 dialogField(warrantyLabel, warrantyField)
         );
 
@@ -323,15 +352,15 @@ public class ProductManagementController {
         ColumnConstraints rightTimeColumn = new ColumnConstraints();
         rightTimeColumn.setHgrow(Priority.ALWAYS);
         timeGrid.getColumnConstraints().addAll(leftTimeColumn, rightTimeColumn);
-        timeGrid.add(dialogField("Ng\u00e0y b\u1eaft \u0111\u1ea7u *", startDatePicker), 0, 0);
-        timeGrid.add(dialogField("Ng\u00e0y k\u1ebft th\u00fac *", endDatePicker), 1, 0);
-        timeGrid.add(dialogField("Gi\u1edd b\u1eaft \u0111\u1ea7u *", startTimeField), 0, 1);
-        timeGrid.add(dialogField("Gi\u1edd k\u1ebft th\u00fac *", endTimeField), 1, 1);
+        timeGrid.add(dialogField("Ngày bắt đầu *", startDatePicker), 0, 0);
+        timeGrid.add(dialogField("Ngày kết thúc *", endDatePicker), 1, 0);
+        timeGrid.add(dialogField("Giờ bắt đầu *", startTimeField), 0, 1);
+        timeGrid.add(dialogField("Giờ kết thúc *", endTimeField), 1, 1);
 
-        VBox timeSection = new VBox(14, sectionTitle("Th\u1eddi gian \u0111\u1ea5u gi\u00e1"), timeGrid);
+        VBox timeSection = new VBox(14, sectionTitle("Thời gian đấu giá"), timeGrid);
         timeSection.getStyleClass().add("product-dialog-section");
 
-        VBox incrementSection = new VBox(10, dialogField("B\u01b0\u1edbc gi\u00e1 t\u1ed1i thi\u1ec3u ($) *", minIncrementField));
+        VBox incrementSection = new VBox(10, dialogField("Bước giá tối thiểu ($) *", minIncrementField));
         incrementSection.getStyleClass().add("product-dialog-section");
 
         VBox body = new VBox(16, basicSection, timeSection, incrementSection);
@@ -369,7 +398,7 @@ public class ProductManagementController {
                     double price = Double.parseDouble(priceField.getText());
                     String id = "MINE-" + (productData.size() + 101);
                     String auctionType = auctionTypeBox.getValue() == null ? "ART" : auctionTypeBox.getValue();
-                    return new Product(id, auctionType, nameField.getText(), price, "\u0110ang m\u1edf",
+                    return new Product(id, auctionType, nameField.getText(), price, "Đang mở",
                             conditionField.getText(), descriptionArea.getText(), warrantyField.getText());
                 } catch (NumberFormatException e) {
                     return null;
@@ -427,17 +456,17 @@ public class ProductManagementController {
 
             if (response == null || response.isBlank()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("L\u1ed7i t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1");
-                alert.setHeaderText("Kh\u00f4ng th\u1ec3 t\u1ea1o phi\u00ean tr\u00ean server");
-                alert.setContentText("Server kh\u00f4ng ph\u1ea3n h\u1ed3i.");
+                alert.setTitle("Lỗi tạo phiên đấu giá");
+                alert.setHeaderText("Không thể tạo phiên trên server");
+                alert.setContentText("Server không phản hồi.");
                 alert.showAndWait();
                 return;
             }
 
             if (response.startsWith("ERR|")) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("L\u1ed7i t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1");
-                alert.setHeaderText("Kh\u00f4ng th\u1ec3 t\u1ea1o phi\u00ean tr\u00ean server");
+                alert.setTitle("Lỗi tạo phiên đấu giá");
+                alert.setHeaderText("Không thể tạo phiên trên server");
                 alert.setContentText(response.substring(4));
                 alert.showAndWait();
                 return;
@@ -451,17 +480,19 @@ public class ProductManagementController {
                 }
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("L\u1ed7i t\u1ea1o phi\u00ean \u0111\u1ea5u gi\u00e1");
-                alert.setHeaderText("Kh\u00f4ng th\u1ec3 t\u1ea1o phi\u00ean tr\u00ean server");
-                alert.setContentText("Ph\u1ea3n h\u1ed3i kh\u00f4ng h\u1ee3p l\u1ec7: " + response);
+                alert.setTitle("Lỗi tạo phiên đấu giá");
+                alert.setHeaderText("Không thể tạo phiên trên server");
+                alert.setContentText("Phản hồi không hợp lệ: " + response);
                 alert.showAndWait();
                 return;
             }
 
             productData.add(newProduct);
             ProductDataManager.getInstance().pushToGlobalAuction(newProduct);
-        });
 
+            // Cập nhật lại số dư ví tiền Sidebar đề phòng server có thay đổi phí tạo sàn
+            refreshAccountSidebarInfo();
+        });
     }
 
     private void chooseProductImage(
@@ -471,9 +502,9 @@ public class ProductManagementController {
             Label imageUploadHelp
     ) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Ch\u1ecdn \u1ea3nh s\u1ea3n ph\u1ea9m");
+        fileChooser.setTitle("Chọn ảnh sản phẩm");
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("\u1ea2nh JPG/PNG", "*.jpg", "*.jpeg", "*.png")
+                new FileChooser.ExtensionFilter("Ảnh JPG/PNG", "*.jpg", "*.jpeg", "*.png")
         );
 
         File selectedFile = fileChooser.showOpenDialog(dialog.getDialogPane().getScene().getWindow());
@@ -482,20 +513,19 @@ public class ProductManagementController {
         }
 
         if (selectedFile.length() > 5L * 1024L * 1024L) {
-            showDialogError("\u1ea2nh kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 5MB.");
+            showDialogError("Ảnh không được vượt quá 5MB.");
             return;
         }
 
         try {
             selectedImageBlob[0] = Files.readAllBytes(selectedFile.toPath());
             imageUploadTitle.setText(selectedFile.getName());
-            imageUploadHelp.setText("\u0110\u00e3 ch\u1ecdn " + selectedImageBlob[0].length / 1024 + " KB");
+            imageUploadHelp.setText("Đã chọn " + selectedImageBlob[0].length / 1024 + " KB");
         } catch (IOException e) {
-            showDialogError("Kh\u00f4ng th\u1ec3 \u0111\u1ecdc file \u1ea3nh: " + e.getMessage());
+            showDialogError("Không thể đọc file ảnh: " + e.getMessage());
         }
     }
 
-    // Escape any '|' characters in text fields to avoid breaking pipe-separated protocol
     private String escapePipe(String input) {
         if (input == null) return "";
         return input.replace("|", " ");
@@ -521,7 +551,7 @@ public class ProductManagementController {
     }
 
     private HBox sectionTitle(String text) {
-        Label icon = styledLabel("\u25a3", "product-dialog-section-icon");
+        Label icon = styledLabel("❑", "product-dialog-section-icon");
         Label title = styledLabel(text, "product-dialog-section-title");
         HBox box = new HBox(10, icon, title);
         box.getStyleClass().add("product-dialog-section-title-row");
@@ -542,7 +572,7 @@ public class ProductManagementController {
     ) {
         boolean isArt = auctionType == null || "ART".equals(auctionType);
         if (isArt) {
-            conditionLabel.setText("T\u00e1c gi\u1ea3:");
+            conditionLabel.setText("Tác giả:");
             warrantyField.clear();
         }
 
@@ -562,7 +592,7 @@ public class ProductManagementController {
             TextField minIncrementField
     ) {
         if (nameField.getText() == null || nameField.getText().isBlank()) {
-            showDialogError("T\u00ean s\u1ea3n ph\u1ea9m kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng.");
+            showDialogError("Tên sản phẩm không được để trống.");
             return false;
         }
 
@@ -570,16 +600,16 @@ public class ProductManagementController {
             double price = Double.parseDouble(priceField.getText().trim());
             double minIncrement = Double.parseDouble(minIncrementField.getText().trim());
             if (price <= 0 || minIncrement <= 0) {
-                showDialogError("Gi\u00e1 v\u00e0 b\u01b0\u1edbc gi\u00e1 ph\u1ea3i l\u1edbn h\u01a1n 0.");
+                showDialogError("Giá và bước giá phải lớn hơn 0.");
                 return false;
             }
         } catch (NumberFormatException e) {
-            showDialogError("Gi\u00e1 v\u00e0 b\u01b0\u1edbc gi\u00e1 ph\u1ea3i l\u00e0 s\u1ed1 h\u1ee3p l\u1ec7.");
+            showDialogError("Giá và bước giá phải là số hợp lệ.");
             return false;
         }
 
         if (startDatePicker.getValue() == null || endDatePicker.getValue() == null) {
-            showDialogError("Vui l\u00f2ng ch\u1ecdn ng\u00e0y b\u1eaft \u0111\u1ea7u v\u00e0 ng\u00e0y k\u1ebft th\u00fac.");
+            showDialogError("Vui lòng chọn ngày bắt đầu và ngày kết thúc.");
             return false;
         }
 
@@ -587,11 +617,11 @@ public class ProductManagementController {
             LocalDateTime startDateTime = buildDateTime(startDatePicker.getValue(), startTimeField);
             LocalDateTime endDateTime = buildDateTime(endDatePicker.getValue(), endTimeField);
             if (!endDateTime.isAfter(startDateTime)) {
-                showDialogError("Th\u1eddi gian k\u1ebft th\u00fac ph\u1ea3i sau th\u1eddi gian b\u1eaft \u0111\u1ea7u.");
+                showDialogError("Thời gian kết thúc phải sau thời gian bắt đầu.");
                 return false;
             }
         } catch (DateTimeParseException e) {
-            showDialogError("Gi\u1edd ph\u1ea3i c\u00f3 \u0111\u1ecbnh d\u1ea1ng HH:mm, v\u00ed d\u1ee5 09:00 ho\u1eb7c 18:30.");
+            showDialogError("Giờ phải có định dạng HH:mm, ví dụ 09:00 hoặc 18:30.");
             return false;
         }
 
@@ -623,8 +653,8 @@ public class ProductManagementController {
 
     private void showDialogError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("D\u1eef li\u1ec7u kh\u00f4ng h\u1ee3p l\u1ec7");
-        alert.setHeaderText("Vui l\u00f2ng ki\u1ec3m tra th\u00f4ng tin \u0111\u1ea5u gi\u00e1");
+        alert.setTitle("Dữ liệu không hợp lệ");
+        alert.setHeaderText("Vui lòng kiểm tra thông tin đấu giá");
         alert.setContentText(message);
         alert.showAndWait();
     }
@@ -641,6 +671,8 @@ public class ProductManagementController {
                     if (subtitleLabel != null) {
                         subtitleLabel.setText("Quản lý các sản phẩm và phiên đấu giá của bạn.");
                     }
+                    // Đồng bộ lại UI tài khoản sau khi hoàn thành tải dữ liệu
+                    refreshAccountSidebarInfo();
                 }))
                 .exceptionally(error -> {
                     javafx.application.Platform.runLater(() -> {
@@ -720,18 +752,18 @@ public class ProductManagementController {
         if (selected == null) return;
 
         TextInputDialog nameDialog = new TextInputDialog(selected.getName());
-        nameDialog.setTitle("S\u1eeda nhanh");
-        nameDialog.setHeaderText("C\u1eadp nh\u1eadt t\u00ean s\u1ea3n ph\u1ea9m:");
+        nameDialog.setTitle("Sửa nhanh");
+        nameDialog.setHeaderText("Cập nhật tên sản phẩm:");
         nameDialog.showAndWait().ifPresent(rawName -> {
             String newName = rawName == null ? "" : rawName.trim();
             if (newName.isEmpty()) {
-                showDialogError("T\u00ean s\u1ea3n ph\u1ea9m kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng.");
+                showDialogError("Tên sản phẩm không được để trống.");
                 return;
             }
 
             String response = auctionService.renameAuction(selected.getId(), escapePipe(newName));
             if (response == null || !response.startsWith("OK|UPDATE_AUCTION|")) {
-                showServerActionError("Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt s\u1ea3n ph\u1ea9m", response);
+                showServerActionError("Không thể cập nhật sản phẩm", response);
                 return;
             }
 
@@ -749,8 +781,8 @@ public class ProductManagementController {
         Product selected = myProductsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            confirm.setTitle("X\u00f3a s\u1ea3n ph\u1ea9m");
-            confirm.setHeaderText("X\u00f3a s\u1ea3n ph\u1ea9m kh\u1ecfi server?");
+            confirm.setTitle("Xóa sản phẩm");
+            confirm.setHeaderText("Xóa sản phẩm khỏi server?");
             confirm.setContentText(selected.getName());
 
             Optional<ButtonType> answer = confirm.showAndWait();
@@ -760,18 +792,21 @@ public class ProductManagementController {
 
             String response = auctionService.deleteAuction(selected.getId());
             if (response == null || !response.startsWith("OK|DELETE_AUCTION|")) {
-                showServerActionError("Kh\u00f4ng th\u1ec3 x\u00f3a s\u1ea3n ph\u1ea9m", response);
+                showServerActionError("Không thể xóa sản phẩm", response);
                 return;
             }
 
             ProductDataManager.getInstance().deleteProductAndAuction(selected.getId());
             myProductsTable.refresh();
+
+            // Đồng bộ lại thông tin ví tiền đề phòng có cơ chế hoàn cọc/phí niêm yết từ server
+            refreshAccountSidebarInfo();
         }
     }
 
     private void showServerActionError(String header, String response) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("L\u1ed7i server");
+        alert.setTitle("Lỗi server");
         alert.setHeaderText(header);
         alert.setContentText(extractServerMessage(response));
         alert.showAndWait();
@@ -779,7 +814,7 @@ public class ProductManagementController {
 
     private String extractServerMessage(String response) {
         if (response == null || response.isBlank()) {
-            return "Server kh\u00f4ng ph\u1ea3n h\u1ed3i.";
+            return "Server không phản hồi.";
         }
         String[] parts = response.split("\\|", 3);
         return parts.length >= 3 ? parts[2] : response;
@@ -789,16 +824,14 @@ public class ProductManagementController {
     private void handleBack(ActionEvent event) {
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/fxml/AuctionList.fxml"));
-            // Lấy Stage từ nút bấm
             Stage stage = (Stage) backButton.getScene().getWindow();
 
             Scene scene = new Scene(root, 1280, 800);
 
-            // Nạp file CSS tổng vào Scene mới
             String css = getClass().getResource("/css/style.css").toExternalForm();
             scene.getStylesheets().add(css);
 
-            stage.setTitle("UET Auction System");
+            stage.setTitle("Auction System");
             stage.setScene(scene);
             stage.setMaximized(true);
             stage.show();
@@ -806,6 +839,7 @@ public class ProductManagementController {
             e.printStackTrace();
         }
     }
+
     @FXML
     private void handleSidebarProducts(ActionEvent event) {
         if (!SessionManager.hasRole("Seller")) {
@@ -819,17 +853,16 @@ public class ProductManagementController {
         if (!SessionManager.hasRole("Bidder")) {
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "UET Auction System - Lịch sử đặt giá", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "Auction System - Lịch sử đặt giá", 1280, 800);
     }
 
     @FXML
     private void handleCurrentAuctions(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "Auction System", 1280, 800);
     }
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "Auction System - Tài khoản", 1280, 800);
     }
-
 }
