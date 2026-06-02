@@ -10,10 +10,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -23,6 +20,8 @@ public class BidHistoryController {
     @FXML private Label sidebarRoleLabel;
     @FXML private Label sidebarBalanceLabel;
     @FXML private VBox bidHistoryCard;
+    @FXML private Button productsSidebarButton;
+    @FXML private Button bidHistorySidebarButton;
     @FXML private TableView<BidHistoryDTO> bidHistoryTable;
     @FXML private TableColumn<BidHistoryDTO, String> colBidId;
     @FXML private TableColumn<BidHistoryDTO, String> colAuctionId;
@@ -42,6 +41,7 @@ public class BidHistoryController {
         if (sidebarRoleLabel != null) {
             sidebarRoleLabel.setText("Role: " + SessionManager.getCurrentUserRole());
         }
+        configureSidebarForRole();
 
         configureTable();
         Platform.runLater(() -> {
@@ -50,6 +50,19 @@ public class BidHistoryController {
                 loadBidHistory();
             }
         });
+    }
+
+    private void configureSidebarForRole() {
+        if (productsSidebarButton != null) {
+            boolean isSeller = SessionManager.hasRole("Seller");
+            productsSidebarButton.setVisible(isSeller);
+            productsSidebarButton.setManaged(isSeller);
+        }
+        if (bidHistorySidebarButton != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            bidHistorySidebarButton.setVisible(isBidder);
+            bidHistorySidebarButton.setManaged(isBidder);
+        }
     }
 
     private void configureTable() {
@@ -191,6 +204,23 @@ public class BidHistoryController {
     @FXML
     private void handleBack(ActionEvent event) {
         NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1280, 800);
+    }
+
+    @FXML
+    private void handleCurrentAuctions(ActionEvent event) {
+        NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarProducts(ActionEvent event) {
+        if (!SessionManager.hasRole("Seller")) {
+            if (messageLabel != null) {
+                messageLabel.setText("Chỉ seller mới được quản lý sản phẩm.");
+                messageLabel.setStyle("-fx-text-fill: #d92d20;");
+            }
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "UET Auction System - Kho hàng", 1280, 800);
     }
 
     @FXML

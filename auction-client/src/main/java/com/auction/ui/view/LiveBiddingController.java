@@ -12,8 +12,14 @@ import com.auction.application.service.AutoBidService;
 import com.auction.application.service.PeriodicUpdateService;
 import com.auction.shared.session.SessionManager;
 import javafx.application.Platform;
+import javafx.beans.property.*;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.chart.*;
+import javafx.scene.layout.StackPane;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Callback;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -37,15 +43,58 @@ public class LiveBiddingController {
     @FXML private Label leadingBidderLabel;
     @FXML private Label accountBalanceLabel;
     @FXML private TextField bidAmountField;
-    @FXML private ListView<String> bidHistoryList;
     @FXML private Button backButton;
     @FXML private Button autoBidButton;
+    @FXML private Button filter1dBtn;
+    @FXML private Button filter3dBtn;
+    @FXML private Button filter5dBtn;
+    @FXML private Button filter7dBtn;
+    @FXML private Button filterAllBtn;
+    
+    private int currentChartFilterDays = -1; // -1 = ALL
+
+    @FXML private Label priceChangeLabel;
+    @FXML private StackPane chartContainer;
+    @FXML private LineChart<String, Number> priceLineChart;
+    @FXML private CategoryAxis xAxisLine;
+    @FXML private NumberAxis yAxisLine;
+    
+    @FXML private TableView<BidHistoryModel> bidHistoryTable;
+    @FXML private TableColumn<BidHistoryModel, String> timeCol;
+    @FXML private TableColumn<BidHistoryModel, String> userCol;
+    @FXML private TableColumn<BidHistoryModel, String> priceCol;
+    @FXML private TableColumn<BidHistoryModel, String> changeCol;
 
     private Product currentProduct;
     private Timer timer;
     private long timeLeft;
-    private ObservableList<String> bidHistory;
+    private ObservableList<BidHistoryModel> bidHistoryModels = FXCollections.observableArrayList();
     private static LiveBiddingController activeController;
+
+    public static class BidHistoryModel {
+        private final StringProperty time;
+        private final StringProperty user;
+        private final StringProperty price;
+        private final StringProperty change;
+        private final BooleanProperty isLeader;
+        private final DoubleProperty numericChange;
+
+        public BidHistoryModel(String time, String user, String price, String change, boolean isLeader, double numericChange) {
+            this.time = new SimpleStringProperty(time);
+            this.user = new SimpleStringProperty(user);
+            this.price = new SimpleStringProperty(price);
+            this.change = new SimpleStringProperty(change);
+            this.isLeader = new SimpleBooleanProperty(isLeader);
+            this.numericChange = new SimpleDoubleProperty(numericChange);
+        }
+
+        public StringProperty timeProperty() { return time; }
+        public StringProperty userProperty() { return user; }
+        public StringProperty priceProperty() { return price; }
+        public StringProperty changeProperty() { return change; }
+        public boolean isLeader() { return isLeader.get(); }
+        public double getNumericChange() { return numericChange.get(); }
+    }
     private final AuctionService auctionService = new AuctionService();
     private final AccountService accountService = new AccountService();
     private final AutoBidService autoBidService = new AutoBidService();
@@ -54,10 +103,94 @@ public class LiveBiddingController {
     public void initialize() {
         activeController = this;
         setupBackButton();
-        startCountdown();
+        
+        Product p = ProductDataManager.getInstance().getLiveBiddingProductData();
+        if (p != null) {
+            setProduct(p);
+            ProductDataManager.getInstance().setLiveBiddingProductData(null);
+        } else {
+            startCountdown();
+        }
+        
         updateBalanceUI();
+        configureTableAndChart();
         // Bắt đầu periodic updates khi vào LiveBidding
         startPeriodicUpdates();
+    }
+
+    private void configureTableAndChart() {
+        if (bidHistoryTable != null) {
+            timeCol.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
+            userCol.setCellValueFactory(cellData -> cellData.getValue().userProperty());
+            priceCol.setCellValueFactory(cellData -> cellData.getValue().priceProperty());
+            changeCol.setCellValueFactory(cellData -> cellData.getValue().changeProperty());
+
+            userCol.setCellFactory(column -> new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        BidHistoryModel model = getTableView().getItems().get(getIndex());
+                        if (model.isLeader()) {
+                            setText(item + " 👑");
+                            setStyle("-fx-text-fill: #eab308; -fx-font-weight: bold;"); // Vàng cho người dẫn đầu
+                        } else {
+                            setText(item);
+                            setStyle("-fx-text-fill: #172033;");
+                        }
+                    }
+                }
+            });
+
+            changeCol.setCellFactory(column -> new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(item);
+                        BidHistoryModel model = getTableView().getItems().get(getIndex());
+                        if (model.getNumericChange() > 0) {
+                            setStyle("-fx-text-fill: #10b981; -fx-font-weight: bold;"); // Xanh lá
+                        } else {
+                            setStyle("-fx-text-fill: #9ca3af;"); // Xám
+                        }
+                    }
+                }
+            });
+
+            bidHistoryTable.setItems(bidHistoryModels);
+        }
+    }
+
+    @FXML private void handleFilter1D() { updateChartFilter(1, filter1dBtn); }
+    @FXML private void handleFilter3D() { updateChartFilter(3, filter3dBtn); }
+    @FXML private void handleFilter5D() { updateChartFilter(5, filter5dBtn); }
+    @FXML private void handleFilter7D() { updateChartFilter(7, filter7dBtn); }
+    @FXML private void handleFilterAll() { updateChartFilter(-1, filterAllBtn); }
+
+    private void updateChartFilter(int days, Button activeBtn) {
+        currentChartFilterDays = days;
+        if (filter1dBtn != null) {
+            filter1dBtn.getStyleClass().remove("chart-toggle-btn-active");
+            filter1dBtn.getStyleClass().add("chart-toggle-btn");
+            filter3dBtn.getStyleClass().remove("chart-toggle-btn-active");
+            filter3dBtn.getStyleClass().add("chart-toggle-btn");
+            filter5dBtn.getStyleClass().remove("chart-toggle-btn-active");
+            filter5dBtn.getStyleClass().add("chart-toggle-btn");
+            filter7dBtn.getStyleClass().remove("chart-toggle-btn-active");
+            filter7dBtn.getStyleClass().add("chart-toggle-btn");
+            filterAllBtn.getStyleClass().remove("chart-toggle-btn-active");
+            filterAllBtn.getStyleClass().add("chart-toggle-btn");
+            
+            activeBtn.getStyleClass().remove("chart-toggle-btn");
+            activeBtn.getStyleClass().add("chart-toggle-btn-active");
+        }
+        refreshBidHistoryFromServer();
     }
 
     public static void onBidUpdated(String auctionId, double currentPrice, String leadingBidderId) {
@@ -103,28 +236,173 @@ public class LiveBiddingController {
     }
 
     private void refreshBidHistoryFromServer() {
-        if (currentProduct == null || bidHistory == null) {
+        if (currentProduct == null || bidHistoryModels == null) {
             return;
         }
 
-        // Fetch history from server off the FX thread (network IO)
         List<BidHistoryDTO> serverHistory = auctionService.getBidHistory(currentProduct.getId());
 
-        // Update UI-bound collections and controls on the JavaFX Application Thread
         Platform.runLater(() -> {
-            bidHistory.clear();
+            bidHistoryModels.clear();
 
             if (serverHistory == null || serverHistory.isEmpty()) {
                 updateLeadingBidder(null);
-                bidHistory.add("ℹ️ Bạn chưa đặt giá cho sản phẩm này.");
+                updatePriceChangeUI(currentProduct.getPrice(), currentProduct.getPrice());
+                
+                if (priceLineChart != null) priceLineChart.getData().clear();
                 return;
             }
 
             updateLeadingBidder(serverHistory.get(0));
-            for (BidHistoryDTO bid : serverHistory) {
-                bidHistory.add(formatBidHistoryLine(bid));
+            
+            double startingPrice = serverHistory.get(serverHistory.size() - 1).getBidAmount();
+            double currentMaxPrice = serverHistory.get(0).getBidAmount();
+            
+            updatePriceChangeUI(startingPrice, currentMaxPrice);
+
+            XYChart.Series<String, Number> lineSeries = new XYChart.Series<>();
+            XYChart.Series<String, Number> areaSeries = new XYChart.Series<>();
+
+            // Build history list and chart data
+            for (int i = 0; i < serverHistory.size(); i++) {
+                BidHistoryDTO bid = serverHistory.get(i);
+                boolean isLeader = (i == 0);
+                
+                double previousPrice = startingPrice;
+                if (i < serverHistory.size() - 1) {
+                    previousPrice = serverHistory.get(i + 1).getBidAmount();
+                }
+                
+                double diff = bid.getBidAmount() - previousPrice;
+                double diffPercent = previousPrice > 0 ? (diff / previousPrice) * 100 : 0;
+                
+                String changeText = "";
+                if (diff > 0) {
+                    changeText = String.format("+ $%.2f (%.2f%%)", diff, diffPercent);
+                } else if (diff < 0) {
+                    changeText = String.format("- $%.2f (%.2f%%)", Math.abs(diff), diffPercent);
+                }
+                
+                String timeStr = formatTimeStr(bid.getBidTime(), "dd/MM/yyyy HH:mm:ss");
+                String username = bid.getBidderUsername() == null ? "Unknown" : bid.getBidderUsername();
+                String priceStr = "$" + String.format("%.2f", bid.getBidAmount());
+                
+                bidHistoryModels.add(new BidHistoryModel(timeStr, username, priceStr, changeText, isLeader, diff));
             }
+            
+            // Lọc dữ liệu biểu đồ
+            long filterThresholdSecs = currentChartFilterDays > 0 ? currentChartFilterDays * 86400L : -1;
+            java.time.ZonedDateTime now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+
+            // For chart, we need oldest to newest (reverse of serverHistory)
+            for (int i = serverHistory.size() - 1; i >= 0; i--) {
+                BidHistoryDTO bid = serverHistory.get(i);
+                boolean isLatest = (i == 0);
+                
+                if (filterThresholdSecs > 0) {
+                    java.time.ZonedDateTime bidTime = parseToZonedDateTime(bid.getBidTime());
+                    if (bidTime != null) {
+                        long diffSecs = java.time.Duration.between(bidTime, now).getSeconds();
+                        if (diffSecs > filterThresholdSecs && !isLatest) {
+                            continue; // Bỏ qua điểm này nếu quá hạn (nhưng luôn giữ mốc mới nhất)
+                        }
+                    }
+                }
+                
+                String timeStr = formatTimeStr(bid.getBidTime(), "HH:mm");
+                
+                XYChart.Data<String, Number> data1 = new XYChart.Data<>(timeStr, bid.getBidAmount());
+                
+                javafx.scene.layout.StackPane node = new javafx.scene.layout.StackPane();
+                node.getStyleClass().addAll("chart-line-symbol", "series0", "default-color0");
+                // Tăng kích thước vùng click lên một chút để dễ hover hơn
+                node.setPrefSize(14, 14);
+                node.setMaxSize(14, 14);
+                
+                if (isLatest) {
+                    javafx.scene.control.Label priceLabel = new javafx.scene.control.Label(String.format("$%.0f", bid.getBidAmount()));
+                    priceLabel.setManaged(false);
+                    priceLabel.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-padding: 2 6; -fx-background-radius: 4; -fx-font-size: 11px; -fx-font-weight: bold;");
+                    node.setStyle("-fx-background-color: #f59e0b, white;");
+                    priceLabel.setVisible(true);
+                    
+                    priceLabel.layoutXProperty().bind(node.widthProperty().divide(2).subtract(priceLabel.widthProperty().divide(2)));
+                    priceLabel.layoutYProperty().bind(node.heightProperty().divide(2).subtract(25));
+                    
+                    node.getChildren().add(priceLabel);
+                } else {
+                    node.setCursor(javafx.scene.Cursor.HAND);
+                    javafx.scene.control.Tooltip tooltip = new javafx.scene.control.Tooltip(String.format("$%.0f", bid.getBidAmount()));
+                    tooltip.setStyle("-fx-background-color: white; -fx-border-color: #22c55e; -fx-text-fill: #22c55e; -fx-padding: 2 6; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 11px; -fx-font-weight: bold;");
+                    tooltip.setShowDelay(javafx.util.Duration.ZERO);
+                    javafx.scene.control.Tooltip.install(node, tooltip);
+                }
+                
+                data1.setNode(node);
+                
+                lineSeries.getData().add(data1);
+            }
+
+            if (priceLineChart != null) priceLineChart.getData().setAll(lineSeries);
         });
+    }
+
+    private void updatePriceChangeUI(double startingPrice, double currentPrice) {
+        if (priceChangeLabel == null) return;
+        double diff = currentPrice - startingPrice;
+        double diffPercent = startingPrice > 0 ? (diff / startingPrice) * 100 : 0;
+        
+        if (diff >= 0) {
+            priceChangeLabel.setText(String.format("↑ $%.2f (%.0f%%) so với giá khởi điểm", diff, diffPercent));
+            priceChangeLabel.setStyle("-fx-text-fill: #10b981; -fx-font-size: 12px; -fx-font-weight: bold;");
+        } else {
+            priceChangeLabel.setText(String.format("↓ $%.2f (%.0f%%) so với giá khởi điểm", Math.abs(diff), Math.abs(diffPercent)));
+            priceChangeLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px; -fx-font-weight: bold;");
+        }
+    }
+
+    private String formatTimeStr(String rawTime, String pattern) {
+        if (rawTime == null || rawTime.isEmpty()) return "";
+        try {
+            // Parse chuẩn ISO-8601 có chứa múi giờ (VD: 2026-06-02T11:58:00Z)
+            java.time.ZonedDateTime zdt = java.time.ZonedDateTime.parse(rawTime);
+            // Chuyển sang múi giờ Việt Nam
+            java.time.ZonedDateTime localTime = zdt.withZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            return localTime.format(java.time.format.DateTimeFormatter.ofPattern(pattern));
+        } catch (Exception e) {
+            // Fallback nếu không có chữ Z hoặc múi giờ
+            try {
+                // Xử lý chuỗi kiểu SQL Timestamp: "2026-06-01 06:02:07.0" -> "2026-06-01T06:02:07.0"
+                String normalizedTime = rawTime.replace(" ", "T");
+                java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(normalizedTime);
+                
+                // Mặc định dữ liệu thô từ server là UTC (+0), do đó ta gán nó vào UTC trước
+                java.time.ZonedDateTime utcZdt = ldt.atZone(java.time.ZoneOffset.UTC);
+                // Sau đó mới chuyển sang múi giờ Việt Nam (+7)
+                java.time.ZonedDateTime localTime = utcZdt.withZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+                
+                return localTime.format(java.time.format.DateTimeFormatter.ofPattern(pattern));
+            } catch (Exception ex) {
+                // Trả về nguyên bản nếu parse thất bại
+                return rawTime;
+            }
+        }
+    }
+
+    private java.time.ZonedDateTime parseToZonedDateTime(String rawTime) {
+        if (rawTime == null || rawTime.isEmpty()) return null;
+        try {
+            java.time.ZonedDateTime zdt = java.time.ZonedDateTime.parse(rawTime);
+            return zdt.withZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        } catch (Exception e) {
+            try {
+                String normalizedTime = rawTime.replace(" ", "T");
+                java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(normalizedTime);
+                return ldt.atZone(java.time.ZoneOffset.UTC).withZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            } catch (Exception ex) {
+                return null;
+            }
+        }
     }
 
     private void updateLeadingBidder(BidHistoryDTO highestBid) {
@@ -139,13 +417,6 @@ public class LiveBiddingController {
 
         leadingBidderLabel.setText(highestBid.getBidderUsername());
         ProductDataManager.getInstance().setLeadingUser(currentProduct.getId(), highestBid.getBidderUsername());
-    }
-
-    private String formatBidHistoryLine(BidHistoryDTO bid) {
-        String bidder = bid.getBidderUsername() == null || bid.getBidderUsername().isBlank()
-                ? "Unknown"
-                : bid.getBidderUsername();
-        return bidder + " đã đặt giá: $" + String.format("%.2f", bid.getBidAmount());
     }
 
     private String getCurrentDisplayName() {
@@ -271,9 +542,9 @@ public class LiveBiddingController {
         // Debug logging to help diagnose missing time/countdown issues
         System.out.println("[LiveBiddingController] AuctionId=" + product.getId() + " endDateTime='" + endDt + "' parsedSeconds=" + (timeLeft == Long.MAX_VALUE ? "UNKNOWN" : timeLeft));
 
-        this.bidHistory = ProductDataManager.getInstance().getHistoryForProduct(product.getId());
-        this.bidHistory.clear();
-        bidHistoryList.setItems(this.bidHistory);
+        if (bidHistoryModels != null) {
+            bidHistoryModels.clear();
+        }
         refreshBidHistoryFromServer();
 
         if (timeLeft <= 0) {
@@ -282,7 +553,9 @@ public class LiveBiddingController {
 
             String finalLeader = ProductDataManager.getInstance().getLeadingUser(product.getId(), "");
             String historyName = finalLeader.isEmpty() ? "Không có người đặt giá" : finalLeader;
-            bidHistory.add(0, "🏆 NGƯỜI CHIẾN THẮNG CUỐI CÙNG: " + historyName);
+            if (bidHistoryModels != null) {
+                bidHistoryModels.add(0, new BidHistoryModel("", "🏆 NGƯỜI CHIẾN THẮNG: " + historyName, "", "", false, 0));
+            }
 
             if (!alreadyShown) {
                 ProductDataManager.getInstance().setWinnerDialogShown(product.getId(), true);
@@ -393,12 +666,6 @@ public class LiveBiddingController {
         manager.setLeadingUser(auctionId, displayName);
         refreshBalanceFromServer();
         refreshBidHistoryFromServer();
-
-        if (bidHistory != null && bidHistory.isEmpty()) {
-            bidHistory.add(0, isMe
-                    ? displayName + " đã được cập nhật giá dẫn đầu: $" + currentPrice
-                    : "Người khác đã đặt giá: $" + currentPrice + " (" + leadingBidderId + ")");
-        }
     }
 
     private void applyExternalAuctionEnded(String auctionId) {
@@ -411,8 +678,8 @@ public class LiveBiddingController {
         bidAmountField.setDisable(true);
         stopTimer();
 
-        if (bidHistory != null) {
-            bidHistory.add(0, "🏁 Phiên đấu giá đã kết thúc.");
+        if (bidHistoryModels != null) {
+            bidHistoryModels.add(0, new BidHistoryModel("", "🏁 Phiên đấu giá đã kết thúc.", "", "", false, 0));
         }
     }
 
@@ -424,8 +691,8 @@ public class LiveBiddingController {
         currentProduct.setEndDateTime(newEndDateTime);
         ProductDataManager.getInstance().updateAuctionEndDate(auctionId, newEndDateTime);
         bidAmountField.setDisable(false);
-        if (bidHistory != null) {
-            bidHistory.add(0, "Hệ thống: Phiên đấu giá đã được gia hạn.");
+        if (bidHistoryModels != null) {
+            bidHistoryModels.add(0, new BidHistoryModel("", "Hệ thống: Phiên đấu giá đã được gia hạn.", "", "", false, 0));
         }
     }
 

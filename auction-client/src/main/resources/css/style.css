@@ -728,3 +728,61 @@
     -fx-border-color: #2d6cdf;
     -fx-text-fill: #2d6cdf;
 }
+
+/* ---- Live Room Chart & Table Styles ---- */
+
+.chart-toggle-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 6;
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 12px;
+    -fx-padding: 4 12;
+    -fx-cursor: hand;
+}
+
+.chart-toggle-btn:hover {
+    -fx-background-color: #f3f4f6;
+}
+
+.chart-toggle-btn-active {
+    -fx-background-color: #2563eb;
+    -fx-border-color: #2563eb;
+    -fx-border-radius: 6;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 4 12;
+    -fx-cursor: hand;
+}
+
+/* JavaFX Chart customizations */
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+.chart-vertical-grid-lines {
+    -fx-stroke: transparent;
+}
+.chart-horizontal-grid-lines {
+    -fx-stroke: #e5e7eb;
+    -fx-stroke-dash-array: 2 4;
+}
+.chart-series-line {
+    -fx-stroke: #3b82f6;
+    -fx-stroke-width: 2px;
+}
+.chart-line-symbol {
+    -fx-background-color: #3b82f6, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 5px;
+    -fx-padding: 4px;
+}
+.default-color0.chart-area-symbol {
+    -fx-background-color: transparent; 
+}
+.default-color0.chart-series-area-fill {
+    -fx-fill: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.01));
+}
+.default-color0.chart-series-area-line {
+    -fx-stroke: #3b82f6;
+    -fx-stroke-width: 2px;
+}
