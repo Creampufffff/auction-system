@@ -99,6 +99,7 @@ public class ClientHandler implements Runnable {
 
             // Router command dạng text nhận từ socket.
             return switch (command) {
+                case "PING" -> "OK|PONG";
                 case "HELP" -> help();
                 case "QUIT", "EXIT" -> "OK|BYE";
                 case "LOGIN" -> login(payload);
@@ -540,8 +541,8 @@ public class ClientHandler implements Runnable {
         String description = rawArgs[2];
         String startDate = rawArgs[3];
         String endDate = rawArgs[4];
-        double startPrice = Double.parseDouble(rawArgs[5]);
-        double minIncrement = Double.parseDouble(rawArgs[6]);
+        double startPrice = oldItem.getStartPrice();
+        double minIncrement = oldItem.getMinIncreasement();
         String extra = rawArgs[7];
 
         Item item;
@@ -638,7 +639,8 @@ public class ClientHandler implements Runnable {
                 + "," + nullToEmpty(auction.getEndDateTime())
                 + "," + escapeCsvField(auction.getCondition())
                 + "," + escapeCsvField(auction.getDescription())
-                + "," + escapeCsvField(auction.getWarranty());
+                + "," + escapeCsvField(auction.getWarranty())
+                + "," + auction.getMinIncrement();
         if (!includeImage) {
             return record;
         }

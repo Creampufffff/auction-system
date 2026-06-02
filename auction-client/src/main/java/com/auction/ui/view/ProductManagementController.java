@@ -45,6 +45,8 @@ public class ProductManagementController {
     // BỔ SUNG: Khai báo các Label điều khiển thông tin tài khoản đồng bộ với file FXML mới
     @FXML private Label accountRoleLabel;
     @FXML private Label accountBalanceLabel;
+    @FXML private Button productsSidebarButton;
+    @FXML private Button bidHistorySidebarButton;
 
     private final ObservableList<Product> productData = ProductDataManager.getInstance().getProductList();
     private final AuctionService auctionService = new AuctionService();
@@ -57,6 +59,7 @@ public class ProductManagementController {
 
         // BỔ SUNG: Cập nhật thông tin tài khoản và số dư ngay khi màn hình khởi tạo
         refreshAccountSidebarInfo();
+        configureSidebarForRole();
 
         TableColumn<Product, String> typeCol = new TableColumn<>("Loại sản phẩm");
         typeCol.setCellValueFactory(cellData -> cellData.getValue().typeProperty());
@@ -124,6 +127,19 @@ public class ProductManagementController {
             // Lấy trực tiếp số dư định dạng tiền tệ từ ProductDataManager vừa được sync
             double balance = ProductDataManager.getInstance().getUserBalance();
             accountBalanceLabel.setText("Vĩ: $" + String.format("%.2f", balance));
+        }
+    }
+
+    private void configureSidebarForRole() {
+        if (productsSidebarButton != null) {
+            boolean isSeller = SessionManager.hasRole("Seller");
+            productsSidebarButton.setVisible(isSeller);
+            productsSidebarButton.setManaged(isSeller);
+        }
+        if (bidHistorySidebarButton != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            bidHistorySidebarButton.setVisible(isBidder);
+            bidHistorySidebarButton.setManaged(isBidder);
         }
     }
 
@@ -689,17 +705,22 @@ public class ProductManagementController {
         try {
             return auctionService.getMyAuctions()
                     .stream()
-                    .map(auction -> new Product(
-                            auction.getAuctionId(),
-                            auction.getItemType(),
-                            auction.getName(),
-                            auction.getCurrentPrice(),
-                            auction.getAuctionStatus().toString(),
-                            auction.getCondition(),
-                            auction.getDescription(),
-                            auction.getWarranty(),
-                            auction.getEndDateTime()
-                    ))
+                    .map(auction -> {
+                        Product product = new Product(
+                                auction.getAuctionId(),
+                                auction.getItemType(),
+                                auction.getName(),
+                                auction.getCurrentPrice(),
+                                auction.getAuctionStatus().toString(),
+                                auction.getCondition(),
+                                auction.getDescription(),
+                                auction.getWarranty(),
+                                auction.getStartDateTime(),
+                                auction.getEndDateTime()
+                        );
+                        product.setMinIncrement(auction.getMinIncrement());
+                        return product;
+                    })
                     .collect(java.util.stream.Collectors.toList());
         } catch (IllegalStateException e) {
             throw e;
@@ -730,7 +751,9 @@ public class ProductManagementController {
         auction.setCondition(product.getCondition());
         auction.setDescription(product.getDescription());
         auction.setWarranty(product.getWarranty());
+        auction.setStartDateTime(product.getStartDateTime());
         auction.setEndDateTime(product.getEndDateTime());
+        auction.setMinIncrement(product.getMinIncrement());
         return auction;
     }
 
@@ -774,6 +797,18 @@ public class ProductManagementController {
                     .ifPresent(auction -> auction.setName(newName));
             myProductsTable.refresh();
         });
+    }
+
+    @FXML
+    private void handleEditAuctionFull(ActionEvent event) {
+        Product selected = myProductsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showDialogError("Vui lòng chọn một sản phẩm để chỉnh sửa.");
+            return;
+        }
+
+        AuctionEditController.showAndUpdate(selected, auctionService)
+                .ifPresent(updated -> myProductsTable.refresh());
     }
 
     @FXML

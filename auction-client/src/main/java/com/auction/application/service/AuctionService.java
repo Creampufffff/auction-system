@@ -195,7 +195,7 @@ public class AuctionService {
         }
 
         try {
-            String response = SocketClientService.sendSessionCommand("GET_BID_HISTORY " + auctionId);
+            String response = sendCommand("GET_BID_HISTORY " + auctionId);
             return parseBidHistoryResponse(response);
         } catch (Exception e) {
             return new ArrayList<>();
@@ -433,11 +433,19 @@ public class AuctionService {
                     auction.setWarranty(emptyToNull(fields[10]));
                 }
                 if (fields.length >= 12) {
-                    auction.setImageBlob(decodeImage(fields[11]));
+                    if (isNumeric(fields[11])) {
+                        auction.setMinIncrement(Double.parseDouble(fields[11]));
+                    } else {
+                        auction.setImageBlob(decodeImage(fields[11]));
+                    }
                 }
                 if (fields.length >= 13) {
-                    auction.setHighestBidderUsername(emptyToNull(fields[11]));
-                    auction.setImageBlob(decodeImage(fields[12]));
+                    if (isNumeric(fields[11])) {
+                        auction.setImageBlob(decodeImage(fields[12]));
+                    } else {
+                        auction.setHighestBidderUsername(emptyToNull(fields[11]));
+                        auction.setImageBlob(decodeImage(fields[12]));
+                    }
                 }
             } else {
                 auction.setItemType("ART");
@@ -453,6 +461,18 @@ public class AuctionService {
 
     private String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private boolean isNumeric(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(value);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     private byte[] decodeImage(String value) {

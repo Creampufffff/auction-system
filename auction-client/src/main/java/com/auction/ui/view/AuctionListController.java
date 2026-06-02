@@ -34,7 +34,7 @@ public class AuctionListController {
 
     // [MỚI] 3 stat boxes ở trên
     @FXML private Label totalSessionsLabel;  // Tổng phiên đang mở
-    @FXML private Label onlineUsersLabel;    // Phiên đang mở (OPEN + RUNNING)
+    @FXML private Label onlineUsersLabel;    // Phiên đang mở (RUNNING)
     @FXML private Label statBalanceLabel;    // Số dư (stat box riêng, khác sidebar)
 
     // [MỚI] Pagination & Search
@@ -302,10 +302,10 @@ public class AuctionListController {
             totalSessionsLabel.setText(String.valueOf(count));
         }
 
-        // Stat box 2: Phiên đang mở (OPEN hoặc RUNNING)
+        // Stat box 2: Phiên đang mở là các phiên đang diễn ra, không tính phiên sắp diễn ra.
         if (onlineUsersLabel != null) {
             long openCount = ProductDataManager.getInstance().getServerAuctionList().stream()
-                    .filter(a -> a.getAuctionStatus() == Status.OPEN || a.getAuctionStatus() == Status.RUNNING)
+                    .filter(a -> a.getAuctionStatus() == Status.RUNNING)
                     .count();
             onlineUsersLabel.setText(String.valueOf(openCount));
         }
@@ -399,6 +399,7 @@ public class AuctionListController {
                     "No warranty",
                     selected.getEndDateTime()
             );
+            productModel.setMinIncrement(selected.getMinIncrement());
 
             // Lưu trữ đối tượng tạm để controller đích có thể chủ động cấu hình thay vì bóc tách FXML thủ công phá vỡ cấu trúc Stage
             ProductDataManager.getInstance().setLiveBiddingProductData(productModel);

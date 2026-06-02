@@ -11,7 +11,9 @@ public class Product {
     private final StringProperty condition;
     private final StringProperty description;
     private final StringProperty warranty;
+    private final StringProperty startDateTime;
     private final StringProperty endDateTime;
+    private final DoubleProperty minIncrement;
 
     public Product(String id, String name, double price, String status, String condition, String description, String warranty) {
         this(id, "ART", name, price, status, condition, description, warranty, null);
@@ -22,6 +24,10 @@ public class Product {
     }
 
     public Product(String id, String type, String name, double price, String status, String condition, String description, String warranty, String endDateTime) {
+        this(id, type, name, price, status, condition, description, warranty, null, endDateTime);
+    }
+
+    public Product(String id, String type, String name, double price, String status, String condition, String description, String warranty, String startDateTime, String endDateTime) {
         this.id = new SimpleStringProperty(id);
         this.type = new SimpleStringProperty(type);
         this.name = new SimpleStringProperty(name);
@@ -30,7 +36,9 @@ public class Product {
         this.condition = new SimpleStringProperty(condition);
         this.description = new SimpleStringProperty(description);
         this.warranty = new SimpleStringProperty(warranty);
+        this.startDateTime = new SimpleStringProperty(startDateTime);
         this.endDateTime = new SimpleStringProperty(endDateTime);
+        this.minIncrement = new SimpleDoubleProperty(0);
     }
 
     public StringProperty idProperty() { return id; }
@@ -41,7 +49,9 @@ public class Product {
     public StringProperty conditionProperty() { return condition; }
     public StringProperty descriptionProperty() { return description; }
     public StringProperty warrantyProperty() { return warranty; }
+    public StringProperty startDateTimeProperty() { return startDateTime; }
     public StringProperty endDateTimeProperty() { return endDateTime; }
+    public DoubleProperty minIncrementProperty() { return minIncrement; }
 
     public String getId() { return id.get(); }
     public String getType() { return type.get(); }
@@ -51,7 +61,9 @@ public class Product {
     public String getCondition() { return condition.get(); }
     public String getDescription() { return description.get(); }
     public String getWarranty() { return warranty.get(); }
+    public String getStartDateTime() { return startDateTime.get(); }
     public String getEndDateTime() { return endDateTime.get(); }
+    public double getMinIncrement() { return minIncrement.get(); }
 
     /* ============================================================
        CÁC HÀM SETTER (THÊM MỚI ĐỂ FIX LỖI)
@@ -74,6 +86,10 @@ public class Product {
 
     public void setWarranty(String value) { this.warranty.set(value); }
 
+    public void setStartDateTime(String value) { this.startDateTime.set(value); }
+
     public void setEndDateTime(String value) { this.endDateTime.set(value); }
+
+    public void setMinIncrement(double value) { this.minIncrement.set(value); }
 }
 

@@ -26,7 +26,7 @@ public class AuctionMapper {
             ? "ELECTRONICS"
             : item instanceof Vehicle ? "VEHICLE" : "ART";
 
-        return new AuctionListDTO(
+        AuctionListDTO dto = new AuctionListDTO(
             auction.getId(),
             item.getId(),
             itemType,
@@ -40,6 +40,8 @@ public class AuctionMapper {
             item.getEndDateString(),
             item.getImageBlob()
         );
+        dto.setMinIncrement(item.getMinIncreasement());
+        return dto;
     }
 
     public static List<AuctionListDTO> toListDTOs(List<Auction> auctions) {

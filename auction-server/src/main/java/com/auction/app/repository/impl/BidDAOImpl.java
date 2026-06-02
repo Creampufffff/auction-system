@@ -15,6 +15,7 @@ import com.auction.app.repository.BidDAO;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class BidDAOImpl implements BidDAO {
     private final AuctionDAOImpl auctionDAO = new AuctionDAOImpl();
@@ -257,14 +258,13 @@ public class BidDAOImpl implements BidDAO {
 
                 BidderAccountState currentBidderState = null;
                 BidderAccountState previousBidderState = null;
-                String currentBidderId = bidderId;
 
                 for (String id : bidderIdsToLock) {
                     BidderAccountState state = lockBidderAccount(connection, lockBidderSql, id);
-                    if (id.equals(currentBidderId)) {
+                    if (Objects.equals(id, bidderId)) {
                         currentBidderState = state;
                     }
-                    if (lastBidderId != null && id.equals(lastBidderId)) {
+                    if (Objects.equals(id, lastBidderId)) {
                         previousBidderState = state;
                     }
                 }
@@ -273,23 +273,18 @@ public class BidDAOImpl implements BidDAO {
                     throw new IllegalStateException("Bidder account not found");
                 }
 
-                if (lastBidderId != null && !lastBidderId.isBlank() && lastBidderId.equals(bidderId)) {
-                    previousBidderState = currentBidderState;
-                }
+                // Only release held balance if previous bidder is different from current bidder
+                boolean isSameBidder = lastBidderId != null && lastBidderId.equals(bidderId);
 
-                double currentPrice = lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : lockedAuction.startPrice;
-
-                // Only release the previous bidder's held balance if:
-                // 1) There is a previous bidder AND
-                // 2) They actually have held balance (indicating a valid previous bid)
-                if (lastBidderId != null && !lastBidderId.isBlank() && previousBidderState != null && previousBidderState.heldBalance > 0) {
+                if (!isSameBidder && lastBidderId != null && !lastBidderId.isBlank() && previousBidderState != null && previousBidderState.heldBalance > 0) {
+                    // Release previous bidder's held balance (refund their bid)
                     previousBidderState.release(lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : 0);
                 }
 
                 currentBidderState.reserve(bid.getBidAmount());
 
                 updateBidderAccount(connection, updateBidderSql, bidderId, currentBidderState);
-                if (previousBidderState != null && !lastBidderId.equals(bidderId)) {
+                if (!isSameBidder && previousBidderState != null) {
                     updateBidderAccount(connection, updateBidderSql, lastBidderId, previousBidderState);
                 }
 

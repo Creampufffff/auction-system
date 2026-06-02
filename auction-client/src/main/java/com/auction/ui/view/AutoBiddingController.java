@@ -30,9 +30,6 @@ public class AutoBiddingController {
         errorLabel.setText("");
     }
 
-    /**
-     * Set auction information
-     */
     public void setAuctionInfo(String auctionId, String auctionName, double currentPrice,
                                double minIncrement, double userBalance) {
         this.auctionId = auctionId;
@@ -54,10 +51,9 @@ public class AutoBiddingController {
     private void handleSetAutoBid() {
         errorLabel.setText("");
 
-        // Validate input
         String input = maxBidAmountField.getText().trim();
         if (input.isBlank()) {
-            showError("Vui lòng nhập giá tối đa!");
+            showError("Vui lòng nhập giá tối đa.");
             return;
         }
 
@@ -65,34 +61,25 @@ public class AutoBiddingController {
         try {
             maxAutoAmount = Double.parseDouble(input);
         } catch (NumberFormatException e) {
-            showError("Giá phải là số hợp lệ!");
+            showError("Giá phải là số hợp lệ.");
             return;
         }
 
-        // Validate amount
-        if (maxAutoAmount <= currentPrice) {
-            showError("Giá tối đa phải cao hơn giá hiện tại ($" + String.format("%.2f", currentPrice) + ")!");
+        if (maxAutoAmount < nextBidAmount) {
+            showError("Giá tối đa phải từ $" + String.format("%.2f", nextBidAmount) + " trở lên.");
             return;
         }
 
         if (maxAutoAmount > userBalance) {
-            showError("Giá tối đa không được vượt quá số dư tài khoản ($" + String.format("%.2f", userBalance) + ")!");
+            showError("Giá tối đa không được vượt quá số dư tài khoản ($" + String.format("%.2f", userBalance) + ").");
             return;
         }
 
-        // Send to server
         ApiResponseDTO response = autoBidService.setAutoBid(auctionId, maxAutoAmount);
 
         if (response != null && response.isSuccess()) {
-            showSuccess("Auto-Bid đã được đặt thành công!\nGiá tối đa: $" + String.format("%.2f", maxAutoAmount));
-            // Close dialog after slight delay
-            Platform.runLater(() -> {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored) {
-                }
-                closeDialog();
-            });
+            showSuccess("Auto-Bid đã được đặt thành công.\nGiá tối đa: $" + String.format("%.2f", maxAutoAmount));
+            closeDialog();
         } else {
             String errorMsg = response != null ? response.getMessage() : "Lỗi không xác định";
             showError("Không thể đặt Auto-Bid: " + errorMsg);
@@ -111,7 +98,6 @@ public class AutoBiddingController {
 
     private void showError(String message) {
         errorLabel.setText(message);
-        errorLabel.setStyle("-fx-text-fill: #d92d20; -fx-font-size: 11px;");
     }
 
     private void showSuccess(String message) {
@@ -122,4 +108,3 @@ public class AutoBiddingController {
         alert.showAndWait();
     }
 }
-

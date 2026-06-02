@@ -1,6 +1,7 @@
 package com.auction.domain.model;
 
 import com.app.common.dto.AuctionListDTO;
+import com.app.common.dto.BidHistoryDTO;
 import com.app.common.enums.Status;
 import com.auction.shared.session.SessionManager;
 import javafx.collections.FXCollections;
@@ -31,6 +32,7 @@ public class ProductDataManager {
     private final Map<String, ObservableList<String>> historyMap;
     private final Map<String, Double> currentPriceMap;
     private final Map<String, Integer> timeLeftMap;
+    private final Map<String, List<BidHistoryDTO>> bidHistoryCacheMap = new HashMap<>();
     private final Map<String, Boolean> dialogShownMap = new HashMap<>();
 
     // --- LOGIC VÍ TIỀN & SESSION ---
@@ -98,6 +100,7 @@ public class ProductDataManager {
         dialogShownMap.clear();
         currentPriceMap.clear();
         timeLeftMap.clear();
+        bidHistoryCacheMap.clear();
         selectedAuction = null;
         liveBiddingProductData = null;
         productDetailReturnPath = "/fxml/AuctionList.fxml";
@@ -130,6 +133,21 @@ public class ProductDataManager {
             historyMap.put(auctionId, FXCollections.observableArrayList());
         }
         return historyMap.get(auctionId);
+    }
+
+    public synchronized List<BidHistoryDTO> getCachedBidHistory(String auctionId) {
+        if (auctionId == null || auctionId.isBlank()) {
+            return List.of();
+        }
+        List<BidHistoryDTO> cached = bidHistoryCacheMap.get(auctionId);
+        return cached == null ? List.of() : List.copyOf(cached);
+    }
+
+    public synchronized void cacheBidHistory(String auctionId, List<BidHistoryDTO> bids) {
+        if (auctionId == null || auctionId.isBlank() || bids == null) {
+            return;
+        }
+        bidHistoryCacheMap.put(auctionId, List.copyOf(bids));
     }
 
     public double getCurrentPrice(String auctionId, double defaultPrice) {

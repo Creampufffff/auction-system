@@ -68,6 +68,12 @@
                                text="Chưa có"
                                style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #172033;"/>
                     </VBox>
+                    <VBox spacing="4" style="-fx-background-color: #f3f6fb; -fx-border-color: #dbe4f0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 12;">
+                        <Label text="BƯỚC GIÁ TỐI THIỂU" style="-fx-text-fill: #667085; -fx-font-size: 11px; -fx-font-weight: bold;"/>
+                        <Label fx:id="minIncrementLabel"
+                               text="Đang tải..."
+                               style="-fx-font-weight: bold; -fx-font-size: 18px; -fx-text-fill: #172033;"/>
+                    </VBox>
                 </VBox>
 
                 <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
@@ -89,14 +95,6 @@
                 <VBox VBox.vgrow="ALWAYS" spacing="15" style="-fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-padding: 15;">
                     <HBox alignment="CENTER_LEFT">
                         <Label text="BIỂU ĐỒ DIỄN BIẾN GIÁ" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #6b7280;"/>
-                        <Region HBox.hgrow="ALWAYS"/>
-                        <HBox spacing="5">
-                            <Button fx:id="filter1dBtn" text="1D" onAction="#handleFilter1D" styleClass="chart-toggle-btn"/>
-                            <Button fx:id="filter3dBtn" text="3D" onAction="#handleFilter3D" styleClass="chart-toggle-btn"/>
-                            <Button fx:id="filter5dBtn" text="5D" onAction="#handleFilter5D" styleClass="chart-toggle-btn"/>
-                            <Button fx:id="filter7dBtn" text="7D" onAction="#handleFilter7D" styleClass="chart-toggle-btn"/>
-                            <Button fx:id="filterAllBtn" text="ALL" onAction="#handleFilterAll" styleClass="chart-toggle-btn-active"/>
-                        </HBox>
                     </HBox>
                     
                     <StackPane fx:id="chartContainer" VBox.vgrow="ALWAYS" minHeight="250">

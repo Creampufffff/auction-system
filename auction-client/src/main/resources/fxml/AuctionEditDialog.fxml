@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.auction.ui.view.AuctionEditController"
+            fitToWidth="true"
+            hbarPolicy="NEVER"
+            vbarPolicy="AS_NEEDED"
+            styleClass="product-dialog-scroll">
+    <VBox styleClass="product-dialog-shell">
+        <HBox spacing="16" styleClass="product-dialog-custom-header">
+            <Label text="✎" styleClass="product-dialog-header-icon"/>
+            <VBox spacing="4">
+                <Label text="Chỉnh sửa phiên đấu giá" styleClass="product-dialog-title"/>
+                <Label text="Cập nhật thông tin phiên, giá khởi điểm và bước giá tối thiểu được giữ nguyên"
+                       styleClass="product-dialog-subtitle"/>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="16" styleClass="product-dialog-body">
+            <VBox spacing="14">
+                <HBox spacing="10" styleClass="product-dialog-section-title-row">
+                    <Label text="❑" styleClass="product-dialog-section-icon"/>
+                    <Label text="Thông tin chính" styleClass="product-dialog-section-title"/>
+                </HBox>
+
+                <GridPane hgap="24" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Label text="Tên sản phẩm *" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="nameField" promptText="Nhập tên sản phẩm" styleClass="product-dialog-input"/>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <Label text="Loại sản phẩm" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="typeField" editable="false" focusTraversable="false">
+                            <styleClass>
+                                <String fx:value="product-dialog-input"/>
+                                <String fx:value="product-dialog-locked-input"/>
+                            </styleClass>
+                        </TextField>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                        <Label text="Giá ($)" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="priceField" editable="false" focusTraversable="false">
+                            <styleClass>
+                                <String fx:value="product-dialog-input"/>
+                                <String fx:value="product-dialog-locked-input"/>
+                            </styleClass>
+                        </TextField>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                        <Label text="Bước giá tối thiểu ($)" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="minIncrementField" editable="false" focusTraversable="false">
+                            <styleClass>
+                                <String fx:value="product-dialog-input"/>
+                                <String fx:value="product-dialog-locked-input"/>
+                            </styleClass>
+                        </TextField>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="2" GridPane.columnIndex="0" GridPane.columnSpan="2">
+                        <Label fx:id="typeSpecificLabel" text="Thông tin phụ" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="typeSpecificField" styleClass="product-dialog-input"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
+
+            <VBox spacing="14">
+                <HBox spacing="10" styleClass="product-dialog-section-title-row">
+                    <Label text="❑" styleClass="product-dialog-section-icon"/>
+                    <Label text="Thời gian đấu giá" styleClass="product-dialog-section-title"/>
+                </HBox>
+
+                <GridPane hgap="24" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Label text="Ngày bắt đầu *" styleClass="product-dialog-field-label"/>
+                        <DatePicker fx:id="startDatePicker" maxWidth="Infinity" styleClass="product-dialog-input"/>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <Label text="Giờ bắt đầu *" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="startTimeField" promptText="HH:mm" styleClass="product-dialog-input"/>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                        <Label text="Ngày kết thúc *" styleClass="product-dialog-field-label"/>
+                        <DatePicker fx:id="endDatePicker" maxWidth="Infinity" styleClass="product-dialog-input"/>
+                    </VBox>
+
+                    <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                        <Label text="Giờ kết thúc *" styleClass="product-dialog-field-label"/>
+                        <TextField fx:id="endTimeField" promptText="HH:mm" styleClass="product-dialog-input"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
+
+            <VBox spacing="10">
+                <Label text="Mô tả chi tiết" styleClass="product-dialog-field-label"/>
+                <TextArea fx:id="descriptionArea"
+                          prefRowCount="4"
+                          promptText="Nhập mô tả chi tiết về sản phẩm..."
+                          styleClass="product-dialog-input"/>
+            </VBox>
+        </VBox>
+    </VBox>
+</ScrollPane>

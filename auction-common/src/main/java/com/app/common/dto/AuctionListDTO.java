@@ -21,6 +21,7 @@ public class AuctionListDTO implements Serializable {
     private String startDateTime;
     private String endDateTime;
     private String highestBidderUsername;
+    private double minIncrement;
     private byte[] imageBlob;
 
     public AuctionListDTO() {
