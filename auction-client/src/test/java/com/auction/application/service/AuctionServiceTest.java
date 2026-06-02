@@ -12,7 +12,7 @@ import org.mockito.Mockito;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
 
-@DisplayName("Test logic nghiá»‡p vá»¥ Äáº¥u giÃ¡ (AuctionService)")
+@DisplayName("Test logic nghiệp vụ Đấu giá (AuctionService)")
 public class AuctionServiceTest {
 
     private AuctionService auctionService;
@@ -22,12 +22,8 @@ public class AuctionServiceTest {
         auctionService = new AuctionService();
     }
 
-    // =========================================================================
-    // 1. TEST LOGIC VALIDATION (KIá»‚M TRA Dá»® LIá»†U Äáº¦U VÃ€O)
-    // =========================================================================
-
     @Test
-    @DisplayName("Äáº·t giÃ¡ tháº¥t báº¡i khi thiáº¿u mÃ£ Ä‘áº¥u giÃ¡ (Auction ID rá»—ng)")
+    @DisplayName("Đặt giá thất bại khi thiếu mã đấu giá")
     void placeBid_NullOrEmptyAuctionId_ShouldReturnFailedResponse() {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("");
@@ -37,12 +33,12 @@ public class AuctionServiceTest {
         PlaceBidResponseDTO response = auctionService.placeBid(request);
 
         assertNotNull(response);
-        assertFalse(response.isSuccess(), "Pháº£i tháº¥t báº¡i vÃ¬ thiáº¿u mÃ£ Ä‘áº¥u giÃ¡");
-        assertEquals("ThÃ´ng tin Ä‘áº·t giÃ¡ khÃ´ng há»£p lá»‡.", response.getMessage());
+        assertFalse(response.isSuccess(), "Phải thất bại vì thiếu mã đấu giá");
+        assertEquals("Thông tin đặt giá không hợp lệ.", response.getMessage());
     }
 
     @Test
-    @DisplayName("Äáº·t giÃ¡ tháº¥t báº¡i khi sá»‘ tiá»n báº±ng 0 hoáº·c Ã¢m")
+    @DisplayName("Đặt giá thất bại khi số tiền bằng 0 hoặc âm")
     void placeBid_NegativeOrZeroAmount_ShouldReturnFailedResponse() {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("AUC-001");
@@ -51,16 +47,12 @@ public class AuctionServiceTest {
 
         PlaceBidResponseDTO response = auctionService.placeBid(request);
 
-        assertFalse(response.isSuccess(), "Pháº£i tháº¥t báº¡i vÃ¬ sá»‘ tiá»n khÃ´ng há»£p lá»‡");
-        assertEquals("ThÃ´ng tin Ä‘áº·t giÃ¡ khÃ´ng há»£p lá»‡.", response.getMessage());
+        assertFalse(response.isSuccess(), "Phải thất bại vì số tiền không hợp lệ");
+        assertEquals("Thông tin đặt giá không hợp lệ.", response.getMessage());
     }
 
-    // =========================================================================
-    // 2. TEST LOGIC PHÃ‚N QUYá»€N (ROLE CHECK)
-    // =========================================================================
-
     @Test
-    @DisplayName("TÃ i khoáº£n khÃ´ng pháº£i Bidder (VD: Seller) khÃ´ng Ä‘Æ°á»£c phÃ©p Ä‘áº·t giÃ¡")
+    @DisplayName("Tài khoản không phải Bidder không được phép đặt giá")
     void placeBid_UserRoleIsNotBidder_ShouldReturnFailedResponse() {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("AUC-001");
@@ -72,18 +64,14 @@ public class AuctionServiceTest {
 
             PlaceBidResponseDTO response = auctionService.placeBid(request);
 
-            assertFalse(response.isSuccess(), "Seller khÃ´ng Ä‘Æ°á»£c phÃ©p Ä‘áº·t giÃ¡");
-            assertEquals("Chá»‰ ngÆ°á»i Ä‘áº¥u giÃ¡ má»›i Ä‘Æ°á»£c Ä‘áº·t giÃ¡.", response.getMessage());
+            assertFalse(response.isSuccess(), "Seller không được phép đặt giá");
+            assertEquals("Chỉ người đấu giá mới được đặt giá.", response.getMessage());
         }
     }
 
-    // =========================================================================
-    // 3. TEST LOGIC PARSE PHáº¢N Há»’I Tá»ª SERVER & Xá»¬ LÃ Lá»–I Máº NG
-    // =========================================================================
-
     @Test
-    @DisplayName("Äáº·t giÃ¡ thÃ nh cÃ´ng khi Server tráº£ vá» Ä‘Ãºng format giao thá»©c")
-    void placeBid_ServerSuccessResponse_ShouldReturnSuccessResponse() {
+    @DisplayName("Đặt giá thành công khi Server trả về đúng format")
+    void placeBid_ServerSuccessResponse_ShouldReturnSuccessResponse() throws Exception {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("AUC-999");
         request.setBidderId("USER-101");
@@ -95,14 +83,13 @@ public class AuctionServiceTest {
             sessionMock.when(() -> SessionManager.hasRole("Bidder")).thenReturn(true);
             sessionMock.when(SessionManager::getCurrentUserId).thenReturn("USER-101");
 
-            String mockServerResponse = "OK|BID_PLACED|BID-777|AUC-999|250.0";
             socketMock.when(() -> SocketClientService.sendSessionCommand(Mockito.anyString()))
-                    .thenReturn(mockServerResponse);
+                    .thenReturn("OK|BID_PLACED|BID-777|AUC-999|250.0");
 
             PlaceBidResponseDTO response = auctionService.placeBid(request);
 
             assertTrue(response.isSuccess());
-            assertEquals("Äáº·t giÃ¡ thÃ nh cÃ´ng.", response.getMessage());
+            assertEquals("Đặt giá thành công.", response.getMessage());
             assertEquals("BID-777", response.getBidId());
             assertEquals("AUC-999", response.getAuctionId());
             assertEquals(250.0, response.getBidAmount());
@@ -110,8 +97,8 @@ public class AuctionServiceTest {
     }
 
     @Test
-    @DisplayName("BÃ³c tÃ¡ch Ä‘Ãºng thÃ´ng bÃ¡o lá»—i khi Server tá»« chá»‘i lá»‡nh Ä‘áº·t giÃ¡")
-    void placeBid_ServerErrorResponse_ShouldReturnFailedResponse() {
+    @DisplayName("Bóc tách đúng thông báo lỗi khi Server từ chối lệnh đặt giá")
+    void placeBid_ServerErrorResponse_ShouldReturnFailedResponse() throws Exception {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("AUC-999");
         request.setBidderId("USER-101");
@@ -121,21 +108,19 @@ public class AuctionServiceTest {
              MockedStatic<SocketClientService> socketMock = mockStatic(SocketClientService.class)) {
 
             sessionMock.when(() -> SessionManager.hasRole("Bidder")).thenReturn(true);
-
-            String mockServerResponse = "ERR|LOW_BID|GiÃ¡ tháº§u pháº£i cao hÆ¡n giÃ¡ hiá»‡n táº¡i.";
             socketMock.when(() -> SocketClientService.sendSessionCommand(Mockito.anyString()))
-                    .thenReturn(mockServerResponse);
+                    .thenReturn("ERR|LOW_BID|Giá thầu phải cao hơn giá hiện tại.");
 
             PlaceBidResponseDTO response = auctionService.placeBid(request);
 
             assertFalse(response.isSuccess());
-            assertEquals("GiÃ¡ tháº§u pháº£i cao hÆ¡n giÃ¡ hiá»‡n táº¡i.", response.getMessage());
+            assertEquals("Giá thầu phải cao hơn giá hiện tại.", response.getMessage());
         }
     }
 
     @Test
-    @DisplayName("NÃ©m ngoáº¡i lá»‡ IllegalStateException khi máº¥t káº¿t ná»‘i máº¡ng (Socket throw Exception)")
-    void placeBid_NetworkException_ShouldThrowIllegalStateException() {
+    @DisplayName("Ném ngoại lệ IllegalStateException khi mất kết nối mạng")
+    void placeBid_NetworkException_ShouldThrowIllegalStateException() throws Exception {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("AUC-999");
         request.setBidderId("USER-101");
@@ -146,23 +131,20 @@ public class AuctionServiceTest {
 
             sessionMock.when(() -> SessionManager.hasRole("Bidder")).thenReturn(true);
             sessionMock.when(SessionManager::getCurrentUserId).thenReturn("USER-101");
-
-            // Giáº£ láº­p Socket nÃ©m Exception do rá»›t máº¡ng hoáº·c timeout
             socketMock.when(() -> SocketClientService.sendSessionCommand(Mockito.anyString()))
                     .thenThrow(new Exception("Connection reset by peer"));
 
-            // Expect hÃ m placeBid sáº½ nÃ©m ra IllegalStateException
             IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
                 auctionService.placeBid(request);
             });
 
-            assertEquals("KhÃ´ng thá»ƒ gá»­i yÃªu cáº§u Ä‘áº¥u giÃ¡ tá»›i server.", exception.getMessage());
+            assertEquals("Không thể gửi yêu cầu đấu giá tới server.", exception.getMessage());
         }
     }
 
     @Test
-    @DisplayName("Xá»­ lÃ½ an toÃ n khi Server tráº£ vá» null hoáº·c chuá»—i dá»‹ dáº¡ng khÃ´ng Ä‘á»§ tham sá»‘")
-    void placeBid_MalformedOrNullResponse_ShouldReturnFailedResponse() {
+    @DisplayName("Xử lý an toàn khi Server trả về null hoặc chuỗi dị dạng")
+    void placeBid_MalformedOrNullResponse_ShouldReturnFailedResponse() throws Exception {
         PlaceBidRequestDTO request = new PlaceBidRequestDTO();
         request.setAuctionId("AUC-999");
         request.setBidderId("USER-101");
@@ -174,19 +156,17 @@ public class AuctionServiceTest {
             sessionMock.when(() -> SessionManager.hasRole("Bidder")).thenReturn(true);
             sessionMock.when(SessionManager::getCurrentUserId).thenReturn("USER-101");
 
-            // Tráº£ vá» Null (Server sáº­p)
             socketMock.when(() -> SocketClientService.sendSessionCommand(Mockito.anyString()))
                     .thenReturn(null);
             PlaceBidResponseDTO response1 = auctionService.placeBid(request);
             assertFalse(response1.isSuccess());
-            assertEquals("Server khÃ´ng pháº£n há»“i.", response1.getMessage());
+            assertEquals("Server không phản hồi.", response1.getMessage());
 
-            // Tráº£ vá» chuá»—i thiáº¿u pipe (Dá»‹ dáº¡ng)
             socketMock.when(() -> SocketClientService.sendSessionCommand(Mockito.anyString()))
-                    .thenReturn("OK|BID_PLACED|BID-777"); // Thiáº¿u Auction ID vÃ  Amount
+                    .thenReturn("OK|BID_PLACED|BID-777");
             PlaceBidResponseDTO response2 = auctionService.placeBid(request);
             assertFalse(response2.isSuccess());
-            assertEquals("Pháº£n há»“i Ä‘áº·t giÃ¡ khÃ´ng há»£p lá»‡.", response2.getMessage());
+            assertEquals("Phản hồi đặt giá không hợp lệ.", response2.getMessage());
         }
     }
 }

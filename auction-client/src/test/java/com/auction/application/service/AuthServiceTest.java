@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
-@DisplayName("Test logic nghiá»‡p vá»¥ XÃ¡c thá»±c (AuthService)")
+@DisplayName("Test logic nghiệp vụ Xác thực (AuthService)")
 class AuthServiceTest {
 
     private AuthService authService;
@@ -30,12 +30,8 @@ class AuthServiceTest {
         mockedSocket.close();
     }
 
-    // ==========================================
-    // TEST CHá»¨C NÄ‚NG ÄÄ‚NG NHáº¬P
-    // ==========================================
-
     @Test
-    @DisplayName("ÄÄƒng nháº­p thÃ nh cÃ´ng vá»›i thÃ´ng tin há»£p lá»‡")
+    @DisplayName("Đăng nhập thành công với thông tin hợp lệ")
     void testLogin_ValidCredentials_ReturnsSuccess() {
         String expectedCommand = "LOGIN tam_nguyen password123";
         mockedSocket.when(() -> SocketClientService.sendText(expectedCommand))
@@ -43,17 +39,17 @@ class AuthServiceTest {
 
         LoginResponseDTO response = authService.login("tam_nguyen", "password123");
 
-        assertTrue(response.isSuccess(), "ÄÄƒng nháº­p pháº£i thÃ nh cÃ´ng");
+        assertTrue(response.isSuccess(), "Đăng nhập phải thành công");
         assertEquals("25020358", response.getUserId());
         assertEquals("tam_nguyen", response.getUsername());
         assertEquals("Bidder", response.getRole());
     }
 
     @Test
-    @DisplayName("ÄÄƒng nháº­p tháº¥t báº¡i khi sai tÃ i khoáº£n hoáº·c máº­t kháº©u")
+    @DisplayName("Đăng nhập thất bại khi sai tài khoản hoặc mật khẩu")
     void testLogin_InvalidCredentials_ReturnsFailed() {
         mockedSocket.when(() -> SocketClientService.sendText(anyString()))
-                .thenReturn("ERR|Sai tÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u");
+                .thenReturn("ERR|Sai tên đăng nhập hoặc mật khẩu");
 
         LoginResponseDTO response = authService.login("tam_nguyen", "wrong_pass");
 
@@ -62,7 +58,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Cháº·n Ä‘Äƒng nháº­p ngay táº¡i Client náº¿u Ä‘á»ƒ trá»‘ng thÃ´ng tin (KhÃ´ng gá»i Server)")
+    @DisplayName("Chặn đăng nhập ngay tại Client nếu để trống thông tin")
     void testLogin_EmptyUsernameOrPassword_FailsEarlyWithoutNetworkCall() {
         LoginResponseDTO response = authService.login("", "password123");
 
@@ -71,7 +67,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("ÄÄƒng nháº­p tháº¥t báº¡i khi Server khÃ´ng pháº£n há»“i (tráº£ vá» null)")
+    @DisplayName("Đăng nhập thất bại khi Server không phản hồi")
     void testLogin_ServerReturnsNull_ReturnsFailed() {
         mockedSocket.when(() -> SocketClientService.sendText(anyString())).thenReturn(null);
 
@@ -79,12 +75,8 @@ class AuthServiceTest {
         assertFalse(response.isSuccess());
     }
 
-    // ==========================================
-    // TEST CHá»¨C NÄ‚NG ÄÄ‚NG KÃ
-    // ==========================================
-
     @Test
-    @DisplayName("ÄÄƒng kÃ½ tÃ i khoáº£n Bidder thÃ nh cÃ´ng")
+    @DisplayName("Đăng ký tài khoản Bidder thành công")
     void testRegisterBidder_ValidData_ReturnsSuccess() {
         String expectedCommand = "REGISTER_BIDDER tam_nguyen pass123 tam@vnu.edu.vn";
         mockedSocket.when(() -> SocketClientService.sendText(expectedCommand))
@@ -94,11 +86,11 @@ class AuthServiceTest {
 
         assertTrue(response.isSuccess());
         assertEquals("101", response.getUserId());
-        assertEquals("ÄÄƒng kÃ½ thÃ nh cÃ´ng", response.getMessage());
+        assertEquals("Đăng ký thành công", response.getMessage());
     }
 
     @Test
-    @DisplayName("ÄÄƒng kÃ½ tÃ i khoáº£n Seller thÃ nh cÃ´ng")
+    @DisplayName("Đăng ký tài khoản Seller thành công")
     void testRegisterSeller_ValidData_ReturnsSuccess() {
         String expectedCommand = "REGISTER_SELLER shop_tam pass123 shop@vnu.edu.vn";
         mockedSocket.when(() -> SocketClientService.sendText(expectedCommand))
@@ -111,27 +103,27 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("ÄÄƒng kÃ½ tháº¥t báº¡i do Username Ä‘Ã£ tá»“n táº¡i")
+    @DisplayName("Đăng ký thất bại do Username đã tồn tại")
     void testRegister_UsernameTaken_ReturnsErrorMsg() {
         mockedSocket.when(() -> SocketClientService.sendText(anyString()))
-                .thenReturn("ERR|TÃªn Ä‘Äƒng nháº­p Ä‘Ã£ tá»“n táº¡i");
+                .thenReturn("ERR|Tên đăng nhập đã tồn tại");
 
         RegisterResponseDTO response = authService.register("exist_user", "pass", "email@test");
 
         assertFalse(response.isSuccess());
-        assertEquals("TÃªn Ä‘Äƒng nháº­p Ä‘Ã£ tá»“n táº¡i", response.getMessage());
+        assertEquals("Tên đăng nhập đã tồn tại", response.getMessage());
     }
 
     @Test
-    @DisplayName("NÃ©m ngoáº¡i lá»‡ IllegalStateException khi cÃ³ lá»—i káº¿t ná»‘i máº¡ng")
+    @DisplayName("Ném ngoại lệ IllegalStateException khi có lỗi kết nối mạng")
     void testRegister_NetworkException_ThrowsIllegalStateException() {
         mockedSocket.when(() -> SocketClientService.sendText(anyString()))
-                .thenThrow(new IllegalStateException("KhÃ´ng thá»ƒ gá»­i yÃªu cáº§u"));
+                .thenThrow(new IllegalStateException("Không thể gửi yêu cầu"));
 
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             authService.register("user", "pass", "email");
         });
 
-        assertTrue(exception.getMessage().contains("KhÃ´ng thá»ƒ gá»­i yÃªu cáº§u xÃ¡c thá»±c Ä‘áº¿n server"));
+        assertTrue(exception.getMessage().contains("Không thể gửi yêu cầu xác thực đến server"));
     }
 }

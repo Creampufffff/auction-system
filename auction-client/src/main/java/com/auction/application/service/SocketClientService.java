@@ -4,6 +4,7 @@ import com.auction.ui.view.LiveBiddingController;
 import com.auction.domain.model.ProductDataManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 
 import com.app.common.dto.LoginResponseDTO;
 
@@ -16,8 +17,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public final class SocketClientService {
-    private static final String SERVER_HOST = "127.0.0.1";
-    private static final int SERVER_PORT = 5001;
+    private static final Dotenv DOTENV = Dotenv.configure().ignoreIfMissing().load();
+    private static final String SERVER_HOST = resolveConfig("AUCTION_SERVER_HOST", "127.0.0.1");
+    private static final int SERVER_PORT = resolvePort();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Object LISTENER_LOCK = new Object();
 
@@ -291,6 +293,30 @@ public final class SocketClientService {
 
     public static ObjectMapper mapper() {
         return MAPPER;
+    }
+
+    private static String resolveConfig(String key, String defaultValue) {
+        String propertyValue = System.getProperty(key);
+        if (propertyValue != null && !propertyValue.isBlank()) {
+            return propertyValue;
+        }
+
+        String envValue = System.getenv(key);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+
+        String dotenvValue = DOTENV.get(key);
+        return dotenvValue == null || dotenvValue.isBlank() ? defaultValue : dotenvValue;
+    }
+
+    private static int resolvePort() {
+        String value = resolveConfig("AUCTION_SERVER_PORT", "5000");
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 5000;
+        }
     }
 
     private static void handleRealtimeMessage(String message) {
