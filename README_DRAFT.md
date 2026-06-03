@@ -14,28 +14,24 @@ Auction System là ứng dụng đấu giá trực tuyến theo mô hình Client
 - Tự động đóng và xử lí đối với người chiến thắng khi phiên đấu giá kết thúc.
 - Quản lí kho hàng các sản phẩm đấu giá của cá nhân đối với seller, và lịch sử đấu giá đối với bidder.
 
-## 2. Công nghệ sử dụng
+## 2. Công nghệ sử dụng, môi trường chạy và yêu cầu cài đặt
 
-- Java 15 trở lên, project đang cấu hình `maven-compiler-plugin` với `release=15`.
-- Maven dùng để build, test và quản lý dependency.
-- JavaFX 21.0.6 cho giao diện client.
-- MySQL cho cơ sở dữ liệu chính.
-- HikariCP cho connection pool.
-- Jackson Databind cho xử lý JSON.
-- Lombok cho entity/model boilerplate.
-- JUnit 5 và Mockito cho unit test.
-- Socket TCP plain text/JSON cho giao tiếp Client/Server realtime.
+### Công nghệ sử dụng
 
-## 3. Yêu cầu cài đặt
+- **Backend:** Java, Socket TCP, đa luồng với Thread Pool, Concurrency và ScheduledExecutorService.
+- **Frontend:** JavaFX, FXML, CSS tuỳ chỉnh giao diện.
+- **Database:** MySQL, JDBC, HikariCP.
+- **DevOps/Tools:** Maven, Git/GitHub.
+- **Testing:** JUnit 5, Mockito.
 
-Cần cài sẵn:
+### Môi trường chạy và yêu cầu cài đặt
 
-- JDK 15 trở lên. Khuyến nghị dùng JDK 17 hoặc JDK 21 nếu máy đã có sẵn.
-- Maven 3.8 trở lên.
-- MySQL Server 8.x hoặc một MySQL-compatible database.
-- Git để clone project.
+- **JDK:** JDK 15 trở lên, khuyến nghị JDK 17 hoặc JDK 21.
+- **Maven:** Maven 3.8 trở lên.
+- **Database:** MySQL Server 8.x hoặc MySQL-compatible database.
+- **Hệ điều hành:** Windows, Linux hoặc macOS.
 
-Kiểm tra môi trường:
+### Kiểm tra môi trường
 
 ```bash
 java -version
@@ -43,7 +39,7 @@ mvn -version
 mysql --version
 ```
 
-## 4. Cấu trúc thư mục
+## 3. Cấu trúc thư mục
 
 ```text
 auction-system/
@@ -88,7 +84,7 @@ auction-system/
             `-- images/              # Ảnh/icon ứng dụng
 ```
 
-## 5. Cấu hình môi trường
+## 4. Cấu hình môi trường
 
 Tạo file `.env` tại thư mục gốc project. Không đưa mật khẩu thật vào README hoặc commit lên Git.
 
@@ -106,7 +102,7 @@ Ghi chú:
 - Client đọc `AUCTION_SERVER_HOST` và `AUCTION_SERVER_PORT`, mặc định là `127.0.0.1:5000`.
 - Database có thể cấu hình trực tiếp bằng `AUCTION_DB_URL` hoặc tách thành `AUCTION_DB_HOST`, `AUCTION_DB_PORT`, `AUCTION_DB_NAME`.
 
-## 6. Khởi tạo database
+## 5. Khởi tạo database
 
 Tạo database và bảng bằng file `auction-server/schema.sql`.
 
@@ -128,7 +124,7 @@ Get-Content auction-server\schema.sql | mysql -u root -p
 mysql -u root -p < auction-server/schema.sql
 ```
 
-## 7. Build và test
+## 6. Build và test
 
 Chạy từ thư mục gốc project.
 
@@ -154,7 +150,7 @@ mvn -pl auction-server -am clean package
 mvn -pl auction-client -am clean package
 ```
 
-## 8. Hướng dẫn chạy Server/Client
+## 7. Hướng dẫn chạy Server/Client
 
 Thứ tự chạy bắt buộc:
 
@@ -230,7 +226,7 @@ LIST_AUCTIONS
 GET_BALANCE
 ```
 
-## 9. Các chức năng đã hoàn thành
+## 8. Các chức năng đã hoàn thành
 
 - Đăng ký tài khoản bidder/seller.
 - Đăng nhập và lưu session người dùng trên client.
@@ -249,7 +245,7 @@ GET_BALANCE
 - Tách module common/server/client để tái sử dụng DTO, entity và mapper.
 - Unit test cho mapper, entity, service, controller và factory chính.
 
-## 10. Giao thức giao tiếp
+## 9. Giao thức giao tiếp
 
 Server hỗ trợ command dạng text và một số request dạng JSON. Format phản hồi text:
 
@@ -278,12 +274,12 @@ START_AUCTION <auctionId>
 END_AUCTION <auctionId>
 ```
 
-## 11. Link báo cáo và video demo
+## 10. Link báo cáo và video demo
 
 - Báo cáo PDF: [Cập nhật link báo cáo tại đây](https://example.com/report.pdf)
 - Video demo: [Cập nhật link video demo tại đây](https://example.com/demo-video)
 
-## 12. Ghi chú khi nộp bài
+## 11. Ghi chú khi nộp bài
 
 - Thay các link placeholder trong mục 11 bằng link thật.
 - Kiểm tra lại `.env` trước khi nộp, không để lộ thông tin database production.
