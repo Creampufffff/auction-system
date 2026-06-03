@@ -4,6 +4,7 @@ WORKDIR /app
 COPY pom.xml .
 COPY auction-common/pom.xml auction-common/pom.xml
 COPY auction-server/pom.xml auction-server/pom.xml
+COPY auction-client/pom.xml auction-client/pom.xml
 RUN mvn -pl auction-server -am dependency:go-offline
 
 COPY auction-common auction-common
