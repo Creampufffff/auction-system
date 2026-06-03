@@ -4,6 +4,7 @@ import com.app.common.entity.User;
 import com.app.common.exception.UserAuthException;
 import com.auction.app.repository.UserDAO;
 import com.auction.app.service.UserService;
+import com.auction.app.service.security.PasswordHasher;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Username cannot be empty");
         }
 
-        if (user.getPassword() == null || user.getPassword().isBlank()) {
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
             throw new IllegalArgumentException("Password cannot be empty");
         }
 
@@ -37,6 +38,8 @@ public class UserServiceImpl implements UserService {
         if (existingUser != null) {
             throw new IllegalArgumentException("Username already exists");
         }
+
+        user.setPasswordHash(PasswordHasher.hash(user.getPasswordHash()));
 
         if (!userDAO.save(user)) {
             throw new IllegalStateException("Failed to save user");
@@ -59,7 +62,7 @@ public class UserServiceImpl implements UserService {
             throw new UserAuthException("User not found");
         }
 
-        if (!user.getPassword().equals(password)) {
+        if (!PasswordHasher.verify(password, user.getPasswordHash())) {
             throw new UserAuthException("Incorrect password");
         }
 

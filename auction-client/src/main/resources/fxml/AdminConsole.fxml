@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.ui.view.AdminConsoleController"
+      prefWidth="1280"
+      prefHeight="800"
+      style="-fx-background-color: #f3f6fb;">
+
+    <VBox prefWidth="250" spacing="22" style="-fx-background-color: #172033;">
+        <padding>
+            <Insets top="28" right="18" bottom="24" left="18"/>
+        </padding>
+
+        <VBox spacing="2">
+            <Label text="ADMIN" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
+            <Label text="Console" style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        </VBox>
+
+        <VBox spacing="8">
+            <Button fx:id="dashboardButton" text="Dashboard" onAction="#showDashboard"
+                    maxWidth="Infinity" alignment="CENTER_LEFT" styleClass="sidebar-button, active-tab">
+                <graphic><Region styleClass="icon-style, icon-stat-total"/></graphic>
+            </Button>
+            <Button fx:id="usersButton" text="User list" onAction="#showUsers"
+                    maxWidth="Infinity" alignment="CENTER_LEFT" styleClass="sidebar-button">
+                <graphic><Region styleClass="icon-style, icon-account"/></graphic>
+            </Button>
+            <Button fx:id="auctionsButton" text="Auction list" onAction="#showAuctions"
+                    maxWidth="Infinity" alignment="CENTER_LEFT" styleClass="sidebar-button">
+                <graphic><Region styleClass="icon-style, icon-auction"/></graphic>
+            </Button>
+            <Button fx:id="bidsButton" text="Bid history" onAction="#showBids"
+                    maxWidth="Infinity" alignment="CENTER_LEFT" styleClass="sidebar-button">
+                <graphic><Region styleClass="icon-style, icon-history"/></graphic>
+            </Button>
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS"/>
+
+        <VBox spacing="10">
+            <VBox spacing="6" style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
+                <Label text="Tài khoản admin" style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
+                <Label fx:id="adminNameLabel" text="Admin" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            </VBox>
+            <Button text="Đăng xuất" onAction="#handleLogout" maxWidth="Infinity" alignment="CENTER_LEFT" styleClass="sidebar-button"/>
+        </VBox>
+    </VBox>
+
+    <VBox spacing="18" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets top="28" right="34" bottom="28" left="34"/>
+        </padding>
+
+        <HBox alignment="CENTER_LEFT" spacing="18">
+            <VBox spacing="4">
+                <Label text="Admin Console" style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                <Label text="Theo dõi user, phiên đấu giá và lịch sử đặt giá trong hệ thống."
+                       style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="messageLabel" text="" style="-fx-text-fill: #475467; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+            <Button text="Làm mới" onAction="#handleRefresh" styleClass="primary-action-button"/>
+        </HBox>
+
+        <StackPane VBox.vgrow="ALWAYS">
+            <VBox fx:id="dashboardPane" spacing="16">
+                <HBox spacing="14">
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="TỔNG USER" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="totalUsersLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                    </VBox>
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="BIDDER" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="totalBiddersLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;"/>
+                    </VBox>
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="SELLER" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="totalSellersLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #12a594;"/>
+                    </VBox>
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="TỔNG BID" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="totalBidsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #7c3aed;"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="14">
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="TỔNG AUCTION" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="totalAuctionsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                    </VBox>
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="ĐANG CHẠY" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="runningAuctionsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #12a594;"/>
+                    </VBox>
+                    <VBox HBox.hgrow="ALWAYS" spacing="4" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 18;">
+                        <Label text="ĐÃ KẾT THÚC" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                        <Label fx:id="finishedAuctionsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #667085;"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="usersPane" spacing="14" visible="false" managed="false">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <TextField fx:id="userSearchField" promptText="Tìm username, email, id..." prefWidth="300" styleClass="modern-input"/>
+                    <ComboBox fx:id="roleFilterBox" prefWidth="160" styleClass="auction-filter-control"/>
+                </HBox>
+                <TableView fx:id="userTable" VBox.vgrow="ALWAYS">
+                    <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
+                    <columns>
+                        <TableColumn fx:id="userIdColumn" text="User ID"/>
+                        <TableColumn fx:id="usernameColumn" text="Username"/>
+                        <TableColumn fx:id="emailColumn" text="Email"/>
+                        <TableColumn fx:id="roleColumn" text="Role"/>
+                        <TableColumn fx:id="balanceColumn" text="Balance"/>
+                        <TableColumn fx:id="heldBalanceColumn" text="Held"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox fx:id="auctionsPane" spacing="14" visible="false" managed="false">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <TextField fx:id="auctionSearchField" promptText="Tìm auction, item..." prefWidth="300" styleClass="modern-input"/>
+                    <ComboBox fx:id="auctionStatusFilterBox" prefWidth="170" styleClass="auction-filter-control"/>
+                </HBox>
+                <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS">
+                    <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
+                    <columns>
+                        <TableColumn fx:id="auctionIdColumn" text="Auction ID"/>
+                        <TableColumn fx:id="itemNameColumn" text="Item"/>
+                        <TableColumn fx:id="itemTypeColumn" text="Type"/>
+                        <TableColumn fx:id="auctionStatusColumn" text="Status"/>
+                        <TableColumn fx:id="currentPriceColumn" text="Current price"/>
+                        <TableColumn fx:id="startDateColumn" text="Start"/>
+                        <TableColumn fx:id="endDateColumn" text="End"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox fx:id="bidsPane" spacing="14" visible="false" managed="false">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <TextField fx:id="bidSearchField" promptText="Tìm bid, auction, bidder..." prefWidth="330" styleClass="modern-input"/>
+                </HBox>
+                <TableView fx:id="bidTable" VBox.vgrow="ALWAYS">
+                    <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
+                    <columns>
+                        <TableColumn fx:id="bidIdColumn" text="Bid ID"/>
+                        <TableColumn fx:id="bidAuctionIdColumn" text="Auction ID"/>
+                        <TableColumn fx:id="bidItemColumn" text="Item"/>
+                        <TableColumn fx:id="bidderColumn" text="Bidder"/>
+                        <TableColumn fx:id="bidAmountColumn" text="Amount"/>
+                        <TableColumn fx:id="bidTimeColumn" text="Time"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </StackPane>
+    </VBox>
+</HBox>

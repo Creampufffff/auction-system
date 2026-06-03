@@ -519,8 +519,9 @@ public class LiveBiddingController {
         try {
             double bidAmount = Double.parseDouble(bidAmountField.getText());
             double currentPrice = currentProduct.getPrice();
+            double minimumBid = currentPrice + Math.max(0, currentMinIncrement);
 
-            if (bidAmount > currentPrice) {
+            if (bidAmount >= minimumBid) {
                 PlaceBidResponseDTO response;
                 try {
                     response = auctionService.placeBid(currentProduct.getId(), bidAmount);
@@ -549,7 +550,7 @@ public class LiveBiddingController {
                 bidAmountField.clear();
 
             } else {
-                showAlert("Giá thầu thấp", "Bạn phải đặt cao hơn $" + currentPrice);
+                showAlert("Giá thầu thấp", "Bạn phải đặt tối thiểu $" + String.format("%.2f", minimumBid));
             }
         } catch (NumberFormatException e) {
             showAlert("Lỗi", "Vui lòng nhập số tiền hợp lệ!");

@@ -5,13 +5,19 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class AuctionExtensionManager {
-    // ========== TIME CONFIGURATION ==========
-    private static final int EXTENSION_THRESHOLD_SECONDS = 300;  // 5 minutes - sniping detection threshold
-    private static final int EXTENSION_DURATION_SECONDS = 300;   // 5 minutes - extension duration
-    private static final int MAX_EXTENSIONS = 3;                  // Maximum 3 extensions
+    private static final int DEFAULT_EXTENSION_THRESHOLD_SECONDS = 10;
+    private static final int DEFAULT_EXTENSION_DURATION_SECONDS = 60;
 
     public static boolean checkAndExtend(Auction auction) {
+        return checkAndExtend(auction, DEFAULT_EXTENSION_THRESHOLD_SECONDS, DEFAULT_EXTENSION_DURATION_SECONDS);
+    }
+
+    public static boolean checkAndExtend(Auction auction, long thresholdSeconds, long extensionSeconds) {
         if (auction == null || auction.getItem() == null) {
+            return false;
+        }
+
+        if (thresholdSeconds <= 0 || extensionSeconds <= 0) {
             return false;
         }
 
@@ -21,59 +27,23 @@ public class AuctionExtensionManager {
         }
 
         try {
-            // ========== BƯỚC 1: Parse thời gian kết thúc ==========
             LocalDateTime endTime = parseDateTime(endDateString);
             LocalDateTime now = LocalDateTime.now();
 
-            // Mốc 5 phút trước hết giờ
-            LocalDateTime thresholdTime = endTime.minusSeconds(EXTENSION_THRESHOLD_SECONDS);
+            long secondsRemaining = java.time.temporal.ChronoUnit.SECONDS.between(now, endTime);
+            if (secondsRemaining >= 0 && secondsRemaining <= thresholdSeconds) {
+                LocalDateTime newEndTime = endTime.plusSeconds(extensionSeconds);
+                String newEndDateString = newEndTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                auction.getItem().setEndDateString(newEndDateString);
 
-            // ========== BƯỚC 2: Kiểm tra nếu hiện tại ở trong 5 phút cuối ==========
-            if (now.isAfter(thresholdTime) && now.isBefore(endTime)) {
-                // ========== BƯỚC 3: Kiểm tra còn được gia hạn không ==========
-                int extensionCount = getExtensionCount(auction);
-                if (extensionCount < MAX_EXTENSIONS) {
-                    // ========== BƯỚC 4: Gia hạn phiên ==========
-                    LocalDateTime newEndTime = endTime.plusSeconds(EXTENSION_DURATION_SECONDS);
-                    String newEndDateString = newEndTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                    auction.getItem().setEndDateString(newEndDateString);
-
-                    System.out.println("⏱️  Auction extended by 5 minutes (extension " + (extensionCount + 1) + "/3)");
-                    return true;
-                }
+                System.out.println("Auction extended by " + extensionSeconds + " seconds");
+                return true;
             }
         } catch (Exception e) {
-            System.err.println("❌ Error checking auction extension: " + e.getMessage());
+            System.err.println("Error checking auction extension: " + e.getMessage());
         }
 
         return false;
-    }
-
-    /**
-     * Lấy số lần phiên đã được gia hạn
-     *
-     * Cách lưu: "2026-05-08T15:30:00|2"
-     * - Phần 1: Thời gian kết thúc
-     * - Phần 2: Số lần gia hạn
-     *
-     * @param auction Phiên cần kiểm tra
-     * @return Số lần gia hạn
-     */
-    private static int getExtensionCount(Auction auction) {
-        String endDateString = auction.getItem().getEndDateString();
-
-        // Nếu có ký hiệu "|" thì có thông tin gia hạn
-        if (endDateString.contains("|")) {
-            try {
-                String[] parts = endDateString.split("\\|");
-                if (parts.length > 1) {
-                    return Integer.parseInt(parts[1]);
-                }
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-        return 0;  // Mới tạo, chưa gia hạn lần nào
     }
 
     /**

@@ -1,14 +1,14 @@
 package com.app.common.entity;
 
 public abstract class User extends BaseEntity {
-    private String username, password, email;
+    private String username, passwordHash, email;
     private double balance;
     private double heldBalance;
 //    public static final int permissionLevel = 3;
 
-    public User(String username, String password, String email){
+    public User(String username, String passwordHash, String email){
         this.username = username;
-        this.password = password;
+        this.passwordHash = passwordHash;
         this.email = email;
         this.balance = 0;
         this.heldBalance = 0;
@@ -22,12 +22,22 @@ public abstract class User extends BaseEntity {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    @Deprecated
+    public String getPassword() {
+        return getPasswordHash();
+    }
+
+    @Deprecated
     public void setPassword(String password) {
-        this.password = password;
+        setPasswordHash(password);
     }
 
     public String getEmail() {

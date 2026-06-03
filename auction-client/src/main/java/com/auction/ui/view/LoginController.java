@@ -54,6 +54,11 @@ public class LoginController {
         messageLabel.setStyle("-fx-text-fill: #2ecc71;");
         messageLabel.setText("Đăng nhập thành công! Đang vào hệ thống...");
 
+        if (SessionManager.hasRole("Admin")) {
+            NavigationService.getInstance().navigateTo("/fxml/AdminConsole.fxml", "UET Auction System - Admin Console", 1280, 800);
+            return;
+        }
+
         // Chuyển sang Dashboard (Kích thước chuẩn cho bảng đấu giá)
         NavigationService.getInstance().navigateTo("/fxml/AuctionList.fxml", "UET Auction System - Dashboard", 1280, 800);
     }

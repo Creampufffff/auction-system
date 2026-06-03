@@ -166,8 +166,7 @@ public class AuctionServiceImpl implements AuctionService {
             return false;
         }
 
-        // Reuse AuctionExtensionManager which encapsulates parsing and extension policy.
-        boolean extended = AuctionExtensionManager.checkAndExtend(auction);
+        boolean extended = AuctionExtensionManager.checkAndExtend(auction, thresholdSeconds, extensionSeconds);
         if (extended) {
             // Persist the new end date string stored in auction.item
             return auctionDAO.updateItemEndDate(auctionId, auction.getItem().getEndDateString());

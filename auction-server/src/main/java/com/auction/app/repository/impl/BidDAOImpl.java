@@ -77,7 +77,7 @@ public class BidDAOImpl implements BidDAO {
                        b.bid_amount,
                        b.created_at,
                        u.username AS bidder_username,
-                       u.password AS bidder_password,
+                       u.password_hash AS bidder_password_hash,
                        u.email AS bidder_email,
                        a.status AS auction_status,
                        i.id AS item_id,
@@ -276,12 +276,18 @@ public class BidDAOImpl implements BidDAO {
                 // Only release held balance if previous bidder is different from current bidder
                 boolean isSameBidder = lastBidderId != null && lastBidderId.equals(bidderId);
 
+                double currentAuctionHeldAmount = lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : 0;
+
                 if (!isSameBidder && lastBidderId != null && !lastBidderId.isBlank() && previousBidderState != null && previousBidderState.heldBalance > 0) {
                     // Release previous bidder's held balance (refund their bid)
-                    previousBidderState.release(lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : 0);
+                    previousBidderState.release(currentAuctionHeldAmount);
                 }
 
-                currentBidderState.reserve(bid.getBidAmount());
+                if (isSameBidder) {
+                    currentBidderState.replaceReservation(currentAuctionHeldAmount, bid.getBidAmount());
+                } else {
+                    currentBidderState.reserve(bid.getBidAmount());
+                }
 
                 updateBidderAccount(connection, updateBidderSql, bidderId, currentBidderState);
                 if (!isSameBidder && previousBidderState != null) {
@@ -337,7 +343,7 @@ public class BidDAOImpl implements BidDAO {
     private BidTransaction mapBidWithAuctionSummary(ResultSet resultSet) throws SQLException {
         Bidder bidder = new Bidder(
                 resultSet.getString("bidder_username"),
-                resultSet.getString("bidder_password"),
+                resultSet.getString("bidder_password_hash"),
                 resultSet.getString("bidder_email")
         );
         bidder.setId(resultSet.getString("bidder_id"));
@@ -536,6 +542,11 @@ public class BidDAOImpl implements BidDAO {
             }
             heldBalance -= amount;
             balance += amount;
+        }
+
+        private void replaceReservation(double currentAmount, double newAmount) {
+            release(currentAmount);
+            reserve(newAmount);
         }
     }
 }

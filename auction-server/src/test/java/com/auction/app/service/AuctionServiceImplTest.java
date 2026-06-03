@@ -163,7 +163,7 @@ class AuctionServiceImplTest {
 
         // Mock static class AuctionExtensionManager
         mockedExtensionManager = Mockito.mockStatic(AuctionExtensionManager.class);
-        mockedExtensionManager.when(() -> AuctionExtensionManager.checkAndExtend(auction)).thenReturn(true);
+        mockedExtensionManager.when(() -> AuctionExtensionManager.checkAndExtend(auction, 10, 60)).thenReturn(true);
         when(auctionDAO.updateItemEndDate(eq("auc-1"), any())).thenReturn(true);
 
         boolean result = auctionService.extendIfEndingSoon("auc-1", 10, 60);
