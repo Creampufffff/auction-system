@@ -11,12 +11,14 @@ import com.auction.application.service.AuctionService;
 import com.auction.application.service.AutoBidService;
 import com.auction.application.service.PeriodicUpdateService;
 import com.auction.shared.session.SessionManager;
+import com.auction.ui.navigation.NavigationService;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.chart.*;
+import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
@@ -47,6 +49,7 @@ public class LiveBiddingController {
     @FXML private TextField bidAmountField;
     @FXML private Button backButton;
     @FXML private Button autoBidButton;
+    @FXML private VBox biddingControlsPanel;
 
     @FXML private Label priceChangeLabel;
     @FXML private StackPane chartContainer;
@@ -67,6 +70,9 @@ public class LiveBiddingController {
     private ObservableList<BidHistoryModel> bidHistoryModels = FXCollections.observableArrayList();
     private static LiveBiddingController activeController;
     private String lastRenderedTopBidKey;
+    private boolean sellerMonitorMode;
+    private String returnFxmlPath = "/fxml/AuctionList.fxml";
+    private String returnTitle = "Auction System";
 
     public static class BidHistoryModel {
         private final StringProperty time;
@@ -113,6 +119,37 @@ public class LiveBiddingController {
         configureTableAndChart();
         // Bắt đầu periodic updates khi vào LiveBidding
         startPeriodicUpdates();
+    }
+
+    public void setSellerMonitorMode(boolean sellerMonitorMode) {
+        this.sellerMonitorMode = sellerMonitorMode;
+        if (sellerMonitorMode) {
+            setReturnTarget("/fxml/ProductManagement.fxml", "Quản lý sản phẩm");
+        }
+        updateBiddingControlsVisibility();
+    }
+
+    public void setReturnTarget(String fxmlPath, String title) {
+        this.returnFxmlPath = fxmlPath == null || fxmlPath.isBlank()
+                ? "/fxml/AuctionList.fxml"
+                : fxmlPath;
+        this.returnTitle = title == null || title.isBlank()
+                ? "Auction System"
+                : title;
+    }
+
+    private void updateBiddingControlsVisibility() {
+        boolean showBiddingControls = !sellerMonitorMode;
+        if (biddingControlsPanel != null) {
+            biddingControlsPanel.setVisible(showBiddingControls);
+            biddingControlsPanel.setManaged(showBiddingControls);
+        }
+        if (bidAmountField != null) {
+            bidAmountField.setDisable(sellerMonitorMode || bidAmountField.isDisable());
+        }
+        if (autoBidButton != null) {
+            autoBidButton.setDisable(sellerMonitorMode);
+        }
     }
 
     private void configureTableAndChart() {
@@ -468,6 +505,9 @@ public class LiveBiddingController {
 
     @FXML
     private void handlePlaceBid() {
+        if (sellerMonitorMode) {
+            return;
+        }
         if (currentProduct == null) return;
 
         timeLeft = calculateSecondsRemaining(currentProduct.getEndDateTime());
@@ -518,6 +558,9 @@ public class LiveBiddingController {
 
     @FXML
     private void handleOpenAutoBiddingDialog() {
+        if (sellerMonitorMode) {
+            return;
+        }
         if (currentProduct == null) {
             showAlert("Lỗi", "Không có sản phẩm nào được chọn");
             return;
@@ -582,7 +625,9 @@ public class LiveBiddingController {
 
         if (timeLeft <= 0) {
             timerLabel.setText("HẾT GIỜ");
-            bidAmountField.setDisable(true);
+            if (bidAmountField != null) {
+                bidAmountField.setDisable(true);
+            }
 
             String finalLeader = ProductDataManager.getInstance().getLeadingUser(product.getId(), "");
             String historyName = finalLeader.isEmpty() ? "Không có người đặt giá" : finalLeader;
@@ -648,7 +693,9 @@ public class LiveBiddingController {
                     } else {
                         timerLabel.setText("HẾT GIỜ");
                         timerLabel.setStyle("-fx-text-fill: #ff4d4d; -fx-font-weight: bold;");
-                        bidAmountField.setDisable(true);
+                        if (bidAmountField != null) {
+                            bidAmountField.setDisable(true);
+                        }
 
                         if (!ProductDataManager.getInstance().isWinnerDialogShown(currentProduct.getId())) {
                             ProductDataManager.getInstance().setWinnerDialogShown(currentProduct.getId(), true);
@@ -737,7 +784,9 @@ public class LiveBiddingController {
 
         ProductDataManager.getInstance().closeAuction(auctionId);
         timerLabel.setText("HẾT GIỜ");
-        bidAmountField.setDisable(true);
+        if (bidAmountField != null) {
+            bidAmountField.setDisable(true);
+        }
         stopTimer();
 
         if (bidHistoryModels != null) {
@@ -752,7 +801,9 @@ public class LiveBiddingController {
 
         currentProduct.setEndDateTime(newEndDateTime);
         ProductDataManager.getInstance().updateAuctionEndDate(auctionId, newEndDateTime);
-        bidAmountField.setDisable(false);
+        if (bidAmountField != null) {
+            bidAmountField.setDisable(sellerMonitorMode);
+        }
         if (bidHistoryModels != null) {
             bidHistoryModels.add(0, new BidHistoryModel("", "Hệ thống: Phiên đấu giá đã được gia hạn.", "", "", false, 0));
         }
@@ -839,7 +890,11 @@ public class LiveBiddingController {
         stopTimer();
         stopPeriodicUpdates();
         activeController = null;
-        switchToAuctionList();
+        switchToReturnTarget();
+    }
+
+    private void switchToReturnTarget() {
+        NavigationService.getInstance().navigateTo(returnFxmlPath, returnTitle, 1280, 800);
     }
 
     private void switchToAuctionList() {

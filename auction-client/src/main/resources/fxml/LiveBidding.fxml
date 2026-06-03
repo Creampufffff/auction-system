@@ -76,7 +76,7 @@
                     </VBox>
                 </VBox>
 
-                <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
+                <VBox fx:id="biddingControlsPanel" spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
                     <Label text="ĐẶT GIÁ CỦA BẠN" style="-fx-font-weight: bold; -fx-text-fill: #172033;"/>
                     <TextField fx:id="bidAmountField" promptText="Nhập mức giá..." style="-fx-padding: 12; -fx-background-radius: 8;"/>
                     <Button text="XÁC NHẬN ĐẶT GIÁ" onAction="#handlePlaceBid" maxWidth="Infinity"

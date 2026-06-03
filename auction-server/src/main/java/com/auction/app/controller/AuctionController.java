@@ -69,6 +69,11 @@ public class AuctionController {
         return AuctionMapper.toListDTOs(auctions);
     }
 
+    public List<AuctionListDTO> getWonAuctionsByBidderId(String bidderId) {
+        List<Auction> auctions = auctionService.getWonAuctionsByBidderId(bidderId);
+        return AuctionMapper.toListDTOs(auctions);
+    }
+
     public ApiResponseDTO updateAuction(Auction auction) {
         try {
             auctionService.updateAuction(auction);

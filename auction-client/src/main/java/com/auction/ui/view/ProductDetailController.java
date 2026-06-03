@@ -16,8 +16,10 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 import java.io.ByteArrayInputStream;
@@ -34,14 +36,18 @@ public class ProductDetailController {
     @FXML private Label itemTypeLabel;
     @FXML private Label statusLabel;
     @FXML private Label startTimeLabel;
+    @FXML private Label conditionTitleLabel;
     @FXML private Label conditionLabel;
     @FXML private Label specsLabel;
+    @FXML private Label typeSpecificTitleLabel;
     @FXML private Label warrantyLabel;
     @FXML private Label endTimeLabel;
     @FXML private Label winnerTitleLabel;
     @FXML private Label winnerLabel;
     @FXML private Button joinAuctionButton;
     @FXML private Button deleteProductButton;
+    @FXML private Separator detailActionSeparator;
+    @FXML private HBox detailActionBar;
     @FXML private ImageView productImageView;
     @FXML private Label productImagePlaceholder;
 
@@ -76,22 +82,76 @@ public class ProductDetailController {
                 ? auction.getEndDateTime()
                 : "Chưa có thời gian kết thúc");
 
-        conditionLabel.setText(hasText(auction.getCondition()) ? auction.getCondition() : "N/A");
         specsLabel.setText(hasText(auction.getDescription()) ? auction.getDescription() : "Không có mô tả chi tiết.");
-        warrantyLabel.setText(hasText(auction.getWarranty()) ? auction.getWarranty() : "Không có thông tin thêm.");
+        updateTypeSpecificDisplay(auction);
         updateProductImage(auction.getImageBlob());
+    }
+
+    private void updateTypeSpecificDisplay(AuctionListDTO auction) {
+        String itemType = normalizeItemType(auction.getItemType());
+        boolean isArt = "ART".equals(itemType);
+
+        if (conditionTitleLabel != null) {
+            conditionTitleLabel.setVisible(!isArt);
+            conditionTitleLabel.setManaged(!isArt);
+        }
+        if (conditionLabel != null) {
+            conditionLabel.setVisible(!isArt);
+            conditionLabel.setManaged(!isArt);
+            conditionLabel.setText(hasText(auction.getCondition()) ? auction.getCondition() : "N/A");
+        }
+
+        if (typeSpecificTitleLabel != null) {
+            typeSpecificTitleLabel.setText(typeSpecificLabelText(itemType));
+        }
+        warrantyLabel.setText(typeSpecificValueText(auction, itemType));
+    }
+
+    private String normalizeItemType(String itemType) {
+        return hasText(itemType) ? itemType.trim().toUpperCase() : "";
+    }
+
+    private String typeSpecificLabelText(String itemType) {
+        return switch (itemType) {
+            case "ART" -> "Tác giả:";
+            case "VEHICLE" -> "Hãng xe:";
+            default -> "Bảo hành:";
+        };
+    }
+
+    private String typeSpecificValueText(AuctionListDTO auction, String itemType) {
+        if ("ART".equals(itemType)) {
+            return hasText(auction.getCondition()) ? auction.getCondition() : "Không có thông tin tác giả.";
+        }
+        if ("VEHICLE".equals(itemType)) {
+            return hasText(auction.getWarranty()) ? auction.getWarranty() : "Không có thông tin hãng xe.";
+        }
+        return hasText(auction.getWarranty()) ? auction.getWarranty() : "Không có thông tin bảo hành.";
     }
 
     private void configureActionsForRole() {
         boolean isSeller = SessionManager.hasRole("Seller");
+        boolean canDeleteProduct = isSeller && isOpenedFromProductManagement();
         if (joinAuctionButton != null) {
             joinAuctionButton.setVisible(!isSeller);
             joinAuctionButton.setManaged(!isSeller);
         }
         if (deleteProductButton != null) {
-            deleteProductButton.setVisible(isSeller);
-            deleteProductButton.setManaged(isSeller);
+            deleteProductButton.setVisible(canDeleteProduct);
+            deleteProductButton.setManaged(canDeleteProduct);
         }
+        if (detailActionSeparator != null) {
+            detailActionSeparator.setVisible(canDeleteProduct);
+            detailActionSeparator.setManaged(canDeleteProduct);
+        }
+        if (detailActionBar != null) {
+            detailActionBar.setVisible(canDeleteProduct);
+            detailActionBar.setManaged(canDeleteProduct);
+        }
+    }
+
+    private boolean isOpenedFromProductManagement() {
+        return "/fxml/ProductManagement.fxml".equals(ProductDataManager.getInstance().getProductDetailReturnPath());
     }
 
     private void updateWinnerDisplay(AuctionListDTO auction) {

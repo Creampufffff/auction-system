@@ -84,6 +84,34 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    public List<Auction> findWonByBidderId(String bidderId) {
+        String sql = """
+                SELECT a.id, a.item_id, a.status
+                FROM auctions a
+                WHERE a.status = ?
+                  AND a.last_bidder_id = ?
+                ORDER BY a.updated_at DESC
+                """;
+        List<Auction> auctions = new ArrayList<>();
+
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, Status.FINISHED.name());
+            statement.setString(2, bidderId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapAuction(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load won items for bidder: " + bidderId, e);
+        }
+
+        return auctions;
+    }
+
+    @Override
     public boolean updateCurrentPrice(String auctionId, double newPrice, String lastBidderId, int currentVersion) {
         String sql = """
                 UPDATE auctions a

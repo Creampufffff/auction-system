@@ -57,6 +57,17 @@
                 </graphic>
             </Button>
 
+            <Button fx:id="wonItemsSidebarButton"
+                    text="Kho vật phẩm"
+                    onAction="#handleSidebarWonItems"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-warehouse"/>
+                </graphic>
+            </Button>
+
             <Button text="Tài khoản"
                     onAction="#handleSidebarAccount"
                     maxWidth="Infinity"

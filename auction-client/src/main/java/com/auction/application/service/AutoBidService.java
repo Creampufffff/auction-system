@@ -11,6 +11,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AutoBidService {
@@ -36,7 +38,7 @@ public class AutoBidService {
                 return new ApiResponseDTO(false, "Chưa đăng nhập hoặc kết nối tới server chưa được thiết lập. Vui lòng đăng nhập lại.");
             }
 
-            String cmd = String.format("SET_AUTO_BID %s %.2f", auctionId, maxAmount);
+            String cmd = String.format(Locale.US , "SET_AUTO_BID %s %.2f", auctionId, maxAmount);
             String resp = SocketClientService.sendSessionCommand(cmd);
             if (resp != null && resp.startsWith("OK|AUTO_BID_SET")) {
                 // OK|AUTO_BID_SET|{id}

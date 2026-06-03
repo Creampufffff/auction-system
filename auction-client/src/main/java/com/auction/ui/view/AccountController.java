@@ -6,6 +6,7 @@ import com.auction.domain.model.ProductDataManager;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -20,6 +21,7 @@ public class AccountController {
     @FXML private Label sidebarRoleLabel;
     @FXML private Label sidebarBalanceLabel;
     @FXML private Button productsSidebarButton;
+    @FXML private Button wonItemsSidebarButton;
     @FXML private Button bidHistorySidebarButton;
 
     @FXML private Label balanceLabel;
@@ -40,7 +42,10 @@ public class AccountController {
         }
         configureSidebarForRole();
 
-        Platform.runLater(this::loadBalance);
+        Platform.runLater(() -> {
+            loadBalanceFromSession();
+            refreshBalanceAsync();
+        });
     }
 
     private void configureSidebarForRole() {
@@ -54,36 +59,58 @@ public class AccountController {
             bidHistorySidebarButton.setVisible(isBidder);
             bidHistorySidebarButton.setManaged(isBidder);
         }
+        if (wonItemsSidebarButton != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            wonItemsSidebarButton.setVisible(isBidder);
+            wonItemsSidebarButton.setManaged(isBidder);
+        }
     }
 
-    private void loadBalance() {
-        BalanceResponseDTO response = accountService.getBalance();
-        if (response != null && response.getUserId() != null) {
-            double balance = response.getBalance();
-            ProductDataManager.getInstance().setUserBalance(balance);
-            String balanceText = "$" + String.format("%.2f", balance);
-            balanceLabel.setText(balanceText);
-            if (sidebarBalanceLabel != null) {
-                sidebarBalanceLabel.setText("Ví: " + balanceText);
+    private void loadBalanceFromSession() {
+        ProductDataManager.getInstance().syncBalanceFromSession();
+        updateBalanceLabels(SessionManager.getCurrentUserBalance());
+        if (balanceMessageLabel != null) {
+            balanceMessageLabel.setText("So du gan nhat");
+        }
+    }
+
+    private void refreshBalanceAsync() {
+        if (balanceMessageLabel != null) {
+            balanceMessageLabel.setText("Dang cap nhat so du...");
+        }
+
+        Task<BalanceResponseDTO> task = new Task<>() {
+            @Override
+            protected BalanceResponseDTO call() {
+                return accountService.getBalance();
             }
-            if (balance < 100) {
-                balanceLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;");
-                if (sidebarBalanceLabel != null) {
-                    sidebarBalanceLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;");
-                }
-            } else {
-                balanceLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;");
-                if (sidebarBalanceLabel != null) {
-                    sidebarBalanceLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
-                }
+        };
+
+        task.setOnSucceeded(event -> {
+            BalanceResponseDTO response = task.getValue();
+            if (response != null && response.getUserId() != null) {
+                applyBalanceResponse(response);
+                return;
             }
-            if (balanceMessageLabel != null) balanceMessageLabel.setText(response.getMessage());
-        } else {
-            balanceLabel.setText("--");
-            if (sidebarBalanceLabel != null) {
-                sidebarBalanceLabel.setText("Ví: --");
+            if (balanceMessageLabel != null) {
+                balanceMessageLabel.setText("Dang hien thi so du gan nhat.");
             }
-            if (balanceMessageLabel != null) balanceMessageLabel.setText("Không thể tải số dư.");
+        });
+        task.setOnFailed(event -> {
+            if (balanceMessageLabel != null) {
+                balanceMessageLabel.setText("Dang hien thi so du gan nhat.");
+            }
+        });
+
+        Thread thread = new Thread(task, "account-balance-loader");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void applyBalanceResponse(BalanceResponseDTO response) {
+        updateBalanceLabels(response.getBalance());
+        if (balanceMessageLabel != null) {
+            balanceMessageLabel.setText(response.getMessage());
         }
     }
 
@@ -95,9 +122,9 @@ public class AccountController {
         BalanceResponseDTO response = accountService.deposit(amount);
         if (response != null && response.getUserId() != null) {
             updateBalanceLabels(response.getBalance());
-            setActionMessage("Nạp tiền thành công: $" + String.format("%.2f", amount), false);
+            setActionMessage("Nap tien thanh cong: $" + String.format("%.2f", amount), false);
         } else {
-            setActionMessage(response != null ? response.getMessage() : "Nạp tiền thất bại.", true);
+            setActionMessage(response != null ? response.getMessage() : "Nap tien that bai.", true);
         }
         amountField.clear();
     }
@@ -110,9 +137,9 @@ public class AccountController {
         BalanceResponseDTO response = accountService.withdraw(amount);
         if (response != null && response.getUserId() != null) {
             updateBalanceLabels(response.getBalance());
-            setActionMessage("Rút tiền thành công: $" + String.format("%.2f", amount), false);
+            setActionMessage("Rut tien thanh cong: $" + String.format("%.2f", amount), false);
         } else {
-            setActionMessage(response != null ? response.getMessage() : "Rút tiền thất bại.", true);
+            setActionMessage(response != null ? response.getMessage() : "Rut tien that bai.", true);
         }
         amountField.clear();
     }
@@ -126,22 +153,33 @@ public class AccountController {
     private void handleSidebarProducts(ActionEvent event) {
         if (!SessionManager.hasRole("Seller")) {
             if (actionMessageLabel != null) {
-                setActionMessage("Chỉ seller mới được quản lý sản phẩm.", true);
+                setActionMessage("Chi seller moi duoc quan ly san pham.", true);
             }
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quản lý sản phẩm", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/ProductManagement.fxml", "Quan ly san pham", 1280, 800);
     }
 
     @FXML
     private void handleSidebarBidHistory(ActionEvent event) {
         if (!SessionManager.hasRole("Bidder")) {
             if (actionMessageLabel != null) {
-                setActionMessage("Quyền truy cập chỉ dành cho người đấu giá.", true);
+                setActionMessage("Quyen truy cap chi danh cho nguoi dau gia.", true);
             }
             return;
         }
-        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "Lịch sử đặt giá", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "Lich su dat gia", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarWonItems(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            if (actionMessageLabel != null) {
+                setActionMessage("Quyen truy cap chi danh cho nguoi dau gia.", true);
+            }
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/WonItems.fxml", "Kho vat pham", 1280, 800);
     }
 
     @FXML
@@ -151,14 +189,14 @@ public class AccountController {
 
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
-        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "Tài khoản", 1280, 800);
+        NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "Tai khoan", 1280, 800);
     }
 
     @FXML
     private void handleLogout(ActionEvent event) {
         SessionManager.clear();
         ProductDataManager.getInstance().resetSessionState();
-        NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Đăng nhập");
+        NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Dang nhap");
     }
 
     private void updateBalanceLabels(double balance) {
@@ -166,7 +204,7 @@ public class AccountController {
         String balanceText = "$" + String.format("%.2f", balance);
         balanceLabel.setText(balanceText);
         if (sidebarBalanceLabel != null) {
-            sidebarBalanceLabel.setText("Ví: " + balanceText);
+            sidebarBalanceLabel.setText("Vi: " + balanceText);
             sidebarBalanceLabel.setStyle(balance < 100
                     ? "-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ff4d4d;"
                     : "-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
@@ -180,12 +218,12 @@ public class AccountController {
         try {
             double amount = Double.parseDouble(amountField.getText().trim());
             if (amount <= 0) {
-                setActionMessage("Số tiền phải lớn hơn 0.", true);
+                setActionMessage("So tien phai lon hon 0.", true);
                 return -1;
             }
             return amount;
         } catch (NumberFormatException e) {
-            setActionMessage("Vui lòng nhập số tiền hợp lệ.", true);
+            setActionMessage("Vui long nhap so tien hop le.", true);
             return -1;
         }
     }

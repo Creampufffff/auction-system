@@ -19,6 +19,8 @@ public interface AuctionService {
 
     List<Auction> getAuctionsBySellerId(String sellerId);
 
+    List<Auction> getWonAuctionsByBidderId(String bidderId);
+
     void updateAuction(Auction auction);
 
     void deleteAuction(String auctionId);

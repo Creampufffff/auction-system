@@ -21,6 +21,7 @@ public class BidHistoryController {
     @FXML private Label sidebarBalanceLabel;
     @FXML private VBox bidHistoryCard;
     @FXML private Button productsSidebarButton;
+    @FXML private Button wonItemsSidebarButton;
     @FXML private Button bidHistorySidebarButton;
     @FXML private TableView<BidHistoryDTO> bidHistoryTable;
     @FXML private TableColumn<BidHistoryDTO, String> colBidId;
@@ -62,6 +63,11 @@ public class BidHistoryController {
             boolean isBidder = SessionManager.hasRole("Bidder");
             bidHistorySidebarButton.setVisible(isBidder);
             bidHistorySidebarButton.setManaged(isBidder);
+        }
+        if (wonItemsSidebarButton != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            wonItemsSidebarButton.setVisible(isBidder);
+            wonItemsSidebarButton.setManaged(isBidder);
         }
     }
 
@@ -226,5 +232,17 @@ public class BidHistoryController {
     @FXML
     private void handleSidebarAccount(ActionEvent event) {
         NavigationService.getInstance().navigateTo("/fxml/Account.fxml", "UET Auction System - Tài khoản", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarWonItems(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            if (messageLabel != null) {
+                messageLabel.setText("Quyền truy cập chỉ dành cho người đấu giá.");
+                messageLabel.setStyle("-fx-text-fill: #d92d20;");
+            }
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/WonItems.fxml", "Kho vật phẩm", 1280, 800);
     }
 }

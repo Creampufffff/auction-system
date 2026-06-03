@@ -110,6 +110,7 @@ public class ClientHandler implements Runnable {
                 case "GET_BALANCE" -> getBalance(payload);
                 case "LIST_AUCTIONS" -> listAuctions();
                 case "LIST_MY_AUCTIONS" -> listMyAuctions();
+                case "GET_MY_ITEMS" -> getMyItems();
                 case "GET_AUCTION" -> getAuction(payload);
                 case "GET_BID_HISTORY" -> getBidHistory(payload);
                 case "GET_MY_BID_HISTORY" -> getMyBidHistory();
@@ -254,6 +255,21 @@ public class ClientHandler implements Runnable {
         }
 
         StringBuilder response = new StringBuilder("OK|MY_AUCTIONS");
+        for (AuctionListDTO auction : auctions) {
+            response.append("|").append(formatAuctionDTO(auction, false));
+        }
+        return response.toString();
+    }
+
+    private String getMyItems() {
+        Bidder bidder = requireCurrentBidder();
+        List<AuctionListDTO> auctions = auctionController.getWonAuctionsByBidderId(bidder.getId());
+
+        if (auctions.isEmpty()) {
+            return "OK|MY_ITEMS|EMPTY";
+        }
+
+        StringBuilder response = new StringBuilder("OK|MY_ITEMS");
         for (AuctionListDTO auction : auctions) {
             response.append("|").append(formatAuctionDTO(auction, false));
         }
@@ -669,6 +685,7 @@ public class ClientHandler implements Runnable {
                 + "GET_BALANCE;"
                 + "LIST_AUCTIONS;"
                 + "LIST_MY_AUCTIONS;"
+                + "GET_MY_ITEMS;"
                 + "GET_AUCTION auctionId;"
                 + "GET_BID_HISTORY auctionId;"
                 + "GET_MY_BID_HISTORY;"

@@ -180,6 +180,15 @@ public class AuctionService {
         }
     }
 
+    public List<AuctionListDTO> getMyWonItems() {
+        try {
+            String response = SocketClientService.sendSessionCommand("GET_MY_ITEMS");
+            return parseAuctionListResponse(response, "OK|MY_ITEMS|", "OK|MY_ITEMS|EMPTY");
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
     public AuctionListDTO getAuctionById(String auctionId) {
         if (isBlank(auctionId)) {
             return null;

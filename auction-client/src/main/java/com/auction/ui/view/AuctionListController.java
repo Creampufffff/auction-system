@@ -43,6 +43,7 @@ public class AuctionListController {
     @FXML private Button nextPageButton;
     @FXML private Button joinBiddingButton;
     @FXML private Button productsSidebarButton;
+    @FXML private Button wonItemsSidebarButton;
     @FXML private Button bidHistorySidebarButton;
     @FXML private Label pageInfoLabel;
     @FXML private ComboBox<FilterOption> statusFilterBox;
@@ -89,6 +90,11 @@ public class AuctionListController {
             boolean isBidder = SessionManager.hasRole("Bidder");
             bidHistorySidebarButton.setVisible(isBidder);
             bidHistorySidebarButton.setManaged(isBidder);
+        }
+        if (wonItemsSidebarButton != null) {
+            boolean isBidder = SessionManager.hasRole("Bidder");
+            wonItemsSidebarButton.setVisible(isBidder);
+            wonItemsSidebarButton.setManaged(isBidder);
         }
     }
 
@@ -436,6 +442,17 @@ public class AuctionListController {
             return;
         }
         NavigationService.getInstance().navigateTo("/fxml/BidHistory.fxml", "Lịch sử đặt giá", 1280, 800);
+    }
+
+    @FXML
+    private void handleSidebarWonItems(ActionEvent event) {
+        if (!SessionManager.hasRole("Bidder")) {
+            if (messageLabel != null) {
+                messageLabel.setText("Quyền truy cập chỉ dành cho người đấu giá.");
+            }
+            return;
+        }
+        NavigationService.getInstance().navigateTo("/fxml/WonItems.fxml", "Kho vật phẩm", 1280, 800);
     }
 
     @FXML

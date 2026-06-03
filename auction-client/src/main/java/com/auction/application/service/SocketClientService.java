@@ -32,6 +32,7 @@ public final class SocketClientService {
     private static volatile PrintWriter sessionWriter;
     // Queue to store responses from session socket (for synchronous request-response)
     private static final LinkedBlockingQueue<String> sessionResponseQueue = new LinkedBlockingQueue<>();
+    private static final Object SESSION_REQUEST_LOCK = new Object(); //lock để đảm bảo chỉ có 1 request đang chờ response
 
     private SocketClientService() {
     }
@@ -277,18 +278,21 @@ public final class SocketClientService {
      * Timeout: 10 seconds.
      */
     public static String sendSessionCommand(String command) throws Exception {
-        if (sessionWriter == null) throw new IllegalStateException("No authenticated session");
+        synchronized (SESSION_REQUEST_LOCK) {
+            if (sessionWriter == null) throw new IllegalStateException("No authenticated session");
 
-        logTextCommand("sendSessionCommand", command);
-        sessionWriter.println(command);
+            sessionResponseQueue.clear(); //clear để không bị nhận response rác từ lần send khác.
+            logTextCommand("sendSessionCommand", command);
+            sessionWriter.println(command);
 
-        // Wait for response from session socket (read by listener thread)
-        String response = sessionResponseQueue.poll(10, TimeUnit.SECONDS);
-        if (response == null) {
-            throw new IOException("Server did not respond within 10 seconds");
+            // Wait for response from session socket (read by listener thread)
+            String response = sessionResponseQueue.poll(10, TimeUnit.SECONDS);
+            if (response == null) {
+                throw new IOException("Server did not respond within 10 seconds");
+            }
+            logTextResponse("sendSessionCommand", response);
+            return response;
         }
-        logTextResponse("sendSessionCommand", response);
-        return response;
     }
 
     public static ObjectMapper mapper() {

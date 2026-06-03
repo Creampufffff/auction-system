@@ -757,6 +757,62 @@ public class ProductManagementController {
         return auction;
     }
 
+    @FXML
+    private void handleMonitorAuction(ActionEvent event) {
+        Product selected = myProductsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showDialogError("Vui lòng chọn một sản phẩm để theo dõi.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LiveBidding.fxml"));
+            Parent root = loader.load();
+            LiveBiddingController controller = loader.getController();
+            controller.setSellerMonitorMode(true);
+            controller.setReturnTarget("/fxml/ProductManagement.fxml", "Quản lý sản phẩm");
+            controller.setProduct(toLiveBiddingProduct(selected));
+
+            Stage stage = (Stage) myProductsTable.getScene().getWindow();
+            Scene scene = stage.getScene();
+            if (scene == null) {
+                scene = new Scene(root, 1280, 800);
+                stage.setScene(scene);
+            } else {
+                scene.setRoot(root);
+            }
+
+            String css = getClass().getResource("/css/style.css").toExternalForm();
+            if (!scene.getStylesheets().contains(css)) {
+                scene.getStylesheets().add(css);
+            }
+
+            stage.setTitle("Theo dõi đấu giá");
+            stage.setMaximized(true);
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showDialogError("Không thể mở màn hình theo dõi đấu giá.");
+        }
+    }
+
+    private Product toLiveBiddingProduct(Product selected) {
+        Product product = new Product(
+                selected.getId(),
+                selected.getType(),
+                selected.getName(),
+                selected.getPrice(),
+                selected.getStatus(),
+                selected.getCondition(),
+                selected.getDescription(),
+                selected.getWarranty(),
+                selected.getStartDateTime(),
+                selected.getEndDateTime()
+        );
+        product.setMinIncrement(selected.getMinIncrement());
+        return product;
+    }
+
     private Status parseStatus(String status) {
         if (status == null || status.isBlank()) {
             return Status.OPEN;
