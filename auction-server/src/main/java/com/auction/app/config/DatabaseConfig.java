@@ -29,24 +29,24 @@ public class DatabaseConfig {
 
     private static String resolveJdbcUrl() {
         String directUrl = firstNonBlank(
-                dotenv.get("AUCTION_DB_URL"),
-                dotenv.get("DB_URL")
+                resolveConfig("AUCTION_DB_URL"),
+                resolveConfig("DB_URL")
         );
         if (directUrl != null) {
             return directUrl;
         }
 
         String host = firstNonBlank(
-                dotenv.get("AUCTION_DB_HOST"),
-                dotenv.get("DB_HOST")
+                resolveConfig("AUCTION_DB_HOST"),
+                resolveConfig("DB_HOST")
         );
         String port = firstNonBlank(
-                dotenv.get("AUCTION_DB_PORT"),
-                dotenv.get("DB_PORT")
+                resolveConfig("AUCTION_DB_PORT"),
+                resolveConfig("DB_PORT")
         );
         String name = firstNonBlank(
-                dotenv.get("AUCTION_DB_NAME"),
-                dotenv.get("DB_NAME")
+                resolveConfig("AUCTION_DB_NAME"),
+                resolveConfig("DB_NAME")
         );
 
         if (host == null || name == null) {
@@ -59,19 +59,27 @@ public class DatabaseConfig {
 
     private static String resolveDbUsername() {
         return firstNonBlank(
-                dotenv.get("AUCTION_DB_USERNAME"),
-                dotenv.get("DB_USER"),
-                dotenv.get("DB_USERNAME"),
+                resolveConfig("AUCTION_DB_USERNAME"),
+                resolveConfig("DB_USER"),
+                resolveConfig("DB_USERNAME"),
                 DEFAULT_USERNAME
         );
     }
 
     private static String resolveDbPassword() {
         return firstNonBlank(
-                dotenv.get("AUCTION_DB_PASSWORD"),
-                dotenv.get("DB_PASSWORD"),
+                resolveConfig("AUCTION_DB_PASSWORD"),
+                resolveConfig("DB_PASSWORD"),
                 DEFAULT_PASSWORD
         );
+    }
+
+    private static String resolveConfig(String key) {
+        String envValue = System.getenv(key);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        return dotenv.get(key);
     }
 
     private static String firstNonBlank(String... values) {
