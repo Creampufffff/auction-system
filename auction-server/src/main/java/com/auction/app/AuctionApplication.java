@@ -35,7 +35,7 @@ public class AuctionApplication {
 
     public static void main(String[] args) throws IOException {
         Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-        int port = Integer.parseInt(dotenv.get("AUCTION_SERVER_PORT", String.valueOf(DEFAULT_PORT)));
+        int port = Integer.parseInt(resolveConfig(dotenv, "AUCTION_SERVER_PORT", String.valueOf(DEFAULT_PORT)));
 
         UserDAO userDAO = new UserDAOImpl();
         ItemDAO itemDAO = new ItemDAOImpl();
@@ -64,6 +64,15 @@ public class AuctionApplication {
 
         System.out.println("Khởi động Auction Server trên port " + port + "...");
         server.start();
+    }
+
+    private static String resolveConfig(Dotenv dotenv, String key, String defaultValue) {
+        String envValue = System.getenv(key);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        String dotenvValue = dotenv.get(key);
+        return dotenvValue == null || dotenvValue.isBlank() ? defaultValue : dotenvValue;
     }
 
 }
