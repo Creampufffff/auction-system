@@ -34,50 +34,45 @@ class AuctionExtensionManagerTest {
     // =========================================================================
 
     @Test
-    @DisplayName("checkAndExtend: KHÔNG gia hạn nếu thời gian hiện tại CÒN NHIỀU HƠN 5 phút")
-    void checkAndExtend_TimeGreaterThan5Minutes_ShouldNotExtend() {
-        // Thiết lập end time = Hiện tại + 10 phút
-        LocalDateTime futureTime = LocalDateTime.now().plusMinutes(10);
+    @DisplayName("checkAndExtend: KHÔNG gia hạn nếu thời gian hiện tại CÒN NHIỀU HƠN 10 giây")
+    void checkAndExtend_TimeGreaterThanThreshold_ShouldNotExtend() {
+        LocalDateTime futureTime = LocalDateTime.now().plusSeconds(30);
         String expectedEndTime = formatTime(futureTime);
         item.setEndDateString(expectedEndTime);
 
-        boolean isExtended = AuctionExtensionManager.checkAndExtend(auction);
+        boolean isExtended = AuctionExtensionManager.checkAndExtend(auction, 10, 60);
 
-        assertFalse(isExtended, "Không được phép gia hạn khi thời gian còn nhiều hơn 5 phút");
+        assertFalse(isExtended, "Không được phép gia hạn khi thời gian còn nhiều hơn ngưỡng anti-sniping");
         assertEquals(expectedEndTime, item.getEndDateString(), "Thời gian kết thúc không được thay đổi");
     }
 
     @Test
-    @DisplayName("checkAndExtend: GIA HẠN THÀNH CÔNG nếu hiện tại NẰM TRONG 5 phút cuối")
-    void checkAndExtend_TimeWithin5Minutes_ShouldExtend() {
-        // Thiết lập end time = Hiện tại + 3 phút (Nằm trong vùng 5 phút chót)
-        LocalDateTime futureTime = LocalDateTime.now().plusMinutes(3);
+    @DisplayName("checkAndExtend: GIA HẠN THÀNH CÔNG nếu hiện tại NẰM TRONG 10 giây cuối")
+    void checkAndExtend_TimeWithinThreshold_ShouldExtend() {
+        LocalDateTime futureTime = LocalDateTime.now().plusSeconds(5);
         item.setEndDateString(formatTime(futureTime));
 
-        boolean isExtended = AuctionExtensionManager.checkAndExtend(auction);
+        boolean isExtended = AuctionExtensionManager.checkAndExtend(auction, 10, 60);
 
-        assertTrue(isExtended, "Phải gia hạn thành công khi thời gian còn dưới 5 phút");
+        assertTrue(isExtended, "Phải gia hạn thành công khi thời gian còn trong ngưỡng anti-sniping");
 
-        // Thời gian mới phải = Thời gian cũ + 5 phút (300 giây)
-        LocalDateTime expectedNewEndTime = futureTime.plusMinutes(5);
+        LocalDateTime expectedNewEndTime = futureTime.plusSeconds(60);
 
-        // Do có độ trễ mili-giây khi chạy test, ta parse ra và so sánh chuỗi
         String actualEndTime = item.getEndDateString();
-        assertTrue(actualEndTime.startsWith(formatTime(expectedNewEndTime).substring(0, 16)),
-                "Thời gian kết thúc phải được cộng thêm 5 phút");
+        assertEquals(formatTime(expectedNewEndTime), actualEndTime,
+                "Thời gian kết thúc phải được cộng thêm 60 giây");
     }
 
     @Test
-    @DisplayName("checkAndExtend: KHÔNG gia hạn nếu đã quá số lần cho phép (Max = 3)")
-    void checkAndExtend_MaxExtensionsReached_ShouldNotExtend() {
-        // Thiết lập end time = Hiện tại + 3 phút, NHƯNG đã gia hạn 3 lần ("|3")
-        LocalDateTime futureTime = LocalDateTime.now().plusMinutes(3);
-        String expectedEndTime = formatTime(futureTime) + "|3";
+    @DisplayName("checkAndExtend: KHÔNG gia hạn nếu tham số không hợp lệ")
+    void checkAndExtend_InvalidPolicy_ShouldNotExtend() {
+        LocalDateTime futureTime = LocalDateTime.now().plusSeconds(5);
+        String expectedEndTime = formatTime(futureTime);
         item.setEndDateString(expectedEndTime);
 
-        boolean isExtended = AuctionExtensionManager.checkAndExtend(auction);
+        boolean isExtended = AuctionExtensionManager.checkAndExtend(auction, 0, 60);
 
-        assertFalse(isExtended, "Không được phép gia hạn vì đã đạt giới hạn 3 lần");
+        assertFalse(isExtended, "Không được phép gia hạn nếu ngưỡng không hợp lệ");
         assertEquals(expectedEndTime, item.getEndDateString());
     }
 

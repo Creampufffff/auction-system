@@ -114,6 +114,10 @@ public class ClientHandler implements Runnable {
                 case "GET_AUCTION" -> getAuction(payload);
                 case "GET_BID_HISTORY" -> getBidHistory(payload);
                 case "GET_MY_BID_HISTORY" -> getMyBidHistory();
+                case "ADMIN_DASHBOARD" -> adminDashboard();
+                case "ADMIN_LIST_USERS" -> adminListUsers();
+                case "ADMIN_LIST_AUCTIONS" -> adminListAuctions();
+                case "ADMIN_LIST_BIDS" -> adminListBids();
                 case "PLACE_BID" -> placeBid(payload);
                 case "SET_AUTO_BID" -> setAutoBid(payload);
                 case "CANCEL_AUTO_BID" -> cancelAutoBid(payload);
@@ -299,6 +303,76 @@ public class ClientHandler implements Runnable {
         return formatBidHistoryResponse(bids);
     }
 
+    private String adminDashboard() {
+        requireCurrentAdmin();
+        List<User> users = userService.getAllUser();
+        List<AuctionListDTO> auctions = auctionController.getAllAuctions();
+        List<BidHistoryDTO> bids = bidController.getAllBids();
+
+        long bidderCount = users.stream().filter(user -> user instanceof Bidder).count();
+        long sellerCount = users.stream().filter(user -> user instanceof Seller).count();
+        long runningCount = auctions.stream()
+                .filter(auction -> auction.getAuctionStatus() != null && "RUNNING".equals(auction.getAuctionStatus().name()))
+                .count();
+        long finishedCount = auctions.stream()
+                .filter(auction -> auction.getAuctionStatus() != null && "FINISHED".equals(auction.getAuctionStatus().name()))
+                .count();
+
+        return "OK|ADMIN_DASHBOARD|"
+                + users.size() + ","
+                + bidderCount + ","
+                + sellerCount + ","
+                + auctions.size() + ","
+                + runningCount + ","
+                + finishedCount + ","
+                + bids.size();
+    }
+
+    private String adminListUsers() {
+        requireCurrentAdmin();
+        List<User> users = userService.getAllUser();
+        if (users.isEmpty()) {
+            return "OK|ADMIN_USERS|EMPTY";
+        }
+
+        StringBuilder response = new StringBuilder("OK|ADMIN_USERS");
+        for (User user : users) {
+            response.append("|")
+                    .append(nullToEmpty(user.getId()))
+                    .append(",")
+                    .append(escapeCsvField(user.getUsername()))
+                    .append(",")
+                    .append(escapeCsvField(user.getEmail()))
+                    .append(",")
+                    .append(resolveRole(user))
+                    .append(",")
+                    .append(user.getBalance())
+                    .append(",")
+                    .append(user.getHeldBalance());
+        }
+        return response.toString();
+    }
+
+    private String adminListAuctions() {
+        requireCurrentAdmin();
+        List<AuctionListDTO> auctions = auctionController.getAllAuctions();
+        if (auctions.isEmpty()) {
+            return "OK|ADMIN_AUCTIONS|EMPTY";
+        }
+
+        StringBuilder response = new StringBuilder("OK|ADMIN_AUCTIONS");
+        for (AuctionListDTO auction : auctions) {
+            response.append("|").append(formatAuctionDTO(auction, false));
+        }
+        return response.toString();
+    }
+
+    private String adminListBids() {
+        requireCurrentAdmin();
+        List<BidHistoryDTO> bids = bidController.getAllBids();
+        return formatAdminBidHistoryResponse(bids);
+    }
+
     private String formatBidHistoryResponse(List<BidHistoryDTO> bids) {
         if (bids == null || bids.isEmpty()) {
             return "OK|BID_HISTORY|EMPTY";
@@ -324,6 +398,31 @@ public class ClientHandler implements Runnable {
         return response.toString();
     }
 
+    private String formatAdminBidHistoryResponse(List<BidHistoryDTO> bids) {
+        if (bids == null || bids.isEmpty()) {
+            return "OK|ADMIN_BIDS|EMPTY";
+        }
+
+        StringBuilder response = new StringBuilder("OK|ADMIN_BIDS");
+        for (BidHistoryDTO bid : bids) {
+            response.append("|")
+                    .append(nullToEmpty(bid.getBidId()))
+                    .append(",")
+                    .append(nullToEmpty(bid.getAuctionId()))
+                    .append(",")
+                    .append(escapeCsvField(bid.getItemType()))
+                    .append(",")
+                    .append(escapeCsvField(bid.getItemName()))
+                    .append(",")
+                    .append(escapeCsvField(bid.getBidderUsername()))
+                    .append(",")
+                    .append(bid.getBidAmount())
+                    .append(",")
+                    .append(nullToEmpty(bid.getBidTime()));
+        }
+        return response.toString();
+    }
+
     private String placeBid(String payload) {
         String[] args = requirePayload(payload, "Payload").split("\\s+");
         if (args.length != 2 && args.length != 3) {
@@ -341,8 +440,11 @@ public class ClientHandler implements Runnable {
         }
 
         processAutoBids(auctionId);
+        BidHistoryDTO topBid = getTopBid(auctionId);
+        double broadcastAmount = topBid == null ? bidAmount : topBid.getBidAmount();
+        String broadcastBidder = topBid == null ? bidder.getId() : nullToEmpty(topBid.getBidderUsername());
         // Phát realtime sự kiện bid mới cho toàn bộ client.
-        socketServer.broadcast("EVENT|BID_UPDATED|" + auctionId + "|" + bidAmount + "|" + bidder.getId());
+        socketServer.broadcast("EVENT|BID_UPDATED|" + auctionId + "|" + broadcastAmount + "|" + broadcastBidder);
         // Nếu phiên được gia hạn (anti-sniping), phát sự kiện mở rộng
         if (response.isAuctionExtended()) {
             String newEndDate = response.getNewEndDate();
@@ -689,6 +791,10 @@ public class ClientHandler implements Runnable {
                 + "GET_AUCTION auctionId;"
                 + "GET_BID_HISTORY auctionId;"
                 + "GET_MY_BID_HISTORY;"
+                + "ADMIN_DASHBOARD;"
+                + "ADMIN_LIST_USERS;"
+                + "ADMIN_LIST_AUCTIONS;"
+                + "ADMIN_LIST_BIDS;"
                 + "CREATE_ART_AUCTION name|description|startDate|endDate|startPrice|minIncrement|author;"
                 + "CREATE_ELECTRONICS_AUCTION name|description|startDate|endDate|startPrice|minIncrement|warrantyMonths;"
                 + "CREATE_VEHICLE_AUCTION name|description|startDate|endDate|startPrice|minIncrement|brand;"
@@ -749,6 +855,24 @@ public class ClientHandler implements Runnable {
         return (Seller) user;
     }
 
+    private Admin requireCurrentAdmin() {
+        User user = requireCurrentUser();
+        if (!(user instanceof Admin)) {
+            throw new UserAuthException("Current user is not an admin");
+        }
+        return (Admin) user;
+    }
+
+    private String resolveRole(User user) {
+        if (user instanceof Admin) {
+            return "ADMIN";
+        }
+        if (user instanceof Seller) {
+            return "SELLER";
+        }
+        return "BIDDER";
+    }
+
     private Auction requireOwnedAuction(Seller seller, String auctionId, String action) {
         Auction auction = auctionService.getAuctionById(auctionId);
         if (auction == null || auction.getItem() == null) {
@@ -765,6 +889,11 @@ public class ClientHandler implements Runnable {
         if (autoBidController != null) {
             autoBidController.processAutoBids(auctionId);
         }
+    }
+
+    private BidHistoryDTO getTopBid(String auctionId) {
+        List<BidHistoryDTO> bids = bidController.getAuctionBidHistory(auctionId);
+        return bids == null || bids.isEmpty() ? null : bids.get(0);
     }
 
     private String toErrorResponse(Exception exception) {

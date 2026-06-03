@@ -51,15 +51,15 @@ public class BidServiceImpl implements BidService {
             throw new InvalidBidException("User not found");
         }
 
-
-        double reusableHeldAmount = bidDAO.getMaxBidByBidder(bid.getAuction().getId(), bidder.getId());
-        if (bidder.getBalance() + reusableHeldAmount < bid.getBidAmount()) {
-            throw new InsufficientBalanceException("Insufficient funds to place this bid");
-        }
-
-
-        if (!bidDAO.placeBidSafely(bid)) {
-            throw new IllegalStateException("Failed to save bid to database");
+        try {
+            if (!bidDAO.placeBidSafely(bid)) {
+                throw new IllegalStateException("Failed to save bid to database");
+            }
+        } catch (IllegalArgumentException e) {
+            if ("Insufficient funds to place this bid".equals(e.getMessage())) {
+                throw new InsufficientBalanceException(e.getMessage());
+            }
+            throw e;
         }
     }
 

@@ -58,12 +58,13 @@ class BidServiceImplUnitTest {
         BidTransaction bid = sampleBid(10.0, 100.0);
 
         when(userDAO.findById(bid.getBidder().getId())).thenReturn(bid.getBidder());
+        when(bidDAO.placeBidSafely(bid)).thenThrow(new IllegalArgumentException("Insufficient funds to place this bid"));
 
         // When & Then
         assertThrows(InsufficientBalanceException.class, () -> bidService.placeBid(bid));
 
-        // Đảm bảo không có giao dịch nào được lưu xuống DB
-        verify(bidDAO, never()).placeBidSafely(any());
+        // DAO là nơi lock số dư thật và quyết định giao dịch có đủ tiền hay không.
+        verify(bidDAO, times(1)).placeBidSafely(bid);
     }
 
     @Test

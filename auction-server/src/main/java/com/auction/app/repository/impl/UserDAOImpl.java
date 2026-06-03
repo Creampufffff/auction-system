@@ -19,7 +19,7 @@ public class UserDAOImpl implements UserDAO {
     private static final String USER_SELECT_SQL = """
             SELECT u.id,
                    u.username,
-                   u.password,
+                   u.password_hash,
                    u.email,
                    u.role,
                    CASE
@@ -149,11 +149,11 @@ public class UserDAOImpl implements UserDAO {
 
     boolean save(User entity, Connection connection) throws SQLException {
         String upsertUserSql = """
-                INSERT INTO users (id, username, password, email, role)
+                INSERT INTO users (id, username, password_hash, email, role)
                 VALUES (?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     username = VALUES(username),
-                    password = VALUES(password),
+                    password_hash = VALUES(password_hash),
                     email = VALUES(email),
                     role = VALUES(role)
                 """;
@@ -161,7 +161,7 @@ public class UserDAOImpl implements UserDAO {
         try (PreparedStatement statement = connection.prepareStatement(upsertUserSql)) {
             statement.setString(1, entity.getId());
             statement.setString(2, entity.getUsername());
-            statement.setString(3, entity.getPassword());
+            statement.setString(3, entity.getPasswordHash());
             statement.setString(4, entity.getEmail());
             statement.setString(5, resolveRole(entity));
             statement.executeUpdate();
@@ -211,19 +211,19 @@ public class UserDAOImpl implements UserDAO {
         if (ROLE_ADMIN.equals(role)) {
             user = new Admin(
                     resultSet.getString("username"),
-                    resultSet.getString("password"),
+                    resultSet.getString("password_hash"),
                     resultSet.getString("email")
             );
         } else if (ROLE_SELLER.equals(role)) {
             user = new Seller(
                     resultSet.getString("username"),
-                    resultSet.getString("password"),
+                    resultSet.getString("password_hash"),
                     resultSet.getString("email")
             );
         } else {
             user = new Bidder(
                     resultSet.getString("username"),
-                    resultSet.getString("password"),
+                    resultSet.getString("password_hash"),
                     resultSet.getString("email")
             );
         }

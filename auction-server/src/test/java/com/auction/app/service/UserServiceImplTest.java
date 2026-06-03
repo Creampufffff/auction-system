@@ -6,6 +6,7 @@ import com.app.common.entity.User;
 import com.app.common.exception.UserAuthException;
 import com.auction.app.repository.UserDAO;
 import com.auction.app.service.impl.UserServiceImpl;
+import com.auction.app.service.security.PasswordHasher;
 
 // --- CÁC IMPORT CỦA JUNIT 5 & MOCKITO ---
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +46,8 @@ class UserServiceImplTest {
         when(userDAO.save(user)).thenReturn(true);
 
         assertDoesNotThrow(() -> userService.register(user));
+        assertTrue(user.getPasswordHash().startsWith("pbkdf2_sha256$"));
+        assertNotEquals("pass123", user.getPasswordHash());
         verify(userDAO, times(1)).save(user);
     }
 
@@ -93,7 +96,7 @@ class UserServiceImplTest {
     @Test
     @DisplayName("login: Trả về Object User nếu thông tin đăng nhập chính xác")
     void login_ValidCredentials_ReturnsUser() {
-        User user = new Bidder("alice", "pass123", "alice@example.com");
+        User user = new Bidder("alice", PasswordHasher.hash("pass123"), "alice@example.com");
         when(userDAO.findByUsername("alice")).thenReturn(user);
 
         User loggedInUser = userService.login("alice", "pass123");
@@ -105,7 +108,7 @@ class UserServiceImplTest {
     @Test
     @DisplayName("login: Bắt lỗi UserAuthException nếu sai mật khẩu")
     void login_WrongPassword_ThrowsException() {
-        User user = new Bidder("alice", "pass123", "alice@example.com");
+        User user = new Bidder("alice", PasswordHasher.hash("pass123"), "alice@example.com");
         when(userDAO.findByUsername("alice")).thenReturn(user);
 
         assertThrows(UserAuthException.class, () -> userService.login("alice", "wrongpass"));

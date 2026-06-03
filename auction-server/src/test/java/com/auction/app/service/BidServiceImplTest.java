@@ -92,11 +92,12 @@ class BidServiceImplTest {
         BidTransaction bid = sampleBid(1500.0); // Đặt 1500$ nhưng ví chỉ có 1000$
 
         when(userDAO.findById("bidder-1")).thenReturn(bid.getBidder());
+        when(bidDAO.placeBidSafely(bid)).thenThrow(new IllegalArgumentException("Insufficient funds to place this bid"));
 
         InsufficientBalanceException exception = assertThrows(InsufficientBalanceException.class, () -> bidService.placeBid(bid));
         assertEquals("Insufficient funds to place this bid", exception.getMessage());
 
-        verify(bidDAO, never()).placeBidSafely(any());
+        verify(bidDAO, times(1)).placeBidSafely(bid);
     }
 
     @Test
