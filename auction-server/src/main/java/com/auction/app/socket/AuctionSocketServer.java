@@ -1,9 +1,10 @@
 package com.auction.app.socket;
 
+import com.auction.app.controller.AuctionController;
+import com.auction.app.controller.AutoBidController;
+import com.auction.app.controller.BidController;
+import com.auction.app.controller.UserController;
 import com.auction.app.service.AuctionService;
-import com.auction.app.service.AutoBidService;
-import com.auction.app.service.BidService;
-import com.auction.app.service.ItemService;
 import com.auction.app.service.UserService;
 import com.auction.app.socket.observer.Observer;
 import com.auction.app.socket.observer.Subject;
@@ -17,24 +18,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuctionSocketServer implements Subject<String> {
     private final int port;
     private final UserService userService;
-    private final ItemService itemService;
     private final AuctionService auctionService;
-    private final BidService bidService;
-    private final AutoBidService autoBidService;
+    private final UserController userController;
+    private final AuctionController auctionController;
+    private final BidController bidController;
+    private final AutoBidController autoBidController;
 
     private final Set<Observer<String>> observers = ConcurrentHashMap.newKeySet();
 
-    public AuctionSocketServer(int port, UserService userService, ItemService itemService, AuctionService auctionService, BidService bidService) {
-        this(port, userService, itemService, auctionService, bidService, null);
-    }
-
-    public AuctionSocketServer(int port, UserService userService, ItemService itemService, AuctionService auctionService, BidService bidService, AutoBidService autoBidService) {
+    public AuctionSocketServer(int port, UserService userService, AuctionService auctionService,
+                              UserController userController, AuctionController auctionController,
+                              BidController bidController, AutoBidController autoBidController) {
         this.port = port;
         this.userService = userService;
-        this.itemService = itemService;
         this.auctionService = auctionService;
-        this.bidService = bidService;
-        this.autoBidService = autoBidService;
+        this.userController = userController;
+        this.auctionController = auctionController;
+        this.bidController = bidController;
+        this.autoBidController = autoBidController;
     }
 
     public void start() throws IOException {
@@ -44,7 +45,8 @@ public class AuctionSocketServer implements Subject<String> {
             while (true) {
                 // Mỗi client kết nối sẽ được xử lý trên một luồng riêng.
                 Socket clientSocket = serverSocket.accept();
-                ClientHandler handler = new ClientHandler(clientSocket, userService, itemService, auctionService, bidService, autoBidService, this);
+                ClientHandler handler = new ClientHandler(clientSocket, userService, auctionService, 
+                        userController, auctionController, bidController, autoBidController, this);
                 new Thread(handler).start();
             }
         }

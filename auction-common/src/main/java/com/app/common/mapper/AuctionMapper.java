@@ -16,20 +16,32 @@ public class AuctionMapper {
         double currentPrice = item.getHighestCurrentPrice() > 0
             ? item.getHighestCurrentPrice()
             : item.getStartPrice();
+        String condition = item instanceof Art
+            ? ((Art) item).getAuthor()
+            : null;
         String warranty = item instanceof Electronics
             ? String.valueOf(((Electronics) item).getWarrantyMonths())
-            : null;
+            : item instanceof Vehicle ? ((Vehicle) item).getBrand() : null;
+        String itemType = item instanceof Electronics
+            ? "ELECTRONICS"
+            : item instanceof Vehicle ? "VEHICLE" : "ART";
 
-        return new AuctionListDTO(
+        AuctionListDTO dto = new AuctionListDTO(
             auction.getId(),
             item.getId(),
+            itemType,
             item.getName(),
             currentPrice,
             auction.getAuctionStatus(),
-            null,
+            condition,
             item.getDescription(),
-            warranty
+            warranty,
+            item.getStartDateString(),
+            item.getEndDateString(),
+            item.getImageBlob()
         );
+        dto.setMinIncrement(item.getMinIncreasement());
+        return dto;
     }
 
     public static List<AuctionListDTO> toListDTOs(List<Auction> auctions) {
@@ -62,13 +74,19 @@ public class AuctionMapper {
         
         Bidder bidder = bid.getBidder();
         String bidderUsername = bidder != null ? bidder.getUsername() : "Unknown";
+        Auction auction = bid.getAuction();
+        Item item = auction == null ? null : auction.getItem();
+        String itemType = resolveItemType(item);
+        String itemName = item == null ? "" : item.getName();
         
         return new BidHistoryDTO(
             bid.getId(),
-            bid.getAuction().getId(),
+            auction == null ? "" : auction.getId(),
+            itemType,
+            itemName,
             bidderUsername,
             bid.getBidAmount(),
-            bid.getId()
+            bid.getCreatedAt() != null ? bid.getCreatedAt() : ""
         );
     }
 
@@ -83,6 +101,19 @@ public class AuctionMapper {
             }
         }
         return dtos;
+    }
+
+    private static String resolveItemType(Item item) {
+        if (item instanceof Electronics) {
+            return "ELECTRONICS";
+        }
+        if (item instanceof Vehicle) {
+            return "VEHICLE";
+        }
+        if (item instanceof Art) {
+            return "ART";
+        }
+        return "";
     }
 }
 

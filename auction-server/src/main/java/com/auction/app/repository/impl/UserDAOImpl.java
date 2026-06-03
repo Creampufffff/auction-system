@@ -16,10 +16,30 @@ public class UserDAOImpl implements UserDAO {
     private static final String ROLE_SELLER = "SELLER";
     private static final String ROLE_BIDDER = "BIDDER";
 
+    private static final String USER_SELECT_SQL = """
+            SELECT u.id,
+                   u.username,
+                   u.password,
+                   u.email,
+                   u.role,
+                   CASE
+                       WHEN u.role = 'SELLER' THEN COALESCE(s.balance, 0)
+                       WHEN u.role = 'BIDDER' THEN COALESCE(b.balance, 0)
+                       ELSE 0
+                   END AS balance,
+                   CASE
+                       WHEN u.role = 'BIDDER' THEN COALESCE(b.held_balance, 0)
+                       ELSE 0
+                   END AS held_balance
+            FROM users u
+            LEFT JOIN seller s ON s.id = u.id
+            LEFT JOIN bidder b ON b.id = u.id
+            """;
+
 
     @Override
     public User findById(String id) {
-        String sql = "SELECT id, username, password, email, role, balance FROM users WHERE id = ?";
+        String sql = USER_SELECT_SQL + " WHERE u.id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -39,7 +59,7 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public List<User> findAll() {
-        String sql = "SELECT id, username, password, email, role, balance FROM users ORDER BY username";
+        String sql = USER_SELECT_SQL + " ORDER BY u.username";
         List<User> users = new ArrayList<>();
 
         try (Connection connection = DatabaseConfig.getConnection();
@@ -57,30 +77,98 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public boolean save(User entity) {
-        String sql = """
-                INSERT INTO users (id, username, password, email, role, balance)
-                VALUES (?, ?, ?, ?, ?, ?)
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                boolean saved = save(entity, connection);
+                connection.commit();
+                return saved;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot save user: " + entity.getId(), e);
+        }
+    }
+
+    @Override
+    public boolean updateBalance(User user) {
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                boolean updated = updateBalance(user, connection);
+                connection.commit();
+                return updated;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot update balance for user: " + user.getId(), e);
+        }
+    }
+
+    boolean updateBalance(User user, Connection connection) throws SQLException {
+        if (user instanceof Admin) {
+            return true;
+        }
+
+        String sql;
+        boolean isSeller = user instanceof Seller;
+
+        if (isSeller) {
+            sql = """
+                    INSERT INTO seller (id, balance)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE balance = VALUES(balance)
+                    """;
+        } else {
+            sql = """
+                    INSERT INTO bidder (id, balance, held_balance)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE balance = VALUES(balance), held_balance = VALUES(held_balance)
+                    """;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getId());
+            statement.setDouble(2, user.getBalance());
+            if (!isSeller) {
+                statement.setDouble(3, user.getHeldBalance());
+            }
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    boolean save(User entity, Connection connection) throws SQLException {
+        String upsertUserSql = """
+                INSERT INTO users (id, username, password, email, role)
+                VALUES (?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     username = VALUES(username),
                     password = VALUES(password),
                     email = VALUES(email),
-                    role = VALUES(role),
-                    balance = VALUES(balance)
+                    role = VALUES(role)
                 """;
 
-        try (Connection connection = DatabaseConfig.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(upsertUserSql)) {
             statement.setString(1, entity.getId());
             statement.setString(2, entity.getUsername());
             statement.setString(3, entity.getPassword());
             statement.setString(4, entity.getEmail());
             statement.setString(5, resolveRole(entity));
-            statement.setDouble(6, entity.getBalance());
-
-            return statement.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw new IllegalStateException("Cannot save user: " + entity.getId(), e);
+            statement.executeUpdate();
         }
+
+        syncSubtypeTables(entity, connection);
+        return true;
     }
 
     @Override
@@ -98,7 +186,7 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public User findByUsername(String username) {
-        String sql = "SELECT id, username, password, email, role, balance FROM users WHERE username = ?";
+        String sql = USER_SELECT_SQL + " WHERE u.username = ?";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -142,7 +230,48 @@ public class UserDAOImpl implements UserDAO {
 
         user.setId(resultSet.getString("id"));
         user.setBalance(resultSet.getDouble("balance"));
+        user.setHeldBalance(resultSet.getDouble("held_balance"));
         return user;
+    }
+
+    private void syncSubtypeTables(User entity, Connection connection) throws SQLException {
+        try (PreparedStatement deleteAdmin = connection.prepareStatement("DELETE FROM admin WHERE id = ?");
+             PreparedStatement deleteSeller = connection.prepareStatement("DELETE FROM seller WHERE id = ?");
+             PreparedStatement deleteBidder = connection.prepareStatement("DELETE FROM bidder WHERE id = ?")) {
+            deleteAdmin.setString(1, entity.getId());
+            deleteSeller.setString(1, entity.getId());
+            deleteBidder.setString(1, entity.getId());
+            deleteAdmin.executeUpdate();
+            deleteSeller.executeUpdate();
+            deleteBidder.executeUpdate();
+        }
+
+        if (entity instanceof Admin) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO admin (id) VALUES (?) ON DUPLICATE KEY UPDATE id = VALUES(id)")) {
+                statement.setString(1, entity.getId());
+                statement.executeUpdate();
+            }
+            return;
+        }
+
+        String subtypeSql;
+        if (entity instanceof Seller) {
+            subtypeSql = "INSERT INTO seller (id, balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance)";
+        } else {
+            subtypeSql = "INSERT INTO bidder (id, balance, held_balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance), held_balance = VALUES(held_balance)";
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(subtypeSql)) {
+            statement.setString(1, entity.getId());
+            statement.setDouble(2, entity.getBalance());
+            if (entity instanceof Seller) {
+                statement.executeUpdate();
+                return;
+            }
+            statement.setDouble(3, entity.getHeldBalance());
+            statement.executeUpdate();
+        }
     }
 
     private String resolveRole(User user) {

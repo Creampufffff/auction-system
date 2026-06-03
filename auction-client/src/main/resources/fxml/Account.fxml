@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.ui.view.AccountController"
+      prefWidth="1040"
+      prefHeight="660"
+      style="-fx-background-color: #f3f6fb;">
+
+    <VBox prefWidth="250"
+          spacing="22"
+          style="-fx-background-color: #172033;">
+        <padding>
+            <Insets top="28" right="18" bottom="24" left="18"/>
+        </padding>
+
+        <VBox spacing="2">
+            <Label text="ĐẤU GIÁ"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #8fb2ff;"/>
+            <Label text="Bảng điều khiển"
+                   style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        </VBox>
+
+        <VBox spacing="8">
+            <Button text="Phiên đấu giá"
+                    onAction="#handleCurrentAuctions"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-auction"/>
+                </graphic>
+            </Button>
+
+            <Button fx:id="productsSidebarButton"
+                    text="Kho hàng"
+                    onAction="#handleSidebarProducts"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-warehouse"/>
+                </graphic>
+            </Button>
+
+            <Button fx:id="bidHistorySidebarButton"
+                    text="Lịch sử đặt giá"
+                    onAction="#handleSidebarBidHistory"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-history"/>
+                </graphic>
+            </Button>
+
+            <Button fx:id="wonItemsSidebarButton"
+                    text="Kho vật phẩm"
+                    onAction="#handleSidebarWonItems"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button">
+                <graphic>
+                    <Region styleClass="icon-style, icon-warehouse"/>
+                </graphic>
+            </Button>
+
+            <Button text="Tài khoản"
+                    onAction="#handleSidebarAccount"
+                    maxWidth="Infinity"
+                    alignment="CENTER_LEFT"
+                    styleClass="sidebar-button, active-tab">
+                <graphic>
+                    <Region styleClass="icon-style, icon-account"/>
+                </graphic>
+            </Button>
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS"/>
+
+        <VBox spacing="10">
+            <VBox spacing="6"
+                  style="-fx-background-color: #22304a; -fx-background-radius: 8; -fx-padding: 14;">
+                <Label text="Tài khoản"
+                       style="-fx-font-size: 12px; -fx-text-fill: #9aa8bd;"/>
+                <Label fx:id="sidebarRoleLabel"
+                       text="Role: --"
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label fx:id="sidebarBalanceLabel"
+                       text="Ví: --"
+                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            </VBox>
+        </VBox>
+    </VBox>
+
+    <VBox spacing="18" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets top="28" right="34" bottom="28" left="34"/>
+        </padding>
+
+        <VBox spacing="4">
+            <Label text="Tài khoản"
+                   style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+            <Label text="Quản lý thông tin, số dư và giao dịch tài khoản của bạn."
+                   style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+        </VBox>
+
+        <HBox spacing="14">
+            <VBox spacing="8" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+                <Label text="HỒ SƠ"
+                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                <Label fx:id="usernameLabel"
+                       text="--"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #172033;"/>
+                <Label fx:id="roleLabel"
+                       text="--"
+                       style="-fx-font-size: 13px; -fx-text-fill: #667085;"/>
+                <Label fx:id="userIdLabel"
+                       text="--"
+                       style="-fx-font-size: 11px; -fx-text-fill: #aab0bb;"/>
+                <Button text="Đăng xuất"
+                        onAction="#handleLogout"
+                        maxWidth="Infinity"
+                        alignment="CENTER"
+                        styleClass="danger-action-button"
+                        style="-fx-background-color: #d92d20; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 14;"/>
+            </VBox>
+
+            <VBox spacing="8" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+                <Label text="SỐ DƯ"
+                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                <Label fx:id="balanceLabel"
+                       text="--"
+                       style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2d6cdf;"/>
+                <Label fx:id="balanceMessageLabel"
+                       text="Số dư hiện tại"
+                       style="-fx-font-size: 12px; -fx-text-fill: #667085;"/>
+            </VBox>
+
+            <VBox spacing="10" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+                <Label text="NẠP / RÚT TIỀN"
+                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7b8794;"/>
+                <TextField fx:id="amountField"
+                           promptText="Nhập số tiền..."
+                           style="-fx-background-radius: 6; -fx-border-color: #d0d5dd; -fx-border-radius: 6; -fx-padding: 8 10;"/>
+                <HBox spacing="8">
+                    <Button text="Nạp tiền"
+                            onAction="#handleDeposit"
+                            HBox.hgrow="ALWAYS"
+                            maxWidth="Infinity"
+                            styleClass="success-action-button"
+                            style="-fx-background-color: #12a594; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 0;"/>
+                    <Button text="Rút tiền"
+                            onAction="#handleWithdraw"
+                            HBox.hgrow="ALWAYS"
+                            maxWidth="Infinity"
+                            styleClass="danger-action-button"
+                            style="-fx-background-color: #d92d20; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 0;"/>
+                </HBox>
+                <Label fx:id="actionMessageLabel"
+                       text=""
+                       style="-fx-font-size: 12px;"/>
+            </VBox>
+        </HBox>
+
+        <Region VBox.vgrow="ALWAYS"/>
+    </VBox>
+</HBox>

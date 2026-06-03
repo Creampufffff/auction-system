@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.ui.view.AutoBiddingController"
+      spacing="18"
+      prefWidth="560"
+      prefHeight="520"
+      style="-fx-padding: 24; -fx-background-color: #f3f6fb; -fx-font-family: 'Segoe UI';">
+
+    <VBox spacing="4"
+          style="-fx-background-color: #172033; -fx-background-radius: 8; -fx-padding: 18 20;">
+        <Label text="Đặt giá tự động"
+               style="-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;"/>
+        <Label text="Hệ thống sẽ tự động đặt giá thay bạn cho đến mức tối đa đã chọn."
+               style="-fx-text-fill: #d0d8e8; -fx-font-size: 12px;"/>
+    </VBox>
+
+    <VBox spacing="14"
+          style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+        <Label text="THÔNG TIN PHIÊN ĐẤU GIÁ"
+               style="-fx-text-fill: #172033; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+
+        <GridPane vgap="12" hgap="16">
+            <columnConstraints>
+                <ColumnConstraints prefWidth="150"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Sản phẩm" style="-fx-text-fill: #667085; -fx-font-size: 12px;" GridPane.rowIndex="0"/>
+            <Label fx:id="auctionNameLabel" text="N/A" style="-fx-text-fill: #172033; -fx-font-size: 13px; -fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="Giá hiện tại" style="-fx-text-fill: #667085; -fx-font-size: 12px;" GridPane.rowIndex="1"/>
+            <Label fx:id="currentPriceLabel" text="\$0.00" style="-fx-text-fill: #172033; -fx-font-size: 13px; -fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="Bước giá tối thiểu" style="-fx-text-fill: #667085; -fx-font-size: 12px;" GridPane.rowIndex="2"/>
+            <Label fx:id="minIncrementLabel" text="\$0.00" style="-fx-text-fill: #172033; -fx-font-size: 13px; -fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <Label text="Số dư tài khoản" style="-fx-text-fill: #667085; -fx-font-size: 12px;" GridPane.rowIndex="3"/>
+            <Label fx:id="userBalanceLabel" text="\$0.00" style="-fx-text-fill: #172033; -fx-font-size: 13px; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        </GridPane>
+    </VBox>
+
+    <VBox spacing="8">
+        <Label text="GIÁ TỰ ĐỘNG TỐI ĐA"
+               style="-fx-text-fill: #172033; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+        <TextField fx:id="maxBidAmountField"
+                   promptText="Nhập mức giá tối đa bạn muốn đặt tự động"
+                   style="-fx-background-color: white; -fx-border-color: #d0d5dd; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 11 12; -fx-text-fill: #172033;"/>
+        <Label fx:id="errorLabel" text=""
+               style="-fx-text-fill: #d92d20; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+    </VBox>
+
+    <VBox spacing="6"
+          style="-fx-background-color: #fbfcff; -fx-background-radius: 8; -fx-border-color: #e0e7f0; -fx-border-radius: 8; -fx-padding: 16;">
+        <Label text="Cách hoạt động"
+               style="-fx-text-fill: #172033; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+        <Label text="Khi có lượt đặt giá mới từ người khác, hệ thống sẽ tự động đặt giá thay bạn."
+               wrapText="true"
+               style="-fx-text-fill: #344054; -fx-font-size: 12px;"/>
+        <Label text="Giá sẽ được tăng theo từng bước cho đến khi chạm mức tối đa bạn đặt."
+               wrapText="true"
+               style="-fx-text-fill: #344054; -fx-font-size: 12px;"/>
+        <Label text="Nếu mức tối đa của bạn bị vượt qua, hệ thống sẽ hiển thị thông báo."
+               wrapText="true"
+               style="-fx-text-fill: #344054; -fx-font-size: 12px;"/>
+    </VBox>
+
+    <Region VBox.vgrow="ALWAYS"/>
+
+    <HBox spacing="12" alignment="CENTER_RIGHT">
+        <Button text="Hủy"
+                onAction="#handleCancel"
+                style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #b8c2d6; -fx-border-radius: 8; -fx-text-fill: #172033; -fx-font-weight: bold; -fx-padding: 10 20;"/>
+        <Button text="Đặt Auto-Bid"
+                onAction="#handleSetAutoBid"
+                style="-fx-background-color: #2d6cdf; -fx-background-radius: 8; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 24;"/>
+    </HBox>
+</VBox>

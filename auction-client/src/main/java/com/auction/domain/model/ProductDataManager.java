@@ -1,0 +1,460 @@
+package com.auction.domain.model;
+
+import com.app.common.dto.AuctionListDTO;
+import com.app.common.dto.BidHistoryDTO;
+import com.app.common.enums.Status;
+import com.auction.shared.session.SessionManager;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.stream.Collectors;
+
+public class ProductDataManager {
+    private static ProductDataManager instance;
+    private final ObservableList<Product> myProductList;
+    private final ObservableList<AuctionListDTO> serverAuctionList;
+    private AuctionListDTO selectedAuction;
+    private String productDetailReturnPath = "/fxml/AuctionList.fxml";
+    private String productDetailReturnTitle = "Auction System";
+
+    // Thực thể lưu trữ tạm thời phục vụ chuyển màn sang LiveBidding không vỡ Stage
+    private Product liveBiddingProductData;
+
+    private final Map<String, ObservableList<String>> historyMap;
+    private final Map<String, Double> currentPriceMap;
+    private final Map<String, Integer> timeLeftMap;
+    private final Map<String, List<BidHistoryDTO>> bidHistoryCacheMap = new HashMap<>();
+    private final Map<String, Boolean> dialogShownMap = new HashMap<>();
+
+    // --- LOGIC VÍ TIỀN & SESSION ---
+    private double userBalance = 5000.0;
+    private final Map<String, Double> userHeldMoneyMap = new HashMap<>();
+    private final Map<String, String> leadingUserMap = new HashMap<>();
+
+    // --- LOGIC PHÂN TRANG & TÌM KIẾM ---
+    private static final int ITEMS_PER_PAGE = 10;
+    private int currentPage = 1;
+    private String searchKeyword = "";
+    private String statusFilter = "ALL";
+    private String typeFilter = "ALL";
+    private String sortMode = "NEWEST";
+    private List<AuctionListDTO> filteredAuctionList = List.of();
+
+    private Timer globalTimer;
+
+    private ProductDataManager() {
+        myProductList = FXCollections.observableArrayList();
+        serverAuctionList = FXCollections.observableArrayList();
+        historyMap = new HashMap<>();
+        currentPriceMap = new HashMap<>();
+        timeLeftMap = new HashMap<>();
+        startGlobalCountdown();
+    }
+
+    public static ProductDataManager getInstance() {
+        if (instance == null) {
+            instance = new ProductDataManager();
+        }
+        return instance;
+    }
+
+    // --- HÀM TRỢ GIÚP VÍ TIỀN ---
+    public double getUserBalance() { return userBalance; }
+    public void setUserBalance(double balance) {
+        this.userBalance = balance;
+        SessionManager.updateCurrentUserBalance(balance);
+    }
+    public void deductBalance(double amount) { this.userBalance -= amount; }
+    public void refundBalance(double amount) { this.userBalance += amount; }
+    public double getHeldMoney(String auctionId) { return userHeldMoneyMap.getOrDefault(auctionId, 0.0); }
+    public void setHeldMoney(String auctionId, double amount) { userHeldMoneyMap.put(auctionId, amount); }
+
+    // --- GETTER / SETTER CHO LIVE BIDDING TRANSITION ---
+    public Product getLiveBiddingProductData() {
+        return liveBiddingProductData;
+    }
+
+    public void setLiveBiddingProductData(Product product) {
+        this.liveBiddingProductData = product;
+    }
+
+    public void syncBalanceFromSession() {
+        if (SessionManager.isLoggedIn()) {
+            userBalance = SessionManager.getCurrentUserBalance();
+        }
+    }
+
+    public void resetSessionState() {
+        userBalance = 5000.0;
+        userHeldMoneyMap.clear();
+        leadingUserMap.clear();
+        dialogShownMap.clear();
+        currentPriceMap.clear();
+        timeLeftMap.clear();
+        bidHistoryCacheMap.clear();
+        selectedAuction = null;
+        liveBiddingProductData = null;
+        productDetailReturnPath = "/fxml/AuctionList.fxml";
+        productDetailReturnTitle = "Auction System";
+        currentPage = 1;
+        searchKeyword = "";
+        statusFilter = "ALL";
+        typeFilter = "ALL";
+        sortMode = "NEWEST";
+        filteredAuctionList = List.of();
+    }
+
+    private void startGlobalCountdown() {
+        globalTimer = new Timer(true);
+        globalTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                for (String auctionId : timeLeftMap.keySet()) {
+                    Integer currentTime = timeLeftMap.get(auctionId);
+                    if (currentTime != null && currentTime > 0) {
+                        timeLeftMap.put(auctionId, currentTime - 1);
+                    }
+                }
+            }
+        }, 0, 1000);
+    }
+
+    public ObservableList<String> getHistoryForProduct(String auctionId) {
+        if (!historyMap.containsKey(auctionId)) {
+            historyMap.put(auctionId, FXCollections.observableArrayList());
+        }
+        return historyMap.get(auctionId);
+    }
+
+    public synchronized List<BidHistoryDTO> getCachedBidHistory(String auctionId) {
+        if (auctionId == null || auctionId.isBlank()) {
+            return List.of();
+        }
+        List<BidHistoryDTO> cached = bidHistoryCacheMap.get(auctionId);
+        return cached == null ? List.of() : List.copyOf(cached);
+    }
+
+    public synchronized void cacheBidHistory(String auctionId, List<BidHistoryDTO> bids) {
+        if (auctionId == null || auctionId.isBlank() || bids == null) {
+            return;
+        }
+        bidHistoryCacheMap.put(auctionId, List.copyOf(bids));
+    }
+
+    public double getCurrentPrice(String auctionId, double defaultPrice) {
+        return currentPriceMap.getOrDefault(auctionId, defaultPrice);
+    }
+
+    public void setCurrentPrice(String auctionId, double price) {
+        currentPriceMap.put(auctionId, price);
+        serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .ifPresent(a -> a.setCurrentPrice(price));
+    }
+    public void removeAuction(String auctionId) {
+        serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
+    }
+
+    public int getTimeLeft(String auctionId, int defaultTime) {
+        if (!timeLeftMap.containsKey(auctionId)) {
+            timeLeftMap.put(auctionId, defaultTime);
+        }
+        return timeLeftMap.get(auctionId);
+    }
+
+    public void setTimeLeft(String auctionId, int time) {
+        timeLeftMap.put(auctionId, time);
+    }
+
+    public ObservableList<Product> getProductList() { return myProductList; }
+    public ObservableList<AuctionListDTO> getServerAuctionList() { return serverAuctionList; }
+
+    public void pushToGlobalAuction(Product p) {
+        AuctionListDTO dto = new AuctionListDTO(
+                p.getId(), "ITEM-" + p.getId(), p.getType(), p.getName(), p.getPrice(),
+                Status.OPEN, p.getCondition(), p.getDescription(), p.getWarranty()
+        );
+        if (serverAuctionList.stream().noneMatch(a -> a.getAuctionId().equals(p.getId()))) {
+            serverAuctionList.add(dto);
+        }
+    }
+
+    public boolean isWinnerDialogShown(String auctionId) {
+        return dialogShownMap.getOrDefault(auctionId, false);
+    }
+
+    public void setWinnerDialogShown(String auctionId, boolean shown) {
+        dialogShownMap.put(auctionId, shown);
+    }
+
+    public AuctionListDTO getSelectedAuction() { return selectedAuction; }
+    public void setSelectedAuction(AuctionListDTO auction) { this.selectedAuction = auction; }
+
+    public String getProductDetailReturnPath() {
+        return productDetailReturnPath;
+    }
+
+    public String getProductDetailReturnTitle() {
+        return productDetailReturnTitle;
+    }
+
+    public void setProductDetailReturnTarget(String fxmlPath, String title) {
+        this.productDetailReturnPath = fxmlPath == null || fxmlPath.isBlank()
+                ? "/fxml/AuctionList.fxml"
+                : fxmlPath;
+        this.productDetailReturnTitle = title == null || title.isBlank()
+                ? "Auction System"
+                : title;
+    }
+
+    public boolean isEnded(String auctionId) {
+        return serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .map(a -> isEndDateReached(a.getEndDateTime()))
+                .orElse(false);
+    }
+
+    public void closeAuction(String auctionId) {
+        serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .ifPresent(a -> a.setAuctionStatus(Status.FINISHED));
+    }
+
+    public void updateAuctionEndDate(String auctionId, String endDateTime) {
+        serverAuctionList.stream()
+                .filter(a -> a.getAuctionId().equals(auctionId))
+                .findFirst()
+                .ifPresent(a -> a.setEndDateTime(endDateTime));
+    }
+
+    public String getLeadingUser(String auctionId, String defaultUser) {
+        return leadingUserMap.getOrDefault(auctionId, defaultUser);
+    }
+
+    public boolean hasLeadingUser(String auctionId) {
+        return auctionId != null && leadingUserMap.containsKey(auctionId);
+    }
+
+    public void setLeadingUser(String auctionId, String userName) {
+        if (auctionId == null || auctionId.isBlank()) {
+            return;
+        }
+        if (userName == null || userName.isBlank()) {
+            leadingUserMap.remove(auctionId);
+            return;
+        }
+        leadingUserMap.put(auctionId, userName);
+    }
+    public void handleSomeoneElseLeading(String auctionId, double newPrice) {
+        double myHeld = getHeldMoney(auctionId);
+        if (myHeld > 0) {
+            refundBalance(myHeld);
+            setHeldMoney(auctionId, 0.0);
+        }
+        setCurrentPrice(auctionId, newPrice);
+    }
+    public void deleteProductAndAuction(String auctionId) {
+        myProductList.removeIf(p -> p.getId().equals(auctionId));
+        serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
+        dialogShownMap.remove(auctionId);
+    }
+
+    private boolean isEndDateReached(String endDateTime) {
+        LocalDateTime endTime = parseEndDateTime(endDateTime);
+        return endTime != null && !LocalDateTime.now().isBefore(endTime);
+    }
+
+    private LocalDateTime parseEndDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (value.contains("|")) {
+            value = value.split("\\|", 2)[0];
+        }
+
+        for (DateTimeFormatter formatter : List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )) {
+            try {
+                return LocalDateTime.parse(value, formatter);
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        try {
+            return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE).atTime(23, 59, 59);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    // --- PHƯƠNG THỨC TÌM KIẾM VÀ PHÂN TRANG ---
+    public void setSearchKeyword(String keyword) {
+        this.searchKeyword = keyword.toLowerCase().trim();
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void setStatusFilter(String statusFilter) {
+        this.statusFilter = normalizeFilter(statusFilter);
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void setTypeFilter(String typeFilter) {
+        this.typeFilter = normalizeFilter(typeFilter);
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void setSortMode(String sortMode) {
+        this.sortMode = sortMode == null || sortMode.isBlank() ? "NEWEST" : sortMode;
+        this.currentPage = 1;
+        applyFilter();
+    }
+
+    public void resetAuctionFilters() {
+        searchKeyword = "";
+        statusFilter = "ALL";
+        typeFilter = "ALL";
+        sortMode = "NEWEST";
+        currentPage = 1;
+        applyFilter();
+    }
+
+    private void applyFilter() {
+        filteredAuctionList = serverAuctionList.stream()
+                .filter(this::matchesSearch)
+                .filter(this::matchesStatus)
+                .filter(this::matchesType)
+                .sorted(getAuctionComparator())
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesSearch(AuctionListDTO auction) {
+        if (searchKeyword.isEmpty()) {
+            return true;
+        }
+        return safeLower(auction.getName()).contains(searchKeyword)
+                || safeLower(auction.getItemType()).contains(searchKeyword)
+                || safeLower(auction.getAuctionId()).contains(searchKeyword);
+    }
+
+    private boolean matchesStatus(AuctionListDTO auction) {
+        if ("ALL".equals(statusFilter)) {
+            return true;
+        }
+        return auction.getAuctionStatus() != null && auction.getAuctionStatus().name().equals(statusFilter);
+    }
+
+    private boolean matchesType(AuctionListDTO auction) {
+        if ("ALL".equals(typeFilter)) {
+            return true;
+        }
+        return typeFilter.equalsIgnoreCase(auction.getItemType());
+    }
+
+    private Comparator<AuctionListDTO> getAuctionComparator() {
+        return switch (sortMode) {
+            case "PRICE_ASC" -> Comparator.comparingDouble(AuctionListDTO::getCurrentPrice);
+            case "PRICE_DESC" -> Comparator.comparingDouble(AuctionListDTO::getCurrentPrice).reversed();
+            case "ENDING_SOON" -> Comparator.comparing(this::parseEndDateTimeForSort, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "NAME_ASC" -> Comparator.comparing(a -> safeLower(a.getName()));
+            default -> Comparator.comparing(this::parseStartDateTimeForSort, Comparator.nullsLast(Comparator.reverseOrder()));
+        };
+    }
+
+    private LocalDateTime parseStartDateTimeForSort(AuctionListDTO auction) {
+        return parseEndDateTime(auction.getStartDateTime());
+    }
+
+    private LocalDateTime parseEndDateTimeForSort(AuctionListDTO auction) {
+        return parseEndDateTime(auction.getEndDateTime());
+    }
+
+    private String normalizeFilter(String value) {
+        return value == null || value.isBlank() ? "ALL" : value;
+    }
+
+    private String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase();
+    }
+
+    public ObservableList<AuctionListDTO> getPagedAuctions() {
+        applyFilter();
+        int start = (currentPage - 1) * ITEMS_PER_PAGE;
+        int end = Math.min(start + ITEMS_PER_PAGE, filteredAuctionList.size());
+
+        if (start >= filteredAuctionList.size()) {
+            return FXCollections.observableArrayList();
+        }
+
+        return FXCollections.observableArrayList(filteredAuctionList.subList(start, end));
+    }
+
+    public void nextPage() {
+        applyFilter();
+        int totalPages = getTotalPages();
+        if (currentPage < totalPages) {
+            currentPage++;
+        }
+    }
+
+    public void previousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+        }
+    }
+
+    public void goToPage(int pageNumber) {
+        applyFilter();
+        int totalPages = getTotalPages();
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            currentPage = pageNumber;
+        }
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public int getTotalPages() {
+        applyFilter();
+        return (int) Math.ceil((double) filteredAuctionList.size() / ITEMS_PER_PAGE);
+    }
+
+    public int getTotalFilteredItems() {
+        applyFilter();
+        return filteredAuctionList.size();
+    }
+
+    public String getSearchKeyword() {
+        return searchKeyword;
+    }
+
+    public String getStatusFilter() {
+        return statusFilter;
+    }
+
+    public String getTypeFilter() {
+        return typeFilter;
+    }
+
+    public String getSortMode() {
+        return sortMode;
+    }
+}

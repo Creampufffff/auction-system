@@ -1,8 +1,6 @@
 package com.auction.app.service.impl;
 
 import com.app.common.entity.Auction;
-import com.app.common.entity.BidTransaction;
-import com.app.common.entity.User;
 import com.app.common.exception.AuctionClosedException;
 import com.app.common.exception.AuctionNotFoundException;
 import com.app.common.enums.Status;
@@ -105,40 +103,75 @@ public class AuctionServiceImpl implements AuctionService {
         return auctionDAO.findActiveAuctions();
     }
 
+    @Override
+    public List<Auction> getAuctionsBySellerId(String sellerId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new IllegalArgumentException("Seller ID cannot be empty");
+        }
+        return auctionDAO.findBySellerId(sellerId);
+    }
+
+    @Override
+    public List<Auction> getWonAuctionsByBidderId(String bidderId) {
+        if (bidderId == null || bidderId.isBlank()) {
+            throw new IllegalArgumentException("Bidder ID cannot be empty");
+        }
+        return auctionDAO.findWonByBidderId(bidderId);
+    }
+
+    @Override
+    public void updateAuction(Auction auction) {
+        if (auction == null || auction.getId() == null || auction.getId().isBlank()) {
+            throw new IllegalArgumentException("Auction ID cannot be empty");
+        }
+        if (auction.getItem() == null) {
+            throw new IllegalArgumentException("Auction item cannot be null");
+        }
+        if (!auctionDAO.save(auction)) {
+            throw new IllegalStateException("Failed to update auction");
+        }
+    }
+
+    @Override
+    public void deleteAuction(String auctionId) {
+        validateId(auctionId);
+
+        Auction auction = getAuctionById(auctionId);
+        if (auction == null) {
+            throw new AuctionNotFoundException("Auction not found");
+        }
+
+        if (!auctionDAO.delete(auctionId)) {
+            throw new IllegalStateException("Failed to delete auction");
+        }
+    }
+
     private void validateId(String id) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Auction ID cannot be empty");
         }
     }
 
-    private void settleWinningBid(Auction auction) {
 
-        BidTransaction highestBid = bidDAO.getMaxBidByAuctionId(auction.getId());
+    @Override
+    public boolean extendIfEndingSoon(String auctionId, long thresholdSeconds, long extensionSeconds) {
+        validateId(auctionId);
 
-        if (highestBid == null) {
-            return;
+        Auction auction = getAuctionById(auctionId);
+        if (auction == null) {
+            return false;
         }
 
-        User winner = userDAO.findById(highestBid.getBidder().getId());
-        if (winner == null) {
-            throw new IllegalStateException("Winner not found");
+        if (auction.getAuctionStatus() != Status.RUNNING) {
+            return false;
         }
 
-        winner.withdraw(highestBid.getBidAmount());
-
-        String sellerId = auction.getItem().getSellerId();
-        User seller = userDAO.findById(sellerId);
-        if (seller == null) {
-            throw new IllegalStateException("Seller not found");
+        // Reuse AuctionExtensionManager which encapsulates parsing and extension policy.
+        boolean extended = AuctionExtensionManager.checkAndExtend(auction);
+        if (extended) {
+            // Persist the new end date string stored in auction.item
+            return auctionDAO.updateItemEndDate(auctionId, auction.getItem().getEndDateString());
         }
-
-        seller.deposit(highestBid.getBidAmount());
-
-        if (!userDAO.save(winner)) {
-            throw new IllegalStateException("Failed to update winner's account");
-        }
-        if (!userDAO.save(seller)) {
-            throw new IllegalStateException("Failed to update seller's account");
-        }
+        return false;
     }
 }

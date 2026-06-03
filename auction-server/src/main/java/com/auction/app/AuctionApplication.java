@@ -12,14 +12,20 @@ import com.auction.app.repository.impl.UserDAOImpl;
 import com.auction.app.service.AuctionService;
 import com.auction.app.service.AutoBidService;
 import com.auction.app.service.BidService;
+import com.auction.app.service.ItemImageService;
 import com.auction.app.service.ItemService;
 import com.auction.app.service.UserService;
 import com.auction.app.service.impl.AuctionServiceImpl;
 import com.auction.app.service.impl.AutoBidServiceImpl;
 import com.auction.app.service.impl.AuctionManager;
 import com.auction.app.service.impl.BidServiceImpl;
+import com.auction.app.service.impl.ItemImageServiceImpl;
 import com.auction.app.service.impl.ItemServiceImpl;
 import com.auction.app.service.impl.UserServiceImpl;
+import com.auction.app.controller.AuctionController;
+import com.auction.app.controller.AutoBidController;
+import com.auction.app.controller.BidController;
+import com.auction.app.controller.UserController;
 import com.auction.app.socket.AuctionSocketServer;
 
 import java.io.IOException;
@@ -42,12 +48,19 @@ public class AuctionApplication {
         BidService bidService = new BidServiceImpl(bidDAO, auctionDAO, userDAO);
         AutoBidService autoBidService = new AutoBidServiceImpl(auctionDAO, bidDAO);
 
-        AuctionSocketServer server = new AuctionSocketServer(port, userService, itemService, auctionService, bidService, autoBidService);
+        // Create controllers
+        UserController userController = new UserController(userService);
+        AuctionController auctionController = new AuctionController(auctionService);
+        BidController bidController = new BidController(bidService, auctionService, userService);
+        AutoBidController autoBidController = new AutoBidController(autoBidService, auctionService);
+
+        AuctionSocketServer server = new AuctionSocketServer(port, userService, auctionService, 
+                userController, auctionController, bidController, autoBidController);
 
         AuctionManager auctionManager = AuctionManager.getInstance();
-        auctionManager.startAutoClose(auctionService, server);
+        auctionManager.startStatusSync(auctionService, server);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(auctionManager::stopAutoClose));
+        Runtime.getRuntime().addShutdownHook(new Thread(auctionManager::stopStatusSync));
 
         System.out.println("Khởi động Auction Server trên port " + port + "...");
         server.start();

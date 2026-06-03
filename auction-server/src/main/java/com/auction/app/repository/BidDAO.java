@@ -8,6 +8,8 @@ public interface BidDAO extends BaseDAO<BidTransaction> {
     // Get full bid history of an auction (for charting)
     List<BidTransaction> findByAuctionId(String auctionId);
 
+    List<BidTransaction> findByBidderId(String bidderId);
+
     // Get the maximum bid amount a bidder placed in an auction
     double getMaxBidByBidder(String auctionId, String bidderId);
 

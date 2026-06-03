@@ -19,7 +19,7 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                "Unknown Author"
+                defaultIfBlank(dto.getCondition(), "Unknown Author")
             );
 
         } else if ("ELECTRONICS".equalsIgnoreCase(itemType)) {
@@ -30,7 +30,7 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                12
+                parsePositiveInt(dto.getWarranty(), 12)
             );
 
         } else if ("VEHICLE".equalsIgnoreCase(itemType)) {
@@ -41,15 +41,33 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                "Unknown Brand"
+                defaultIfBlank(dto.getWarranty(), "Unknown Brand")
             );
         }
 
         if (item != null) {
             item.setSellerId(dto.getSellerId());
+            item.setImageBlob(dto.getImageBlob());
         }
 
         return item;
+    }
+
+    private static String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private static int parsePositiveInt(String value, int fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return parsed > 0 ? parsed : fallback;
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 }
 

@@ -1,15 +1,21 @@
 package com.auction.app.repository.impl;
 
+import com.app.common.entity.Art;
 import com.app.common.entity.Auction;
 import com.app.common.entity.Bidder;
 import com.app.common.entity.BidTransaction;
+import com.app.common.entity.Electronics;
+import com.app.common.entity.Item;
 import com.app.common.entity.User;
+import com.app.common.entity.Vehicle;
+import com.app.common.enums.Status;
 import com.auction.app.config.DatabaseConfig;
 import com.auction.app.repository.BidDAO;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class BidDAOImpl implements BidDAO {
     private final AuctionDAOImpl auctionDAO = new AuctionDAOImpl();
@@ -18,7 +24,7 @@ public class BidDAOImpl implements BidDAO {
     @Override
     public List<BidTransaction> findByAuctionId(String auctionId) {
         String sql = """
-                SELECT id, auction_id, bidder_id, bid_amount
+                SELECT id, auction_id, bidder_id, bid_amount, created_at
                 FROM bid_transactions
                 WHERE auction_id = ?
                 ORDER BY bid_amount DESC, created_at DESC
@@ -63,9 +69,62 @@ public class BidDAOImpl implements BidDAO {
     }
 
     @Override
+    public List<BidTransaction> findByBidderId(String bidderId) {
+        String sql = """
+                SELECT b.id,
+                       b.auction_id,
+                       b.bidder_id,
+                       b.bid_amount,
+                       b.created_at,
+                       u.username AS bidder_username,
+                       u.password AS bidder_password,
+                       u.email AS bidder_email,
+                       a.status AS auction_status,
+                       i.id AS item_id,
+                       i.seller_id,
+                       i.type AS item_type,
+                       i.name AS item_name,
+                       i.description,
+                       i.start_date,
+                       i.end_date,
+                       i.start_price,
+                       i.min_increment,
+                       i.highest_current_price,
+                       art.author,
+                       e.warranty_months,
+                       v.brand
+                FROM bid_transactions b
+                JOIN users u ON u.id = b.bidder_id
+                JOIN auctions a ON a.id = b.auction_id
+                JOIN items i ON i.id = a.item_id
+                LEFT JOIN art art ON art.id = i.id
+                LEFT JOIN electronics e ON e.id = i.id
+                LEFT JOIN vehicle v ON v.id = i.id
+                WHERE b.bidder_id = ?
+                ORDER BY b.created_at DESC, b.id DESC
+                """;
+        List<BidTransaction> bids = new ArrayList<>();
+
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, bidderId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    bids.add(mapBidWithAuctionSummary(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load bids for bidder: " + bidderId, e);
+        }
+
+        return bids;
+    }
+
+    @Override
     public BidTransaction getMaxBidByAuctionId(String auctionId) {
         String sql = """
-                SELECT id, auction_id, bidder_id, bid_amount
+                SELECT id, auction_id, bidder_id, bid_amount, created_at
                 FROM bid_transactions
                 WHERE auction_id = ?
                 ORDER BY bid_amount DESC, created_at DESC
@@ -90,7 +149,7 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public BidTransaction findById(String id) {
-        String sql = "SELECT id, auction_id, bidder_id, bid_amount FROM bid_transactions WHERE id = ?";
+        String sql = "SELECT id, auction_id, bidder_id, bid_amount, created_at FROM bid_transactions WHERE id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -110,7 +169,7 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public List<BidTransaction> findAll() {
-        String sql = "SELECT id, auction_id, bidder_id, bid_amount FROM bid_transactions ORDER BY created_at DESC";
+        String sql = "SELECT id, auction_id, bidder_id, bid_amount, created_at FROM bid_transactions ORDER BY created_at DESC";
         List<BidTransaction> bids = new ArrayList<>();
 
         try (Connection connection = DatabaseConfig.getConnection();
@@ -152,9 +211,10 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public boolean placeBidSafely(BidTransaction bid) {
-        // Lock auction record to serialize concurrent bid operations.
         String lockAuctionSql = """
                 SELECT a.status,
+                       a.last_bidder_id,
+                       a.current_version,
                        i.start_price,
                        i.min_increment,
                        i.highest_current_price
@@ -163,7 +223,6 @@ public class BidDAOImpl implements BidDAO {
                 WHERE a.id = ?
                 FOR UPDATE
                 """;
-        String bidderSql = "SELECT role, balance FROM users WHERE id = ? FOR UPDATE";
         String maxBidSql = "SELECT MAX(bid_amount) AS max_bid FROM bid_transactions WHERE auction_id = ?";
         String insertBidSql = """
                 INSERT INTO bid_transactions (id, auction_id, bidder_id, bid_amount)
@@ -177,15 +236,58 @@ public class BidDAOImpl implements BidDAO {
                     a.current_version = a.current_version + 1
                 WHERE a.id = ?
                 """;
+        String lockBidderSql = "SELECT balance, held_balance FROM bidder WHERE id = ? FOR UPDATE";
+        String updateBidderSql = "UPDATE bidder SET balance = ?, held_balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             connection.setAutoCommit(false);
 
             try {
-                // Toàn bộ các bước kiểm tra + ghi bid + cập nhật giá phải cùng 1 transaction.
                 LockedAuction lockedAuction = lockAuction(connection, lockAuctionSql, bid.getAuction().getId());
-                validateBidder(connection, bidderSql, bid.getBidder().getId(), bid.getBidAmount());
                 validateBidAmount(connection, maxBidSql, bid, lockedAuction);
+
+                String bidderId = bid.getBidder().getId();
+                String lastBidderId = lockedAuction.lastBidderId;
+
+                List<String> bidderIdsToLock = new ArrayList<>();
+                bidderIdsToLock.add(bidderId);
+                if (lastBidderId != null && !lastBidderId.isBlank() && !lastBidderId.equals(bidderId)) {
+                    bidderIdsToLock.add(lastBidderId);
+                }
+                bidderIdsToLock.sort(String::compareTo);
+
+                BidderAccountState currentBidderState = null;
+                BidderAccountState previousBidderState = null;
+
+                for (String id : bidderIdsToLock) {
+                    BidderAccountState state = lockBidderAccount(connection, lockBidderSql, id);
+                    if (Objects.equals(id, bidderId)) {
+                        currentBidderState = state;
+                    }
+                    if (Objects.equals(id, lastBidderId)) {
+                        previousBidderState = state;
+                    }
+                }
+
+                if (currentBidderState == null) {
+                    throw new IllegalStateException("Bidder account not found");
+                }
+
+                // Only release held balance if previous bidder is different from current bidder
+                boolean isSameBidder = lastBidderId != null && lastBidderId.equals(bidderId);
+
+                if (!isSameBidder && lastBidderId != null && !lastBidderId.isBlank() && previousBidderState != null && previousBidderState.heldBalance > 0) {
+                    // Release previous bidder's held balance (refund their bid)
+                    previousBidderState.release(lockedAuction.highestCurrentPrice > 0 ? lockedAuction.highestCurrentPrice : 0);
+                }
+
+                currentBidderState.reserve(bid.getBidAmount());
+
+                updateBidderAccount(connection, updateBidderSql, bidderId, currentBidderState);
+                if (!isSameBidder && previousBidderState != null) {
+                    updateBidderAccount(connection, updateBidderSql, lastBidderId, previousBidderState);
+                }
+
                 insertBid(connection, insertBidSql, bid);
                 updateAuctionPrice(connection, updateAuctionSql, bid);
 
@@ -225,7 +327,74 @@ public class BidDAOImpl implements BidDAO {
 
         BidTransaction bid = new BidTransaction((Bidder) user, auction, resultSet.getDouble("bid_amount"));
         bid.setId(resultSet.getString("id"));
+        Timestamp createdAt = resultSet.getTimestamp("created_at");
+        if (createdAt != null) {
+            bid.setCreatedAt(createdAt.toString());
+        }
         return bid;
+    }
+
+    private BidTransaction mapBidWithAuctionSummary(ResultSet resultSet) throws SQLException {
+        Bidder bidder = new Bidder(
+                resultSet.getString("bidder_username"),
+                resultSet.getString("bidder_password"),
+                resultSet.getString("bidder_email")
+        );
+        bidder.setId(resultSet.getString("bidder_id"));
+
+        Item item = mapJoinedItem(resultSet);
+        Auction auction = new Auction(item);
+        auction.setId(resultSet.getString("auction_id"));
+        auction.setAuctionStatus(Status.valueOf(resultSet.getString("auction_status")));
+
+        BidTransaction bid = new BidTransaction(bidder, auction, resultSet.getDouble("bid_amount"));
+        bid.setId(resultSet.getString("id"));
+        Timestamp createdAt = resultSet.getTimestamp("created_at");
+        if (createdAt != null) {
+            bid.setCreatedAt(createdAt.toString());
+        }
+        return bid;
+    }
+
+    private Item mapJoinedItem(ResultSet resultSet) throws SQLException {
+        String type = resultSet.getString("item_type");
+        Item item;
+        if ("ELECTRONICS".equals(type)) {
+            item = new Electronics(
+                    resultSet.getString("description"),
+                    resultSet.getString("item_name"),
+                    resultSet.getString("start_date"),
+                    resultSet.getString("end_date"),
+                    resultSet.getDouble("start_price"),
+                    resultSet.getDouble("min_increment"),
+                    resultSet.getInt("warranty_months")
+            );
+        } else if ("VEHICLE".equals(type)) {
+            item = new Vehicle(
+                    resultSet.getString("description"),
+                    resultSet.getString("item_name"),
+                    resultSet.getString("start_date"),
+                    resultSet.getString("end_date"),
+                    resultSet.getDouble("start_price"),
+                    resultSet.getDouble("min_increment"),
+                    resultSet.getString("brand")
+            );
+        } else {
+            item = new Art(
+                    resultSet.getString("description"),
+                    resultSet.getString("item_name"),
+                    resultSet.getString("start_date"),
+                    resultSet.getString("end_date"),
+                    resultSet.getDouble("start_price"),
+                    resultSet.getDouble("min_increment"),
+                    resultSet.getString("author")
+            );
+        }
+
+        item.setId(resultSet.getString("item_id"));
+        item.setSellerId(resultSet.getString("seller_id"));
+        item.setHighestCurrentPrice(resultSet.getDouble("highest_current_price"));
+        return item;
     }
 
     private LockedAuction lockAuction(Connection connection, String sql, String auctionId) throws SQLException {
@@ -242,26 +411,29 @@ public class BidDAOImpl implements BidDAO {
                     throw new IllegalArgumentException("Auction is not active");
                 }
 
+                String lastBidderId = resultSet.getString("last_bidder_id");
                 double startPrice = resultSet.getDouble("start_price");
                 double minIncrement = resultSet.getDouble("min_increment");
                 double highestCurrentPrice = resultSet.getDouble("highest_current_price");
 
-                return new LockedAuction(startPrice, minIncrement, highestCurrentPrice);
+                return new LockedAuction(startPrice, minIncrement, highestCurrentPrice, lastBidderId);
             }
         }
     }
 
-    private void validateBidder(Connection connection, String sql, String bidderId, double bidAmount) throws SQLException {
+    private BidderAccountState lockBidderAccount(Connection connection, String sql, String bidderId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, bidderId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next() || !"BIDDER".equals(resultSet.getString("role"))) {
+                if (!resultSet.next()) {
                     throw new IllegalArgumentException("Bidder not found");
                 }
-                if (resultSet.getDouble("balance") < bidAmount) {
-                    throw new IllegalArgumentException("Insufficient funds to place this bid");
-                }
+
+                return new BidderAccountState(
+                        resultSet.getDouble("balance"),
+                        resultSet.getDouble("held_balance")
+                );
             }
         }
     }
@@ -310,15 +482,60 @@ public class BidDAOImpl implements BidDAO {
         }
     }
 
+    private void updateBidderAccount(Connection connection, String sql, String bidderId, BidderAccountState state) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDouble(1, state.balance);
+            statement.setDouble(2, state.heldBalance);
+            statement.setString(3, bidderId);
+            if (statement.executeUpdate() == 0) {
+                throw new IllegalStateException("Failed to update bidder account");
+            }
+        }
+    }
+
     private static class LockedAuction {
         private final double startPrice;
         private final double minIncrement;
         private final double highestCurrentPrice;
+        private final String lastBidderId;
 
-        private LockedAuction(double startPrice, double minIncrement, double highestCurrentPrice) {
+        private LockedAuction(double startPrice, double minIncrement, double highestCurrentPrice, String lastBidderId) {
             this.startPrice = startPrice;
             this.minIncrement = minIncrement;
             this.highestCurrentPrice = highestCurrentPrice;
+            this.lastBidderId = lastBidderId;
+        }
+    }
+
+    private static class BidderAccountState {
+        private double balance;
+        private double heldBalance;
+
+        private BidderAccountState(double balance, double heldBalance) {
+            this.balance = balance;
+            this.heldBalance = heldBalance;
+        }
+
+        private void reserve(double amount) {
+            if (amount <= 0) {
+                throw new IllegalArgumentException("Bid amount must be greater than 0");
+            }
+            if (balance < amount) {
+                throw new IllegalArgumentException("Insufficient funds to place this bid");
+            }
+            balance -= amount;
+            heldBalance += amount;
+        }
+
+        private void release(double amount) {
+            if (amount <= 0) {
+                return;
+            }
+            if (heldBalance < amount) {
+                throw new IllegalStateException("Held balance is lower than the released amount");
+            }
+            heldBalance -= amount;
+            balance += amount;
         }
     }
 }
