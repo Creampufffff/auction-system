@@ -465,13 +465,9 @@ public class LiveBiddingController {
                 // Xử lý chuỗi kiểu SQL Timestamp: "2026-06-01 06:02:07.0" -> "2026-06-01T06:02:07.0"
                 String normalizedTime = rawTime.replace(" ", "T");
                 java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(normalizedTime);
-                
-                // Mặc định dữ liệu thô từ server là UTC (+0), do đó ta gán nó vào UTC trước
-                java.time.ZonedDateTime utcZdt = ldt.atZone(java.time.ZoneOffset.UTC);
-                // Sau đó mới chuyển sang múi giờ Việt Nam (+7)
-                java.time.ZonedDateTime localTime = utcZdt.withZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
-                
-                return localTime.format(java.time.format.DateTimeFormatter.ofPattern(pattern));
+
+                // SQL/JDBC server đã trả chuỗi theo giờ Việt Nam, không chuyển múi giờ lần nữa.
+                return ldt.format(java.time.format.DateTimeFormatter.ofPattern(pattern));
             } catch (Exception ex) {
                 // Trả về nguyên bản nếu parse thất bại
                 return rawTime;
