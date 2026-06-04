@@ -14,28 +14,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class ProductManagementController {
-    private static final DateTimeFormatter AUCTION_DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML private TableView<Product> myProductsTable;
     @FXML private Label titleLabel;
@@ -254,185 +239,15 @@ public class ProductManagementController {
 
     @FXML
     private void handleAddProduct(ActionEvent event) {
-        Dialog<Product> dialog = new Dialog<>();
-        dialog.setTitle("Đăng sản phẩm mới");
-        dialog.setHeaderText(null);
-
-        ButtonType postButtonType = new ButtonType("Đăng bài", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(postButtonType, ButtonType.CANCEL);
-        dialog.getDialogPane().getStyleClass().add("product-dialog-pane");
-        dialog.getDialogPane().setPrefWidth(820);
-        dialog.getDialogPane().setMinWidth(820);
-        dialog.getDialogPane().setPrefHeight(700);
-        dialog.getDialogPane().setMinHeight(700);
-        String dialogCss = getClass().getResource("/css/style.css").toExternalForm();
-        dialog.getDialogPane().getStylesheets().add(dialogCss);
-
-        TextField nameField = new TextField();
-        TextField priceField = new TextField();
-        ComboBox<String> auctionTypeBox = new ComboBox<>();
-        auctionTypeBox.getItems().addAll("ART", "ELECTRONICS", "VEHICLE");
-        auctionTypeBox.setValue("ART");
-        auctionTypeBox.setMaxWidth(Double.MAX_VALUE);
-        TextField conditionField = new TextField();
-        TextArea descriptionArea = new TextArea();
-        descriptionArea.setPrefRowCount(2);
-        TextField warrantyField = new TextField();
-        DatePicker startDatePicker = new DatePicker(LocalDate.now());
-        DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
-        TextField startTimeField = new TextField("09:00");
-        TextField endTimeField = new TextField("18:00");
-        TextField minIncrementField = new TextField("1");
-        Label conditionLabel = new Label("Tác giả:");
-        Label warrantyLabel = new Label("Thông tin phụ:");
-        nameField.setPromptText("Nhập tên sản phẩm");
-        priceField.setPromptText("Nhập giá khởi điểm");
-        conditionField.setPromptText("Nhập tên tác giả (nếu có)");
-        descriptionArea.setPromptText("Nhập mô tả chi tiết về sản phẩm...");
-        warrantyField.setPromptText("Có thể bỏ trống");
-        startTimeField.setPromptText("HH:mm");
-        endTimeField.setPromptText("HH:mm");
-        styleProductDialogControls(
-                nameField,
-                priceField,
-                auctionTypeBox,
-                conditionField,
-                descriptionArea,
-                warrantyField,
-                startDatePicker,
-                endDatePicker,
-                startTimeField,
-                endTimeField,
-                minIncrementField
-        );
-
-        updateTypeSpecificFields(auctionTypeBox.getValue(), conditionLabel, warrantyLabel, warrantyField);
-        auctionTypeBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            String selectedType = newValue == null ? "ART" : newValue;
-            if ("ELECTRONICS".equals(selectedType)) {
-                conditionLabel.setText("Tình trạng:");
-                warrantyLabel.setText("Bảo hành (tháng):");
-                warrantyField.setPromptText("Ví dụ: 12");
-            } else if ("VEHICLE".equals(selectedType)) {
-                conditionLabel.setText("Tình trạng:");
-                warrantyLabel.setText("Hãng xe:");
-                warrantyField.setPromptText("Ví dụ: Toyota");
-            } else {
-                conditionLabel.setText("Tác giả:");
-            }
-            updateTypeSpecificFields(selectedType, conditionLabel, warrantyLabel, warrantyField);
-        });
-
-        VBox headerText = new VBox(4,
-                styledLabel("Đăng sản phẩm mới", "product-dialog-title"),
-                styledLabel("Điền thông tin chi tiết để tạo phiên đấu giá", "product-dialog-subtitle")
-        );
-        Label headerIcon = styledLabel("⚖", "product-dialog-header-icon");
-        HBox header = new HBox(16, headerIcon, headerText);
-        header.getStyleClass().add("product-dialog-custom-header");
-
-        VBox basicFields = new VBox(12,
-                dialogField("Tên sản phẩm *", nameField),
-                dialogField("Loại auction *", auctionTypeBox),
-                dialogField("Giá khởi điểm ($) *", priceField),
-                dialogField(conditionLabel, conditionField)
-        );
-        basicFields.setPrefWidth(540);
-
-        final byte[][] selectedImageBlob = new byte[1][];
-        Label imageUploadTitle = styledLabel("Thêm ảnh sản phẩm", "product-dialog-upload-title");
-        Label imageUploadHelp = styledLabel("Kéo thả hoặc nhấn để chọn", "product-dialog-upload-help");
-        VBox imageBox = new VBox(10,
-                styledLabel("❑", "product-dialog-upload-icon"),
-                imageUploadTitle,
-                imageUploadHelp,
-                styledLabel("JPG, PNG (tối đa 5MB)", "product-dialog-upload-note")
-        );
-        imageBox.getStyleClass().add("product-dialog-upload-box");
-        imageBox.setOnMouseClicked(mouseEvent -> chooseProductImage(dialog, selectedImageBlob, imageUploadTitle, imageUploadHelp));
-        HBox basicRow = new HBox(28, basicFields, imageBox);
-
-        VBox basicSection = new VBox(16,
-                sectionTitle("Thông tin cơ bản"),
-                basicRow,
-                dialogField("Mô tả chi tiết", descriptionArea),
-                dialogField(warrantyLabel, warrantyField)
-        );
-
-        GridPane timeGrid = new GridPane();
-        timeGrid.setHgap(28);
-        timeGrid.setVgap(12);
-        ColumnConstraints leftTimeColumn = new ColumnConstraints();
-        leftTimeColumn.setHgrow(Priority.ALWAYS);
-        ColumnConstraints rightTimeColumn = new ColumnConstraints();
-        rightTimeColumn.setHgrow(Priority.ALWAYS);
-        timeGrid.getColumnConstraints().addAll(leftTimeColumn, rightTimeColumn);
-        timeGrid.add(dialogField("Ngày bắt đầu *", startDatePicker), 0, 0);
-        timeGrid.add(dialogField("Ngày kết thúc *", endDatePicker), 1, 0);
-        timeGrid.add(dialogField("Giờ bắt đầu *", startTimeField), 0, 1);
-        timeGrid.add(dialogField("Giờ kết thúc *", endTimeField), 1, 1);
-
-        VBox timeSection = new VBox(14, sectionTitle("Thời gian đấu giá"), timeGrid);
-        timeSection.getStyleClass().add("product-dialog-section");
-
-        VBox incrementSection = new VBox(10, dialogField("Bước giá tối thiểu ($) *", minIncrementField));
-        incrementSection.getStyleClass().add("product-dialog-section");
-
-        VBox body = new VBox(16, basicSection, timeSection, incrementSection);
-        body.getStyleClass().add("product-dialog-body");
-
-        VBox shell = new VBox(header, body);
-        shell.getStyleClass().add("product-dialog-shell");
-        ScrollPane scrollPane = new ScrollPane(shell);
-        scrollPane.getStyleClass().add("product-dialog-scroll");
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        dialog.getDialogPane().setContent(scrollPane);
-        Button postButton = (Button) dialog.getDialogPane().lookupButton(postButtonType);
-        postButton.getStyleClass().add("product-dialog-primary-button");
-        postButton.addEventFilter(ActionEvent.ACTION, actionEvent -> {
-            if (!validateAuctionDialogInput(
-                    nameField,
-                    priceField,
-                    startDatePicker,
-                    startTimeField,
-                    endDatePicker,
-                    endTimeField,
-                    minIncrementField
-            )) {
-                actionEvent.consume();
-            }
-        });
-        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
-        cancelButton.getStyleClass().add("product-dialog-secondary-button");
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == postButtonType) {
-                try {
-                    double price = Double.parseDouble(priceField.getText());
-                    String id = "MINE-" + (productData.size() + 101);
-                    String auctionType = auctionTypeBox.getValue() == null ? "ART" : auctionTypeBox.getValue();
-                    return new Product(id, auctionType, nameField.getText(), price, "Đang mở",
-                            conditionField.getText(), descriptionArea.getText(), warrantyField.getText());
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-            return null;
-        });
-
-        Optional<Product> result = dialog.showAndWait();
-        result.ifPresent(newProduct -> {
+        AddProductController.showAndCollect(productData.size()).ifPresent(addProductRequest -> {
+            Product newProduct = addProductRequest.product();
             String name = escapePipe(newProduct.getName());
             String desc = escapePipe(newProduct.getDescription());
-            LocalDate startDateValue = startDatePicker.getValue();
-            LocalDate endDateValue = endDatePicker.getValue();
-            String startDate = buildDateTimeString(startDateValue, startTimeField);
-            String endDate = buildDateTimeString(endDateValue, endTimeField);
+            String startDate = addProductRequest.startDateTime();
+            String endDate = addProductRequest.endDateTime();
             newProduct.setEndDateTime(endDate);
-            String minIncrement = minIncrementField.getText();
-            String auctionType = auctionTypeBox.getValue() == null ? "ART" : auctionTypeBox.getValue();
+            String minIncrement = addProductRequest.minIncrement();
+            String auctionType = addProductRequest.auctionType();
             String condition = escapePipe(newProduct.getCondition());
             String extra = escapePipe(newProduct.getWarranty());
 
@@ -445,7 +260,7 @@ public class ProductManagementController {
                         newProduct.getPrice(),
                         minIncrement,
                         extra,
-                        selectedImageBlob[0]
+                        addProductRequest.imageBlob()
                 );
                 case "VEHICLE" -> auctionService.createVehicleAuction(
                         name,
@@ -455,7 +270,7 @@ public class ProductManagementController {
                         newProduct.getPrice(),
                         minIncrement,
                         extra,
-                        selectedImageBlob[0]
+                        addProductRequest.imageBlob()
                 );
                 default -> auctionService.createArtAuction(
                         name,
@@ -465,23 +280,23 @@ public class ProductManagementController {
                         newProduct.getPrice(),
                         minIncrement,
                         condition,
-                        selectedImageBlob[0]
+                        addProductRequest.imageBlob()
                 );
             };
 
             if (response == null || response.isBlank()) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Lỗi tạo phiên đấu giá");
-                alert.setHeaderText("Không thể tạo phiên trên server");
-                alert.setContentText("Server không phản hồi.");
+                alert.setTitle("Loi tao phien dau gia");
+                alert.setHeaderText("Khong the tao phien tren server");
+                alert.setContentText("Server khong phan hoi.");
                 alert.showAndWait();
                 return;
             }
 
             if (response.startsWith("ERR|")) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Lỗi tạo phiên đấu giá");
-                alert.setHeaderText("Không thể tạo phiên trên server");
+                alert.setTitle("Loi tao phien dau gia");
+                alert.setHeaderText("Khong the tao phien tren server");
                 alert.setContentText(response.substring(4));
                 alert.showAndWait();
                 return;
@@ -495,175 +310,22 @@ public class ProductManagementController {
                 }
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Lỗi tạo phiên đấu giá");
-                alert.setHeaderText("Không thể tạo phiên trên server");
-                alert.setContentText("Phản hồi không hợp lệ: " + response);
+                alert.setTitle("Loi tao phien dau gia");
+                alert.setHeaderText("Khong the tao phien tren server");
+                alert.setContentText("Phan hoi khong hop le: " + response);
                 alert.showAndWait();
                 return;
             }
 
             productData.add(newProduct);
             ProductDataManager.getInstance().pushToGlobalAuction(newProduct);
-
-            // Cập nhật lại số dư ví tiền Sidebar đề phòng server có thay đổi phí tạo sàn
             refreshAccountSidebarInfo();
         });
-    }
-
-    private void chooseProductImage(
-            Dialog<?> dialog,
-            byte[][] selectedImageBlob,
-            Label imageUploadTitle,
-            Label imageUploadHelp
-    ) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Chọn ảnh sản phẩm");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Ảnh JPG/PNG", "*.jpg", "*.jpeg", "*.png")
-        );
-
-        File selectedFile = fileChooser.showOpenDialog(dialog.getDialogPane().getScene().getWindow());
-        if (selectedFile == null) {
-            return;
-        }
-
-        if (selectedFile.length() > 5L * 1024L * 1024L) {
-            showDialogError("Ảnh không được vượt quá 5MB.");
-            return;
-        }
-
-        try {
-            selectedImageBlob[0] = Files.readAllBytes(selectedFile.toPath());
-            imageUploadTitle.setText(selectedFile.getName());
-            imageUploadHelp.setText("Đã chọn " + selectedImageBlob[0].length / 1024 + " KB");
-        } catch (IOException e) {
-            showDialogError("Không thể đọc file ảnh: " + e.getMessage());
-        }
     }
 
     private String escapePipe(String input) {
         if (input == null) return "";
         return input.replace("|", " ");
-    }
-
-    private void styleProductDialogControls(Control... controls) {
-        for (Control control : controls) {
-            control.getStyleClass().add("product-dialog-input");
-            control.setMaxWidth(Double.MAX_VALUE);
-        }
-    }
-
-    private VBox dialogField(String labelText, Control control) {
-        return dialogField(styledLabel(labelText, "product-dialog-field-label"), control);
-    }
-
-    private VBox dialogField(Label label, Control control) {
-        label.getStyleClass().add("product-dialog-field-label");
-        control.setMaxWidth(Double.MAX_VALUE);
-        VBox box = new VBox(7, label, control);
-        box.getStyleClass().add("product-dialog-field");
-        return box;
-    }
-
-    private HBox sectionTitle(String text) {
-        Label icon = styledLabel("❑", "product-dialog-section-icon");
-        Label title = styledLabel(text, "product-dialog-section-title");
-        HBox box = new HBox(10, icon, title);
-        box.getStyleClass().add("product-dialog-section-title-row");
-        return box;
-    }
-
-    private Label styledLabel(String text, String styleClass) {
-        Label label = new Label(text);
-        label.getStyleClass().add(styleClass);
-        return label;
-    }
-
-    private void updateTypeSpecificFields(
-            String auctionType,
-            Label conditionLabel,
-            Label warrantyLabel,
-            TextField warrantyField
-    ) {
-        boolean isArt = auctionType == null || "ART".equals(auctionType);
-        if (isArt) {
-            conditionLabel.setText("Tác giả:");
-            warrantyField.clear();
-        }
-
-        warrantyLabel.setVisible(!isArt);
-        warrantyLabel.setManaged(!isArt);
-        warrantyField.setVisible(!isArt);
-        warrantyField.setManaged(!isArt);
-    }
-
-    private boolean validateAuctionDialogInput(
-            TextField nameField,
-            TextField priceField,
-            DatePicker startDatePicker,
-            TextField startTimeField,
-            DatePicker endDatePicker,
-            TextField endTimeField,
-            TextField minIncrementField
-    ) {
-        if (nameField.getText() == null || nameField.getText().isBlank()) {
-            showDialogError("Tên sản phẩm không được để trống.");
-            return false;
-        }
-
-        try {
-            double price = Double.parseDouble(priceField.getText().trim());
-            double minIncrement = Double.parseDouble(minIncrementField.getText().trim());
-            if (price <= 0 || minIncrement <= 0) {
-                showDialogError("Giá và bước giá phải lớn hơn 0.");
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            showDialogError("Giá và bước giá phải là số hợp lệ.");
-            return false;
-        }
-
-        if (startDatePicker.getValue() == null || endDatePicker.getValue() == null) {
-            showDialogError("Vui lòng chọn ngày bắt đầu và ngày kết thúc.");
-            return false;
-        }
-
-        try {
-            LocalDateTime startDateTime = buildDateTime(startDatePicker.getValue(), startTimeField);
-            LocalDateTime endDateTime = buildDateTime(endDatePicker.getValue(), endTimeField);
-            if (!endDateTime.isAfter(startDateTime)) {
-                showDialogError("Thời gian kết thúc phải sau thời gian bắt đầu.");
-                return false;
-            }
-        } catch (DateTimeParseException e) {
-            showDialogError("Giờ phải có định dạng HH:mm, ví dụ 09:00 hoặc 18:30.");
-            return false;
-        }
-
-        return true;
-    }
-
-    private String buildDateTimeString(LocalDate date, TextField timeField) {
-        return buildDateTime(date, timeField).format(AUCTION_DATE_TIME_FORMATTER);
-    }
-
-    private LocalDateTime buildDateTime(LocalDate date, TextField timeField) {
-        return LocalDateTime.of(date, parseTime(timeField.getText()));
-    }
-
-    private LocalTime parseTime(String value) {
-        if (value == null) {
-            throw new DateTimeParseException("Time is empty", "", 0);
-        }
-
-        String trimmed = value.trim();
-        if (trimmed.matches("\\d{1,2}:\\d{2}")) {
-            return LocalTime.parse(trimmed, DateTimeFormatter.ofPattern("H:mm"));
-        }
-        if (trimmed.matches("\\d{1,2}:\\d{2}:\\d{2}")) {
-            return LocalTime.parse(trimmed, DateTimeFormatter.ofPattern("H:mm:ss"));
-        }
-        throw new DateTimeParseException("Invalid time", trimmed, 0);
     }
 
     private void showDialogError(String message) {
