@@ -68,25 +68,40 @@ public final class SocketClientService {
     }
 
     public static void stopRealtimeListener() {
+        stopRealtimeListener(null);
+    }
+
+    private static void stopRealtimeListener(Socket expectedSocket) {
+        Socket socketToClose;
+        BufferedReader readerToClose;
+        PrintWriter writerToClose;
+
         synchronized (LISTENER_LOCK) {
+            if (expectedSocket != null && sessionSocket != expectedSocket) {
+                return;
+            }
+
             listenerRunning = false;
+            socketToClose = sessionSocket;
+            readerToClose = sessionReader;
+            writerToClose = sessionWriter;
 
-            if (sessionReader != null) {
-                try { sessionReader.close(); } catch (IOException ignored) {}
-                sessionReader = null;
-            }
-
-            if (sessionWriter != null) {
-                sessionWriter.close();
-                sessionWriter = null;
-            }
-
-            if (sessionSocket != null) {
-                try { sessionSocket.close(); } catch (IOException ignored) {}
-                sessionSocket = null;
-            }
-
+            sessionSocket = null;
+            sessionReader = null;
+            sessionWriter = null;
             sessionResponseQueue.clear();
+            sessionResponseQueue.offer("ERR|SESSION_CLOSED");
+        }
+
+        // Closing the socket first unblocks the listener thread's readLine().
+        if (socketToClose != null) {
+            try { socketToClose.close(); } catch (IOException ignored) {}
+        }
+        if (writerToClose != null) {
+            writerToClose.close();
+        }
+        if (readerToClose != null) {
+            try { readerToClose.close(); } catch (IOException ignored) {}
         }
     }
 
@@ -140,7 +155,7 @@ public final class SocketClientService {
             Thread listenerThread = new Thread(() -> {
                 try {
                     String line;
-                    while (listenerRunning && (line = sessionReader.readLine()) != null) {
+                    while (listenerRunning && !sock.isClosed() && (line = r.readLine()) != null) {
                         // Determine if this is a realtime event (BID_UPDATED, AUCTION_ENDED, etc.)
                         // or a command response (OK|..., ERR|...)
                         System.out.println("[SocketClientService] session listener recv: " + line);
@@ -151,7 +166,7 @@ public final class SocketClientService {
                         System.err.println("Session realtime listener stopped: " + e.getMessage());
                     }
                 } finally {
-                    stopRealtimeListener();
+                    stopRealtimeListener(sock);
                 }
             }, "auction-session-listener");
             listenerThread.setDaemon(true);
