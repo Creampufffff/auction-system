@@ -17,7 +17,6 @@ permissions:
 jobs:
   windows-client:
     runs-on: windows-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,15 +42,72 @@ jobs:
         shell: pwsh
         run: .\windows\package-client.ps1 -Version "${{ steps.version.outputs.value }}"
 
-      - name: Upload client artifact
+      - name: Upload Windows client
         uses: actions/upload-artifact@v4
         with:
           name: AuctionClient-windows-x64-${{ steps.version.outputs.value }}
           path: dist/AuctionClient-windows-x64-${{ steps.version.outputs.value }}.zip
 
+  unix-client:
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            artifact: linux-x64
+            extension: tar.gz
+          - runner: macos-13
+            artifact: macos-x64
+            extension: zip
+          - runner: macos-14
+            artifact: macos-arm64
+            extension: zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: temurin
+          cache: maven
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build portable client
+        shell: bash
+        run: bash ./linux-maxOS/package-client.sh "${{ steps.version.outputs.value }}"
+
+      - name: Upload client
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuctionClient-${{ matrix.artifact }}-${{ steps.version.outputs.value }}
+          path: dist/AuctionClient-${{ matrix.artifact }}-${{ steps.version.outputs.value }}.${{ matrix.extension }}
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - windows-client
+      - unix-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/AuctionClient-windows-x64-${{ steps.version.outputs.value }}.zip
+          files: release-artifacts/*
           generate_release_notes: true
