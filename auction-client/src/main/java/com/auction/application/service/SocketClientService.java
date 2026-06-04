@@ -13,11 +13,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public final class SocketClientService {
-    private static final Dotenv DOTENV = Dotenv.configure().ignoreIfMissing().load();
+    private static final Dotenv DOTENV = loadDotenv();
     private static final String SERVER_HOST = resolveConfig("AUCTION_SERVER_HOST", "127.0.0.1");
     private static final int SERVER_PORT = resolvePort();
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -35,6 +36,18 @@ public final class SocketClientService {
     private static final Object SESSION_REQUEST_LOCK = new Object(); //lock để đảm bảo chỉ có 1 request đang chờ response
 
     private SocketClientService() {
+    }
+
+    private static Dotenv loadDotenv() {
+        String appPath = System.getProperty("jpackage.app-path");
+        Path configDirectory = appPath == null || appPath.isBlank()
+                ? Path.of(System.getProperty("user.dir"))
+                : Path.of(appPath).toAbsolutePath().getParent();
+
+        return Dotenv.configure()
+                .directory(configDirectory.toString())
+                .ignoreIfMissing()
+                .load();
     }
 
     public static String sendJson(String requestJson) {

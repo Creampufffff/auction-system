@@ -304,3 +304,25 @@ Session done Failed=0 Scanned=1 Updated=1
 - Báo cáo PDF: TODO - cập nhật link Google Drive/GitHub release tại đây.
 - Video demo: TODO - cập nhật link video demo tại đây.
 
+## 14. Phát hành client Windows
+
+Client Windows được đóng gói dưới dạng portable ZIP có kèm Java runtime. Người
+dùng cuối không cần cài Java:
+
+1. Tải `AuctionClient-windows-x64-<version>.zip` từ GitHub Releases.
+2. Giải nén file ZIP.
+3. Đổi tên `.env.example` thành `.env`, rồi cập nhật IP/port server.
+4. Mở `AuctionClient.exe`.
+
+Để build local:
+
+```powershell
+.\windows\package-client.ps1 -Version "1.0.0"
+```
+
+File kết quả nằm trong `dist/`. Để GitHub Actions tự tạo Release, push một tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
