@@ -2,8 +2,6 @@ package com.auction.application.service;
 
 import com.auction.ui.view.LiveBiddingController;
 import com.auction.domain.model.ProductDataManager;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
 
 import com.app.common.dto.LoginResponseDTO;
@@ -21,7 +19,6 @@ public final class SocketClientService {
     private static final Dotenv DOTENV = loadDotenv();
     private static final String SERVER_HOST = resolveConfig("AUCTION_SERVER_HOST", "127.0.0.1");
     private static final int SERVER_PORT = resolvePort();
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Object LISTENER_LOCK = new Object();
 
     private static volatile boolean listenerRunning;
@@ -48,14 +45,14 @@ public final class SocketClientService {
                 .load();
     }
 
-    // Send a legacy plain-text command (non-JSON) to the server and return single-line response
+    // Send a plain-text command to the server and return a single-line response.
     public static String sendText(String requestText) {
         try (
                 Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            // Consume server welcome line (same behavior as sendJson)
+            // Consume server welcome line.
             reader.readLine();
             logTextCommand("sendText", requestText);
             writer.println(requestText);
@@ -121,7 +118,7 @@ public final class SocketClientService {
             // consume welcome
             r.readLine();
 
-            // send legacy text login
+            // Send text login.
             String loginCmd = String.format("LOGIN %s %s", username, password);
             logTextCommand("openSessionAndLogin", loginCmd);
             w.println(loginCmd);
@@ -212,7 +209,7 @@ public final class SocketClientService {
         }
         System.out.println("[SocketClientService] session message <- " + message);
         // Check if it's an event (realtime broadcast)
-        if (message.startsWith("EVENT|") || (message.startsWith("{") && message.contains("\"type\":\"EVENT"))) {
+        if (message.startsWith("EVENT|")) {
             handleRealtimeMessage(message);
         } else {
             // Treat as command response (OK|..., ERR|...)
@@ -274,21 +271,6 @@ public final class SocketClientService {
         }
 
         try {
-            if (message.startsWith("{")) {
-                JsonNode root = MAPPER.readTree(message);
-                String type = root.path("type").asText("");
-                JsonNode payload = root.path("payload");
-
-                if ("EVENT_BID_UPDATED".equalsIgnoreCase(type)) {
-                    handleBidUpdated(
-                            payload.path("auctionId").asText(null),
-                            payload.path("currentPrice").asDouble(Double.NaN),
-                            payload.path("leadingBidderId").asText(null)
-                    );
-                }
-                return;
-            }
-
             if (message.startsWith("EVENT|BID_UPDATED|")) {
                 String[] parts = message.split("\\|", 5);
                 if (parts.length >= 5) {

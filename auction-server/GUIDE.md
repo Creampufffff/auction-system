@@ -26,7 +26,6 @@
 - Maven (build)
 - MySQL (database)
 - Socket Protocol (client-server)
-- Jackson (JSON serialization)
 - Lombok (code generation)
 
 ---
@@ -138,7 +137,7 @@ server.broadcast("message"); // Gửi đến tất cả client
 **Vị trị:** `src/main/java/com/auction/app/socket/ClientHandler.java`
 
 **Chức năng:**
-- Đọc command từ client (text hoặc JSON)
+- Đọc command text từ client
 - Xử lý từng lệnh (LOGIN, PLACE_BID, CREATE_AUCTION, ...)
 - Ghi kết quả về client
 - Tự động đăng ký `SocketClientObserver` để nhận broadcast
@@ -355,7 +354,7 @@ java -jar target/auction-server-1.0-SNAPSHOT.jar
 ### 4. Client kết nối
 ```
 Socket: localhost:5000
-Protocol: Plain text (legacy) + JSON envelope
+Protocol: Plain text
 
 Ví dụ (telnet):
 > LOGIN user1 pass123

@@ -53,7 +53,7 @@ public class AuthService {
             return createRegisterResponse(false, "Thông tin đăng ký không hợp lệ.", null);
         }
 
-        // Use legacy text protocol to register seller because server JSON handler creates Bidder by default
+        // Seller registration uses its dedicated text command.
         String payload = String.format("REGISTER_SELLER %s %s %s", username, password, email);
         String response;
         try {
