@@ -310,12 +310,82 @@ public class AuctionDAOImpl implements AuctionDAO {
 
     @Override
     public boolean delete(String id) {
-        String sql = "DELETE FROM auctions WHERE id = ?";
+        String lockAuctionSql = """
+                SELECT a.status, a.last_bidder_id, i.highest_current_price
+                FROM auctions a
+                JOIN items i ON i.id = a.item_id
+                WHERE a.id = ?
+                FOR UPDATE
+                """;
+        String lockBidderSql = "SELECT balance, held_balance FROM bidder WHERE id = ? FOR UPDATE";
+        String updateBidderSql = "UPDATE bidder SET balance = ?, held_balance = ? WHERE id = ?";
+        String deleteAuctionSql = "DELETE FROM auctions WHERE id = ?";
 
-        try (Connection connection = DatabaseConfig.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, id);
-            return statement.executeUpdate() > 0;
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                String status;
+                String bidderId;
+                double amount;
+                try (PreparedStatement statement = connection.prepareStatement(lockAuctionSql)) {
+                    statement.setString(1, id);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (!resultSet.next()) {
+                            connection.rollback();
+                            return false;
+                        }
+                        status = resultSet.getString("status");
+                        bidderId = resultSet.getString("last_bidder_id");
+                        amount = resultSet.getDouble("highest_current_price");
+                    }
+                }
+
+                boolean requiresRefund = !Status.FINISHED.name().equals(status)
+                        && bidderId != null
+                        && !bidderId.isBlank()
+                        && amount > 0;
+                if (requiresRefund) {
+                    double bidderBalance;
+                    double bidderHeldBalance;
+                    try (PreparedStatement statement = connection.prepareStatement(lockBidderSql)) {
+                        statement.setString(1, bidderId);
+                        try (ResultSet resultSet = statement.executeQuery()) {
+                            if (!resultSet.next()) {
+                                throw new IllegalStateException("Leading bidder not found");
+                            }
+                            bidderBalance = resultSet.getDouble("balance");
+                            bidderHeldBalance = resultSet.getDouble("held_balance");
+                        }
+                    }
+
+                    if (bidderHeldBalance < amount) {
+                        throw new IllegalStateException("Leading bidder has insufficient held balance");
+                    }
+                    updateUserBalance(
+                            connection,
+                            updateBidderSql,
+                            bidderId,
+                            bidderBalance + amount,
+                            bidderHeldBalance - amount
+                    );
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(deleteAuctionSql)) {
+                    statement.setString(1, id);
+                    if (statement.executeUpdate() == 0) {
+                        throw new IllegalStateException("Failed to delete auction");
+                    }
+                }
+
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to delete auction: " + id, e);
         }
