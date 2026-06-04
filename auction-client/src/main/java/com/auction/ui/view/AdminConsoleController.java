@@ -3,6 +3,7 @@ package com.auction.ui.view;
 import com.app.common.dto.AuctionListDTO;
 import com.app.common.dto.BidHistoryDTO;
 import com.auction.application.service.AdminService;
+import com.auction.application.service.SocketClientService;
 import com.auction.domain.model.AdminDashboardStats;
 import com.auction.domain.model.AdminUserRow;
 import com.auction.domain.model.ProductDataManager;
@@ -116,6 +117,7 @@ public class AdminConsoleController {
 
     @FXML
     private void handleLogout() {
+        SocketClientService.stopRealtimeListener();
         SessionManager.clear();
         ProductDataManager.getInstance().resetSessionState();
         NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Đăng nhập");

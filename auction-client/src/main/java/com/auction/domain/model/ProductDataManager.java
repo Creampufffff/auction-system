@@ -91,6 +91,8 @@ public class ProductDataManager {
         dialogShownMap.clear();
         currentPriceMap.clear();
         bidHistoryCacheMap.clear();
+        serverAuctionList.clear();
+        myProductList.clear();
         selectedAuction = null;
         liveBiddingProductData = null;
         productDetailReturnPath = "/fxml/AuctionList.fxml";

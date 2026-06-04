@@ -134,4 +134,18 @@ public class ProductDataManagerTest {
 
         assertFalse(dataManager.isEnded(unknownAuctionId), "KhÃ´ng tÃ¬m tháº¥y phiÃªn Ä‘áº¥u giÃ¡, máº·c Ä‘á»‹nh tráº£ vá» false");
     }
+
+    @Test
+    @DisplayName("resetSessionState: Xóa cache danh sách auction và sản phẩm khi đăng xuất")
+    void resetSessionState_ShouldClearAuctionCaches() {
+        AuctionListDTO auction = new AuctionListDTO();
+        auction.setAuctionId("AUC-CACHED");
+        dataManager.getServerAuctionList().add(auction);
+        dataManager.getProductList().add(new Product("AUC-CACHED", "ART", "Cached", 100, "OPEN", "", "", ""));
+
+        dataManager.resetSessionState();
+
+        assertTrue(dataManager.getServerAuctionList().isEmpty());
+        assertTrue(dataManager.getProductList().isEmpty());
+    }
 }

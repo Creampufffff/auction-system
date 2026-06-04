@@ -5,6 +5,7 @@ import com.app.common.enums.Status;
 import com.auction.domain.model.Product;
 import com.auction.domain.model.ProductDataManager;
 import com.auction.application.service.AuctionService;
+import com.auction.application.service.SocketClientService;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
 import javafx.application.Platform;
@@ -243,9 +244,7 @@ public class AuctionListController {
     }
 
     private void loadAuctions() {
-        if (ProductDataManager.getInstance().getServerAuctionList().isEmpty()) {
-            ProductDataManager.getInstance().getServerAuctionList().addAll(auctionService.getActiveAuctions());
-        }
+        ProductDataManager.getInstance().getServerAuctionList().setAll(auctionService.getActiveAuctions());
         refreshTablePage();
     }
 
@@ -453,6 +452,7 @@ public class AuctionListController {
 
     @FXML
     private void handleLogout(ActionEvent event) {
+        SocketClientService.stopRealtimeListener();
         SessionManager.clear();
         ProductDataManager.getInstance().resetSessionState();
         NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Đăng nhập");

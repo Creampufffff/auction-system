@@ -2,6 +2,7 @@ package com.auction.ui.view;
 
 import com.app.common.dto.BalanceResponseDTO;
 import com.auction.application.service.AccountService;
+import com.auction.application.service.SocketClientService;
 import com.auction.domain.model.ProductDataManager;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
@@ -194,6 +195,7 @@ public class AccountController {
 
     @FXML
     private void handleLogout(ActionEvent event) {
+        SocketClientService.stopRealtimeListener();
         SessionManager.clear();
         ProductDataManager.getInstance().resetSessionState();
         NavigationService.getInstance().navigateToAuth("/fxml/Login.fxml", "Dang nhap");

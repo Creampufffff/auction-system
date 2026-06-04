@@ -97,6 +97,7 @@ public final class SocketClientService {
      * Returns a LoginResponseDTO parsed from server response (role may be empty if server used text protocol).
      */
     public static LoginResponseDTO openSessionAndLogin(String username, String password) {
+        stopRealtimeListener();
         try {
             Socket sock = new Socket(SERVER_HOST, SERVER_PORT);
             BufferedReader r = new BufferedReader(new InputStreamReader(sock.getInputStream()));
