@@ -87,7 +87,7 @@ public class AuctionService {
                 endDate,
                 startPrice,
                 minIncrement,
-                warrantyMonths,
+                normalizeWarrantyMonths(warrantyMonths),
                 imageBlob
         );
     }
@@ -163,6 +163,23 @@ public class AuctionService {
 
     private String encodeImage(byte[] imageBlob) {
         return imageBlob == null || imageBlob.length == 0 ? "" : Base64.getEncoder().encodeToString(imageBlob);
+    }
+
+    private String normalizeWarrantyMonths(String warrantyMonths) {
+        if (warrantyMonths == null || warrantyMonths.isBlank()) {
+            return "0";
+        }
+
+        try {
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("-?\\d+").matcher(warrantyMonths.trim());
+            if (!matcher.find()) {
+                return "0";
+            }
+            int parsed = Integer.parseInt(matcher.group());
+            return String.valueOf(Math.max(0, parsed));
+        } catch (NumberFormatException e) {
+            return "0";
+        }
     }
 
     public List<AuctionListDTO> getActiveAuctions() {

@@ -115,7 +115,7 @@ public class ProductDetailController {
         return switch (itemType) {
             case "ART" -> "Tác giả:";
             case "VEHICLE" -> "Hãng xe:";
-            default -> "Bảo hành:";
+            default -> "Bảo hành (tháng):";
         };
     }
 

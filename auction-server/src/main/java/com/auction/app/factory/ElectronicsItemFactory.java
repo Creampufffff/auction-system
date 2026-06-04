@@ -16,7 +16,7 @@ public class ElectronicsItemFactory implements ItemFactory {
         String endDate = require(args[3], "endDate");
         double startPrice = Double.parseDouble(require(args[4], "startPrice"));
         double minIncrement = Double.parseDouble(require(args[5], "minIncrement"));
-        int warrantyMonths = Integer.parseInt(require(args[6], "warrantyMonths"));
+        int warrantyMonths = Math.max(0, Integer.parseInt(require(args[6], "warrantyMonths")));
 
         Electronics electronics = new Electronics(description, name, startDate, endDate, startPrice, minIncrement, warrantyMonths);
         electronics.setSellerId(require(args[7], "sellerId"));

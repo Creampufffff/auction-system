@@ -60,10 +60,11 @@ public class AddProductController {
             controller.configure(existingProductCount);
 
             Dialog<AddProductRequest> dialog = new Dialog<>();
-            dialog.setTitle("Dang san pham moi");
+            dialog.setTitle("Đăng sản phẩm mới");
             dialog.setHeaderText(null);
-            ButtonType postButtonType = new ButtonType("Dang bai", ButtonBar.ButtonData.OK_DONE);
-            dialog.getDialogPane().getButtonTypes().addAll(postButtonType, ButtonType.CANCEL);
+            ButtonType postButtonType = new ButtonType("Đăng bài", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancelButtonType = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+            dialog.getDialogPane().getButtonTypes().addAll(postButtonType, cancelButtonType);
             dialog.getDialogPane().getStyleClass().add("product-dialog-pane");
             dialog.getDialogPane().getStylesheets().add(
                     AddProductController.class.getResource("/css/style.css").toExternalForm()
@@ -81,7 +82,7 @@ public class AddProductController {
                     event.consume();
                 }
             });
-            Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+            Button cancelButton = (Button) dialog.getDialogPane().lookupButton(cancelButtonType);
             cancelButton.getStyleClass().add("product-dialog-secondary-button");
 
             dialog.setResultConverter(dialogButton -> {
@@ -118,9 +119,9 @@ public class AddProductController {
     @FXML
     private void handleChooseImage() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Chon anh san pham");
+        fileChooser.setTitle("Chọn ảnh sản phẩm");
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Anh JPG/PNG", "*.jpg", "*.jpeg", "*.png")
+                new FileChooser.ExtensionFilter("Ảnh JPG/PNG", "*.jpg", "*.jpeg", "*.png")
         );
 
         File selectedFile = fileChooser.showOpenDialog(nameField.getScene().getWindow());
@@ -129,16 +130,16 @@ public class AddProductController {
         }
 
         if (selectedFile.length() > 5L * 1024L * 1024L) {
-            showDialogError("Anh khong duoc vuot qua 5MB.");
+            showDialogError("Ảnh không được vượt quá 5MB.");
             return;
         }
 
         try {
             selectedImageBlob = Files.readAllBytes(selectedFile.toPath());
             imageUploadTitle.setText(selectedFile.getName());
-            imageUploadHelp.setText("Da chon " + selectedImageBlob.length / 1024 + " KB");
+            imageUploadHelp.setText("Đã chọn " + selectedImageBlob.length / 1024 + " KB");
         } catch (IOException e) {
-            showDialogError("Khong the doc file anh: " + e.getMessage());
+            showDialogError("Không thể đọc file ảnh: " + e.getMessage());
         }
     }
 
@@ -152,7 +153,7 @@ public class AddProductController {
                 auctionType,
                 nameField.getText().trim(),
                 price,
-                "Dang mo",
+                "Đang mở",
                 valueOrEmpty(conditionField.getText()).trim(),
                 valueOrEmpty(descriptionArea.getText()).trim(),
                 typeSpecificValue
@@ -170,33 +171,40 @@ public class AddProductController {
 
     private String normalizeTypeSpecificValue(String auctionType) {
         String value = valueOrEmpty(warrantyField.getText()).trim();
-        if (!"ELECTRONICS".equals(auctionType) || value.isBlank()) {
+        if (!"ELECTRONICS".equals(auctionType)) {
             return value;
+        }
+        if (value.isBlank()) {
+            return "0";
         }
 
         try {
-            int warrantyMonths = Integer.parseInt(value);
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("-?\\d+").matcher(value);
+            if (!matcher.find()) {
+                return "0";
+            }
+            int warrantyMonths = Integer.parseInt(matcher.group());
             return String.valueOf(Math.max(0, warrantyMonths));
         } catch (NumberFormatException e) {
-            return value;
+            return "0";
         }
     }
 
     private void updateTypeSpecificFields(String auctionType) {
         boolean isArt = "ART".equals(auctionType);
         if ("ELECTRONICS".equals(auctionType)) {
-            conditionLabel.setText("Tinh trang:");
-            conditionField.setPromptText("Nhap tinh trang san pham");
-            warrantyLabel.setText("Bao hanh (thang):");
-            warrantyField.setPromptText("Vi du: 12");
+            conditionLabel.setText("Tình trạng:");
+            conditionField.setPromptText("Nhập tình trạng sản phẩm");
+            warrantyLabel.setText("Bảo hành (tháng):");
+            warrantyField.setPromptText("Ví dụ: 12");
         } else if ("VEHICLE".equals(auctionType)) {
-            conditionLabel.setText("Tinh trang:");
-            conditionField.setPromptText("Nhap tinh trang xe");
-            warrantyLabel.setText("Hang xe:");
-            warrantyField.setPromptText("Vi du: Toyota");
+            conditionLabel.setText("Tình trạng:");
+            conditionField.setPromptText("Nhập tình trạng xe");
+            warrantyLabel.setText("Hãng xe:");
+            warrantyField.setPromptText("Ví dụ: Toyota");
         } else {
-            conditionLabel.setText("Tac gia:");
-            conditionField.setPromptText("Nhap ten tac gia (neu co)");
+            conditionLabel.setText("Tác giả:");
+            conditionField.setPromptText("Nhập tên tác giả (nếu có)");
             warrantyField.clear();
         }
 
@@ -206,7 +214,7 @@ public class AddProductController {
 
     private boolean validateInput() {
         if (nameField.getText() == null || nameField.getText().isBlank()) {
-            showDialogError("Ten san pham khong duoc de trong.");
+            showDialogError("Tên sản phẩm không được để trống.");
             return false;
         }
 
@@ -214,16 +222,16 @@ public class AddProductController {
             double price = Double.parseDouble(priceField.getText().trim());
             double minIncrement = Double.parseDouble(minIncrementField.getText().trim());
             if (price <= 0 || minIncrement <= 0) {
-                showDialogError("Gia va buoc gia phai lon hon 0.");
+                showDialogError("Giá và bước giá phải lớn hơn 0.");
                 return false;
             }
         } catch (NumberFormatException e) {
-            showDialogError("Gia va buoc gia phai la so hop le.");
+            showDialogError("Giá và bước giá phải là số hợp lệ.");
             return false;
         }
 
         if (startDatePicker.getValue() == null || endDatePicker.getValue() == null) {
-            showDialogError("Vui long chon ngay bat dau va ngay ket thuc.");
+            showDialogError("Vui lòng chọn ngày bắt đầu và ngày kết thúc.");
             return false;
         }
 
@@ -231,11 +239,11 @@ public class AddProductController {
             LocalDateTime startDateTime = buildDateTime(startDatePicker.getValue(), startTimeField);
             LocalDateTime endDateTime = buildDateTime(endDatePicker.getValue(), endTimeField);
             if (!endDateTime.isAfter(startDateTime)) {
-                showDialogError("Thoi gian ket thuc phai sau thoi gian bat dau.");
+                showDialogError("Thời gian kết thúc phải sau thời gian bắt đầu.");
                 return false;
             }
         } catch (DateTimeParseException e) {
-            showDialogError("Gio phai co dinh dang HH:mm, vi du 09:00 hoac 18:30.");
+            showDialogError("Giờ phải có định dạng HH:mm, ví dụ 09:00 hoặc 18:30.");
             return false;
         }
 
@@ -275,16 +283,16 @@ public class AddProductController {
 
     private static void showOpenDialogError(Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Loi");
-        alert.setHeaderText("Khong the mo cua so dang san pham");
+        alert.setTitle("Lỗi");
+        alert.setHeaderText("Không thể mở cửa sổ đăng sản phẩm");
         alert.setContentText(e.getClass().getSimpleName() + ": " + e.getMessage());
         alert.showAndWait();
     }
 
     private void showDialogError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Du lieu khong hop le");
-        alert.setHeaderText("Vui long kiem tra thong tin dau gia");
+        alert.setTitle("Dữ liệu không hợp lệ");
+        alert.setHeaderText("Vui lòng kiểm tra thông tin đấu giá");
         alert.setContentText(message);
         alert.showAndWait();
     }

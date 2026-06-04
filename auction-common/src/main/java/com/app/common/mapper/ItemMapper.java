@@ -30,7 +30,7 @@ public class ItemMapper {
                 dto.getEndDateTime(),
                 dto.getStartPrice(),
                 dto.getMinIncrement(),
-                parsePositiveInt(dto.getWarranty(), 12)
+                parseWarrantyMonths(dto.getWarranty(), 0)
             );
 
         } else if ("VEHICLE".equalsIgnoreCase(itemType)) {
@@ -57,14 +57,18 @@ public class ItemMapper {
         return value == null || value.isBlank() ? fallback : value.trim();
     }
 
-    private static int parsePositiveInt(String value, int fallback) {
+    private static int parseWarrantyMonths(String value, int fallback) {
         if (value == null || value.isBlank()) {
             return fallback;
         }
 
         try {
-            int parsed = Integer.parseInt(value.trim());
-            return parsed > 0 ? parsed : fallback;
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("-?\\d+").matcher(value.trim());
+            if (!matcher.find()) {
+                return fallback;
+            }
+            int parsed = Integer.parseInt(matcher.group());
+            return Math.max(0, parsed);
         } catch (NumberFormatException e) {
             return fallback;
         }

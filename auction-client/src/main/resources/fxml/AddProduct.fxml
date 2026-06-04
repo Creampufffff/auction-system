@@ -12,8 +12,8 @@
         <HBox spacing="16" styleClass="product-dialog-custom-header">
             <Label text="+" styleClass="product-dialog-header-icon"/>
             <VBox spacing="4">
-                <Label text="Dang san pham moi" styleClass="product-dialog-title"/>
-                <Label text="Dien thong tin chi tiet de tao phien dau gia" styleClass="product-dialog-subtitle"/>
+                <Label text="Đăng sản phẩm mới" styleClass="product-dialog-title"/>
+                <Label text="Điền thông tin chi tiết để tạo phiên đấu giá" styleClass="product-dialog-subtitle"/>
             </VBox>
         </HBox>
 
@@ -21,36 +21,31 @@
             <VBox spacing="16">
                 <HBox spacing="10" styleClass="product-dialog-section-title-row">
                     <Label text="i" styleClass="product-dialog-section-icon"/>
-                    <Label text="Thong tin co ban" styleClass="product-dialog-section-title"/>
+                    <Label text="Thông tin cơ bản" styleClass="product-dialog-section-title"/>
                 </HBox>
 
                 <HBox spacing="28">
-                    <GridPane hgap="24" vgap="14" prefWidth="540">
-                        <columnConstraints>
-                            <ColumnConstraints hgrow="ALWAYS"/>
-                            <ColumnConstraints hgrow="ALWAYS"/>
-                        </columnConstraints>
-
-                        <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="0">
-                            <Label text="Ten san pham *" styleClass="product-dialog-field-label"/>
-                            <TextField fx:id="nameField" promptText="Nhap ten san pham" styleClass="product-dialog-input"/>
+                    <VBox spacing="12" prefWidth="540">
+                        <VBox spacing="7" styleClass="product-dialog-field">
+                            <Label text="Tên sản phẩm *" styleClass="product-dialog-field-label"/>
+                            <TextField fx:id="nameField" promptText="Nhập tên sản phẩm" styleClass="product-dialog-input"/>
                         </VBox>
 
-                        <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="1">
-                            <Label text="Loai auction *" styleClass="product-dialog-field-label"/>
+                        <VBox spacing="7" styleClass="product-dialog-field">
+                            <Label text="Loại auction *" styleClass="product-dialog-field-label"/>
                             <ComboBox fx:id="auctionTypeBox" maxWidth="Infinity" styleClass="product-dialog-input"/>
                         </VBox>
 
-                        <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="0">
-                            <Label text="Gia khoi diem ($) *" styleClass="product-dialog-field-label"/>
-                            <TextField fx:id="priceField" promptText="Nhap gia khoi diem" styleClass="product-dialog-input"/>
+                        <VBox spacing="7" styleClass="product-dialog-field">
+                            <Label text="Giá khởi điểm ($) *" styleClass="product-dialog-field-label"/>
+                            <TextField fx:id="priceField" promptText="Nhập giá khởi điểm" styleClass="product-dialog-input"/>
                         </VBox>
 
-                        <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="1">
-                            <Label fx:id="conditionLabel" text="Tac gia:" styleClass="product-dialog-field-label"/>
-                            <TextField fx:id="conditionField" promptText="Nhap ten tac gia (neu co)" styleClass="product-dialog-input"/>
+                        <VBox spacing="7" styleClass="product-dialog-field">
+                            <Label fx:id="conditionLabel" text="Tác giả:" styleClass="product-dialog-field-label"/>
+                            <TextField fx:id="conditionField" promptText="Nhập tên tác giả (nếu có)" styleClass="product-dialog-input"/>
                         </VBox>
-                    </GridPane>
+                    </VBox>
 
                     <VBox fx:id="imageBox"
                           alignment="CENTER"
@@ -58,30 +53,30 @@
                           onMouseClicked="#handleChooseImage"
                           styleClass="product-dialog-upload-box">
                         <Label text="IMG" styleClass="product-dialog-upload-icon"/>
-                        <Label fx:id="imageUploadTitle" text="Them anh san pham" styleClass="product-dialog-upload-title"/>
-                        <Label fx:id="imageUploadHelp" text="Nhan de chon" styleClass="product-dialog-upload-help"/>
-                        <Label text="JPG, PNG (toi da 5MB)" styleClass="product-dialog-upload-note"/>
+                        <Label fx:id="imageUploadTitle" text="Thêm ảnh sản phẩm" styleClass="product-dialog-upload-title"/>
+                        <Label fx:id="imageUploadHelp" text="Nhấn để chọn" styleClass="product-dialog-upload-help"/>
+                        <Label text="JPG, PNG (tối đa 5MB)" styleClass="product-dialog-upload-note"/>
                     </VBox>
                 </HBox>
 
                 <VBox spacing="7" styleClass="product-dialog-field">
-                    <Label text="Mo ta chi tiet" styleClass="product-dialog-field-label"/>
+                    <Label text="Mô tả chi tiết" styleClass="product-dialog-field-label"/>
                     <TextArea fx:id="descriptionArea"
                               prefRowCount="2"
-                              promptText="Nhap mo ta chi tiet ve san pham..."
+                              promptText="Nhập mô tả chi tiết về sản phẩm..."
                               styleClass="product-dialog-input"/>
                 </VBox>
 
                 <VBox fx:id="typeSpecificBox" spacing="7" styleClass="product-dialog-field">
-                    <Label fx:id="warrantyLabel" text="Thong tin phu:" styleClass="product-dialog-field-label"/>
-                    <TextField fx:id="warrantyField" promptText="Co the bo trong" styleClass="product-dialog-input"/>
+                    <Label fx:id="warrantyLabel" text="Thông tin phụ:" styleClass="product-dialog-field-label"/>
+                    <TextField fx:id="warrantyField" promptText="Có thể bỏ trống" styleClass="product-dialog-input"/>
                 </VBox>
             </VBox>
 
             <VBox spacing="14" styleClass="product-dialog-section">
                 <HBox spacing="10" styleClass="product-dialog-section-title-row">
                     <Label text="T" styleClass="product-dialog-section-icon"/>
-                    <Label text="Thoi gian dau gia" styleClass="product-dialog-section-title"/>
+                    <Label text="Thời gian đấu giá" styleClass="product-dialog-section-title"/>
                 </HBox>
 
                 <GridPane hgap="28" vgap="12">
@@ -91,22 +86,22 @@
                     </columnConstraints>
 
                     <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="0">
-                        <Label text="Ngay bat dau *" styleClass="product-dialog-field-label"/>
+                        <Label text="Ngày bắt đầu *" styleClass="product-dialog-field-label"/>
                         <DatePicker fx:id="startDatePicker" maxWidth="Infinity" styleClass="product-dialog-input"/>
                     </VBox>
 
                     <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="1">
-                        <Label text="Ngay ket thuc *" styleClass="product-dialog-field-label"/>
+                        <Label text="Ngày kết thúc *" styleClass="product-dialog-field-label"/>
                         <DatePicker fx:id="endDatePicker" maxWidth="Infinity" styleClass="product-dialog-input"/>
                     </VBox>
 
                     <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="0">
-                        <Label text="Gio bat dau *" styleClass="product-dialog-field-label"/>
+                        <Label text="Giờ bắt đầu *" styleClass="product-dialog-field-label"/>
                         <TextField fx:id="startTimeField" promptText="HH:mm" styleClass="product-dialog-input"/>
                     </VBox>
 
                     <VBox spacing="7" styleClass="product-dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="1">
-                        <Label text="Gio ket thuc *" styleClass="product-dialog-field-label"/>
+                        <Label text="Giờ kết thúc *" styleClass="product-dialog-field-label"/>
                         <TextField fx:id="endTimeField" promptText="HH:mm" styleClass="product-dialog-input"/>
                     </VBox>
                 </GridPane>
@@ -114,7 +109,7 @@
 
             <VBox spacing="10" styleClass="product-dialog-section">
                 <VBox spacing="7" styleClass="product-dialog-field">
-                    <Label text="Buoc gia toi thieu ($) *" styleClass="product-dialog-field-label"/>
+                    <Label text="Bước giá tối thiểu ($) *" styleClass="product-dialog-field-label"/>
                     <TextField fx:id="minIncrementField" text="1" styleClass="product-dialog-input"/>
                 </VBox>
             </VBox>
