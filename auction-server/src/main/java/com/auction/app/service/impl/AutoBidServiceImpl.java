@@ -110,7 +110,7 @@ public class AutoBidServiceImpl implements AutoBidService {
     }
 
     @Override
-    public void processAutoBidsForAuction(String auctionId) {
+    public synchronized void processAutoBidsForAuction(String auctionId) {
         // Get all active AutoBids for the auction
         List<AutoBid> activeAutoBids = getAutoBiddsByAuctionId(auctionId);
 
@@ -129,41 +129,41 @@ public class AutoBidServiceImpl implements AutoBidService {
         double currentPrice = currentHighest != null
                 ? currentHighest.getBidAmount()
                 : auction.getItem().getStartPrice();  // If no bids yet, use start price
+        String leadingBidderId = currentHighest != null ? currentHighest.getBidder().getId() : null;
 
         double minIncrement = auction.getItem().getMinIncreasement();
 
-        // ========== STEP 2: Process AutoBids by priority ==========
-        // Iterate AutoBids from highest to lowest (PriorityQueue)
-        for (AutoBid autoBid : activeAutoBids) {
-            if (!autoBid.isActive()) {
-                continue;  // Skip if canceled
+        // Keep alternating challengers until nobody except the leader can afford the next bid.
+        while (true) {
+            double nextBidAmount = currentPrice + minIncrement;
+            String currentLeaderId = leadingBidderId;
+            AutoBid challenger = activeAutoBids.stream()
+                    .filter(AutoBid::isActive)
+                    .filter(autoBid -> !autoBid.getBidderId().equals(currentLeaderId))
+                    .filter(autoBid -> autoBid.getMaxAutoAmount() >= nextBidAmount)
+                    .max(Comparator.comparingDouble(AutoBid::getMaxAutoAmount))
+                    .orElse(null);
+
+            if (challenger == null) {
+                activeAutoBids.stream()
+                        .filter(AutoBid::isActive)
+                        .filter(autoBid -> !autoBid.getBidderId().equals(currentLeaderId))
+                        .filter(autoBid -> autoBid.getMaxAutoAmount() < nextBidAmount)
+                        .forEach(autoBid -> autoBid.setActive(false));
+                return;
             }
 
-            // Giá bid tiếp theo = giá hiện tại + mức tăng tối thiểu
-            double nextBidAmount = currentPrice + minIncrement;
+            try {
+                Bidder bidder = new Bidder("auto", "auto", "auto@system.com");
+                bidder.setId(challenger.getBidderId());
+                BidTransaction autoBidTransaction = new BidTransaction(bidder, auction, nextBidAmount);
 
-            // ========== STEP 3: Check if AutoBid has sufficient funds ==========
-            if (autoBid.getMaxAutoAmount() >= nextBidAmount) {
-                try {
-                    // Tạo đối tượng Bidder tạm để thực hiện bid
-                    Bidder bidder = new Bidder("auto", "auto", "auto@system.com");
-                    bidder.setId(autoBid.getBidderId());
-
-                    // Tạo BidTransaction
-                    BidTransaction autoBidTransaction = new BidTransaction(bidder, auction, nextBidAmount);
-                    
-                    // Save bid into database (with transaction and lock)
-                    bidDAO.placeBidSafely(autoBidTransaction);
-
-                    // Update current price for next AutoBid
-                    currentPrice = nextBidAmount;
-                } catch (Exception e) {
-                    System.err.println("❌ AutoBid failed for ID: " + autoBid.getId() + " - " + e.getMessage());
-                    autoBid.setActive(false);  // Mark this AutoBid as failed
-                }
-            } else {
-                // This AutoBid doesn't have enough funds to continue => cancel
-                autoBid.setActive(false);
+                bidDAO.placeBidSafely(autoBidTransaction);
+                currentPrice = nextBidAmount;
+                leadingBidderId = challenger.getBidderId();
+            } catch (Exception e) {
+                System.err.println("AutoBid failed for ID: " + challenger.getId() + " - " + e.getMessage());
+                challenger.setActive(false);
             }
         }
     }

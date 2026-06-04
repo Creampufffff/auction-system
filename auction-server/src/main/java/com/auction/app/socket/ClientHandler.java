@@ -464,6 +464,12 @@ public class ClientHandler implements Runnable {
             return "ERR|AUTO_BID_ERROR|" + response.getMessage();
         }
 
+        processAutoBids(args[0]);
+        BidHistoryDTO topBid = getTopBid(args[0]);
+        if (topBid != null) {
+            socketServer.broadcast("EVENT|BID_UPDATED|" + args[0] + "|" + topBid.getBidAmount()
+                    + "|" + nullToEmpty(topBid.getBidderUsername()));
+        }
         return "OK|AUTO_BID_SET|" + response.getMessage().split("ID: ")[1];
     }
 

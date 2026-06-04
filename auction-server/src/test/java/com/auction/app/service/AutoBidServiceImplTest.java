@@ -187,6 +187,31 @@ class AutoBidServiceImplTest {
         assertFalse(autoBid.isActive(), "AutoBid gây lỗi DB phải bị vô hiệu hóa để không kẹt hệ thống");
     }
 
+    @Test
+    @DisplayName("processAutoBidsForAuction: Hai auto-bid cạnh tranh liên tục đến khi một bên đạt giới hạn")
+    void testProcessAutoBids_TwoBidders_ContinueUntilOneCannotFollow() {
+        Auction realAuction = createRealAuction("auction-1", 100.0, 10.0);
+        when(auctionDAO.findById("auction-1")).thenReturn(realAuction);
+
+        AutoBid highLimitBid = new AutoBid("auction-1", "bidder-high", 200.0);
+        AutoBid lowLimitBid = new AutoBid("auction-1", "bidder-low", 140.0);
+        autoBidService.createAutoBid(highLimitBid);
+        autoBidService.createAutoBid(lowLimitBid);
+        when(bidDAO.getMaxBidByAuctionId("auction-1")).thenReturn(null);
+
+        autoBidService.processAutoBidsForAuction("auction-1");
+
+        ArgumentCaptor<BidTransaction> bidCaptor = ArgumentCaptor.forClass(BidTransaction.class);
+        verify(bidDAO, times(5)).placeBidSafely(bidCaptor.capture());
+        List<BidTransaction> placedBids = bidCaptor.getAllValues();
+
+        assertEquals(List.of(110.0, 120.0, 130.0, 140.0, 150.0),
+                placedBids.stream().map(BidTransaction::getBidAmount).collect(java.util.stream.Collectors.toList()));
+        assertEquals("bidder-high", placedBids.get(4).getBidder().getId());
+        assertFalse(lowLimitBid.isActive(), "AutoBid giới hạn thấp phải dừng khi không đủ theo giá tiếp theo");
+        assertTrue(highLimitBid.isActive(), "AutoBid đang dẫn đầu vẫn phải giữ trạng thái active");
+    }
+
     // =========================================================================
     // HÀM HỖ TRỢ TẠO DỮ LIỆU THẬT (KHÔNG DÙNG MOCK)
     // =========================================================================
