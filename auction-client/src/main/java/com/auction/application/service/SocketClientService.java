@@ -25,8 +25,6 @@ public final class SocketClientService {
     private static final Object LISTENER_LOCK = new Object();
 
     private static volatile boolean listenerRunning;
-    private static Socket listenerSocket;
-    private static BufferedReader listenerReader;
     // Session socket that can be authenticated (used for sending commands that require login)
     private static volatile Socket sessionSocket;
     private static volatile BufferedReader sessionReader;
@@ -50,20 +48,6 @@ public final class SocketClientService {
                 .load();
     }
 
-    public static String sendJson(String requestJson) {
-        try (
-                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)
-        ) {
-            reader.readLine();
-            writer.println(requestJson);
-            return reader.readLine();
-        } catch (IOException e) {
-            throw new IllegalStateException("Không thể kết nối tới server socket.", e);
-        }
-    }
-
     // Send a legacy plain-text command (non-JSON) to the server and return single-line response
     public static String sendText(String requestText) {
         try (
@@ -83,58 +67,9 @@ public final class SocketClientService {
         }
     }
 
-    public static void startRealtimeListener() {
-        // Deprecated: prefer openSessionAndLogin which starts the authenticated listener on the session socket.
-        synchronized (LISTENER_LOCK) {
-            if (listenerRunning) return;
-            try {
-                listenerSocket = new Socket(SERVER_HOST, SERVER_PORT);
-                listenerReader = new BufferedReader(new InputStreamReader(listenerSocket.getInputStream()));
-                listenerReader.readLine();
-
-                listenerRunning = true;
-                Thread listenerThread = new Thread(() -> {
-                    try {
-                        String line;
-                        while (listenerRunning && (line = listenerReader.readLine()) != null) {
-                            handleRealtimeMessage(line);
-                        }
-                    } catch (IOException e) {
-                        if (listenerRunning) {
-                            System.err.println("Realtime listener stopped: " + e.getMessage());
-                        }
-                    } finally {
-                        stopRealtimeListener();
-                    }
-                }, "auction-realtime-listener");
-                listenerThread.setDaemon(true);
-                listenerThread.start();
-            } catch (IOException e) {
-                stopRealtimeListener();
-                throw new IllegalStateException("Không thể khởi động realtime listener.", e);
-            }
-        }
-    }
-
     public static void stopRealtimeListener() {
         synchronized (LISTENER_LOCK) {
             listenerRunning = false;
-
-            if (listenerReader != null) {
-                try {
-                    listenerReader.close();
-                } catch (IOException ignored) {
-                }
-                listenerReader = null;
-            }
-
-            if (listenerSocket != null) {
-                try {
-                    listenerSocket.close();
-                } catch (IOException ignored) {
-                }
-                listenerSocket = null;
-            }
 
             if (sessionReader != null) {
                 try { sessionReader.close(); } catch (IOException ignored) {}
@@ -152,15 +87,6 @@ public final class SocketClientService {
             }
 
             sessionResponseQueue.clear();
-        }
-    }
-
-    public static JsonNode sendJson(JsonNode request) {
-        try {
-            String response = sendJson(MAPPER.writeValueAsString(request));
-            return response == null ? null : MAPPER.readTree(response);
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể xử lý phản hồi JSON từ server.", e);
         }
     }
 
@@ -278,12 +204,6 @@ public final class SocketClientService {
         }
     }
 
-    public static void sendSessionText(String command) {
-        if (sessionWriter == null) throw new IllegalStateException("No authenticated session");
-        logTextCommand("sendSessionText", command);
-        sessionWriter.println(command);
-    }
-
     /**
      * Send a text command on the authenticated session socket and wait for response.
      * Uses a shared response queue read by the session listener.
@@ -306,10 +226,6 @@ public final class SocketClientService {
             logTextResponse("sendSessionCommand", response);
             return response;
         }
-    }
-
-    public static ObjectMapper mapper() {
-        return MAPPER;
     }
 
     private static String resolveConfig(String key, String defaultValue) {
@@ -432,28 +348,6 @@ public final class SocketClientService {
     }
 
     /**
-     * Kiểm tra kết nối server (health check / heartbeat)
-     * Gửi lệnh PING và kiểm tra xem server có phản hồi không
-     * @return true nếu kết nối khỏe, false nếu bị ngắt
-     */
-    public static boolean sendHeartbeat() {
-        try {
-            String response = sendText("PING");
-            boolean isHealthy = response != null && response.contains("PONG");
-            if (!isHealthy) {
-                System.err.println("[SocketClientService] Heartbeat failed: " + response);
-                // Cố gắng reconnect
-                attemptReconnect();
-            }
-            return isHealthy;
-        } catch (Exception e) {
-            System.err.println("[SocketClientService] Heartbeat error: " + e.getMessage());
-            attemptReconnect();
-            return false;
-        }
-    }
-
-    /**
      * Kiểm tra xem session socket có còn kết nối hay không
      */
     public static boolean isSessionAlive() {
@@ -462,25 +356,5 @@ public final class SocketClientService {
         }
     }
 
-    /**
-     * Cố gắng kết nối lại nếu session bị mất
-     */
-    private static void attemptReconnect() {
-        if (isSessionAlive()) {
-            return;
-        }
-        System.out.println("[SocketClientService] Attempting to reconnect to server...");
-        synchronized (LISTENER_LOCK) {
-            stopRealtimeListener();
-        }
-    }
-
-    public static void main(String[] args) throws IOException {
-        BufferedReader userIn = new BufferedReader(new InputStreamReader(System.in));
-        String userInput;
-        while ((userInput = userIn.readLine()) != null) {
-            System.out.println(sendText(userInput));
-        }
-    }
 }
 

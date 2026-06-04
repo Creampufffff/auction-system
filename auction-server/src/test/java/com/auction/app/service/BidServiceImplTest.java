@@ -39,7 +39,7 @@ class BidServiceImplTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        bidService = new BidServiceImpl(bidDAO, auctionDAO, userDAO);
+        bidService = new BidServiceImpl(bidDAO, userDAO);
     }
 
     // Hàm tạo dữ liệu mẫu nhanh

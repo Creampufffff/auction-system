@@ -6,7 +6,6 @@ import com.app.common.dto.PlaceBidRequestDTO;
 import com.app.common.dto.PlaceBidResponseDTO;
 import com.app.common.enums.Status;
 import com.auction.shared.session.SessionManager;
-import com.auction.application.service.SocketClientService;
 
 import java.util.ArrayList;
 import java.util.Base64;

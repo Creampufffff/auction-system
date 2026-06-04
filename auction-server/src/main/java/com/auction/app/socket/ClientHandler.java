@@ -107,7 +107,7 @@ public class ClientHandler implements Runnable {
                 case "REGISTER_SELLER" -> registerSeller(payload);
                 case "DEPOSIT" -> deposit(payload);
                 case "WITHDRAW" -> withdraw(payload);
-                case "GET_BALANCE" -> getBalance(payload);
+                case "GET_BALANCE" -> getBalance();
                 case "LIST_AUCTIONS" -> listAuctions();
                 case "LIST_MY_AUCTIONS" -> listMyAuctions();
                 case "GET_MY_ITEMS" -> getMyItems();
@@ -227,7 +227,7 @@ public class ClientHandler implements Runnable {
         return "OK|WITHDRAW|" + targetUserId + "|" + balanceResponse.getBalance();
     }
 
-    private String getBalance(String payload) {
+    private String getBalance() {
         String userId = requireCurrentUser().getId();
         BalanceResponseDTO response = userController.getBalance(userId);
         if (response == null) {

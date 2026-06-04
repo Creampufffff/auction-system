@@ -4,7 +4,6 @@ import com.app.common.entity.BidTransaction;
 import com.app.common.entity.User;
 import com.app.common.exception.InsufficientBalanceException;
 import com.app.common.exception.InvalidBidException;
-import com.auction.app.repository.AuctionDAO;
 import com.auction.app.repository.BidDAO;
 import com.auction.app.repository.UserDAO;
 import com.auction.app.repository.impl.UserDAOImpl;
@@ -14,17 +13,14 @@ import java.util.List;
 
 public class BidServiceImpl implements BidService {
     private final BidDAO bidDAO;        // DAO to access database
-    @SuppressWarnings("unused")
-    private final AuctionDAO auctionDAO;
     private final UserDAO userDAO;      // DAO to check users
 
-    public BidServiceImpl(BidDAO bidDAO, AuctionDAO auctionDAO) {
-        this(bidDAO, auctionDAO, new UserDAOImpl());
+    public BidServiceImpl(BidDAO bidDAO) {
+        this(bidDAO, new UserDAOImpl());
     }
 
-    public BidServiceImpl(BidDAO bidDAO, AuctionDAO auctionDAO, UserDAO userDAO) {
+    public BidServiceImpl(BidDAO bidDAO, UserDAO userDAO) {
         this.bidDAO = bidDAO;
-        this.auctionDAO = auctionDAO;
         this.userDAO = userDAO;
     }
 

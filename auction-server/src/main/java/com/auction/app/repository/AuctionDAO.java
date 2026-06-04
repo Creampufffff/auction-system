@@ -1,7 +1,6 @@
 package com.auction.app.repository;
 
 import com.app.common.entity.Auction;
-import com.auction.app.repository.BaseDAO;
 
 import java.util.List;
 

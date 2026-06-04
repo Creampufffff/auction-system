@@ -38,7 +38,7 @@ class AuctionServiceImplTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        auctionService = new AuctionServiceImpl(auctionDAO, bidDAO, userDAO);
+        auctionService = new AuctionServiceImpl(auctionDAO);
     }
 
     @AfterEach

@@ -5,27 +5,15 @@ import com.app.common.exception.AuctionClosedException;
 import com.app.common.exception.AuctionNotFoundException;
 import com.app.common.enums.Status;
 import com.auction.app.repository.AuctionDAO;
-import com.auction.app.repository.BidDAO;
-import com.auction.app.repository.UserDAO;
-import com.auction.app.repository.impl.BidDAOImpl;
-import com.auction.app.repository.impl.UserDAOImpl;
 import com.auction.app.service.AuctionService;
 
 import java.util.List;
 
 public class AuctionServiceImpl implements AuctionService {
     private final AuctionDAO auctionDAO;
-    private final BidDAO bidDAO;
-    private final UserDAO userDAO;
 
     public AuctionServiceImpl(AuctionDAO auctionDAO) {
-        this(auctionDAO, new BidDAOImpl(), new UserDAOImpl());
-    }
-
-    public AuctionServiceImpl(AuctionDAO auctionDAO, BidDAO bidDAO, UserDAO userDAO) {
         this.auctionDAO = auctionDAO;
-        this.bidDAO = bidDAO;
-        this.userDAO = userDAO;
     }
 
     @Override

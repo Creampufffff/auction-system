@@ -18,8 +18,6 @@ public class PeriodicUpdateService {
 
     private static final long PRICE_REFRESH_INTERVAL = 5000;  // 5 giây
     private static final long BALANCE_REFRESH_INTERVAL = 30000; // 30 giây
-    private static final long AUCTION_LIST_REFRESH_INTERVAL = 15000; // 15 giây
-    private static final long HEARTBEAT_INTERVAL = 60000; // 1 phút
     private static final long BID_HISTORY_SYNC_INTERVAL = 10000; // 10 giây
     private static final long STATUS_REFRESH_INTERVAL = 10000; // 10 giây - Refresh trạng thái ProductDetail
 
@@ -89,68 +87,6 @@ public class PeriodicUpdateService {
         if (timer != null) {
             timer.cancel();
             System.out.println("[PeriodicUpdateService] Stopped periodic balance refresh");
-        }
-    }
-
-    /**
-     * Bắt đầu periodic auction list refresh
-     */
-    public void startPeriodicAuctionListRefresh(Runnable refreshTask) {
-        stopPeriodicAuctionListRefresh();
-        Timer timer = new Timer("periodic-auction-list-refresh", true);
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    refreshTask.run();
-                } catch (Exception e) {
-                    System.err.println("Error in periodic auction list refresh: " + e.getMessage());
-                }
-            }
-        }, AUCTION_LIST_REFRESH_INTERVAL, AUCTION_LIST_REFRESH_INTERVAL);
-        activeTimers.put("auctionListRefresh", timer);
-        System.out.println("[PeriodicUpdateService] Started periodic auction list refresh (interval: " + AUCTION_LIST_REFRESH_INTERVAL + "ms)");
-    }
-
-    /**
-     * Dừng periodic auction list refresh
-     */
-    public void stopPeriodicAuctionListRefresh() {
-        Timer timer = activeTimers.remove("auctionListRefresh");
-        if (timer != null) {
-            timer.cancel();
-            System.out.println("[PeriodicUpdateService] Stopped periodic auction list refresh");
-        }
-    }
-
-    /**
-     * Bắt đầu heartbeat (kiểm tra kết nối)
-     */
-    public void startHeartbeat(Runnable heartbeatTask) {
-        stopHeartbeat();
-        Timer timer = new Timer("heartbeat", true);
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    heartbeatTask.run();
-                } catch (Exception e) {
-                    System.err.println("Error in heartbeat: " + e.getMessage());
-                }
-            }
-        }, HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL);
-        activeTimers.put("heartbeat", timer);
-        System.out.println("[PeriodicUpdateService] Started heartbeat (interval: " + HEARTBEAT_INTERVAL + "ms)");
-    }
-
-    /**
-     * Dừng heartbeat
-     */
-    public void stopHeartbeat() {
-        Timer timer = activeTimers.remove("heartbeat");
-        if (timer != null) {
-            timer.cancel();
-            System.out.println("[PeriodicUpdateService] Stopped heartbeat");
         }
     }
 

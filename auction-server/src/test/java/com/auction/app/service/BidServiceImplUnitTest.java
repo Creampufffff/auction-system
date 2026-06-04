@@ -31,7 +31,7 @@ class BidServiceImplUnitTest {
         bidDAO = Mockito.mock(BidDAO.class);
         auctionDAO = Mockito.mock(AuctionDAO.class);
         userDAO = Mockito.mock(UserDAO.class);
-        bidService = new BidServiceImpl(bidDAO, auctionDAO, userDAO);
+        bidService = new BidServiceImpl(bidDAO, userDAO);
     }
 
     // Hàm hỗ trợ khởi tạo dữ liệu mẫu nhanh chóng

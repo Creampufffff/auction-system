@@ -2,7 +2,6 @@ package com.auction.ui.view;
 
 import com.app.common.dto.LoginResponseDTO;
 import com.auction.domain.model.ProductDataManager;
-import com.auction.application.service.AuthService;
 import com.auction.application.service.SocketClientService;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
@@ -14,8 +13,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
 public class LoginController {
-
-    private final AuthService authService = new AuthService();
 
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;

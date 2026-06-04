@@ -1,24 +1,10 @@
 package com.auction.application.service;
 
 import com.app.common.dto.ApiResponseDTO;
-import com.app.common.dto.AutoBidDTO;
 import com.auction.shared.session.SessionManager;
-import com.auction.application.service.SocketClientService;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class AutoBidService {
-    private static final String SERVER_URL = "http://localhost:8080/api/autobid";
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     /**
      * Set auto-bid for an auction
      */
@@ -81,104 +67,5 @@ public class AutoBidService {
         }
     }
 
-    /**
-     * Get all active auto-bids for current user
-     */
-    public List<AutoBidDTO> getMyActiveBids() {
-        try {
-            String userId = SessionManager.getCurrentUserId();
-            if (userId == null || userId.isBlank()) {
-                return new ArrayList<>();
-            }
-
-            HttpURLConnection conn = (HttpURLConnection) new URL(SERVER_URL + "/bidder/" + userId).openConnection();
-            conn.setRequestMethod("GET");
-
-            int responseCode = conn.getResponseCode();
-            String response = readResponse(conn);
-
-            if (responseCode == 200) {
-                AutoBidDTO[] dtos = objectMapper.readValue(response, AutoBidDTO[].class);
-                List<AutoBidDTO> result = new ArrayList<>();
-                for (AutoBidDTO dto : dtos) {
-                    if (dto.isActive()) {
-                        result.add(dto);
-                    }
-                }
-                return result;
-            } else {
-                return new ArrayList<>();
-            }
-        } catch (Exception e) {
-            System.err.println("[AutoBidService] Error getting my active bids: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Get all auto-bids for a specific auction
-     */
-    public List<AutoBidDTO> getAuctionBids(String auctionId) {
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(SERVER_URL + "/auction/" + auctionId).openConnection();
-            conn.setRequestMethod("GET");
-
-            int responseCode = conn.getResponseCode();
-            String response = readResponse(conn);
-
-            if (responseCode == 200) {
-                AutoBidDTO[] dtos = objectMapper.readValue(response, AutoBidDTO[].class);
-                List<AutoBidDTO> result = new ArrayList<>();
-                for (AutoBidDTO dto : dtos) {
-                    result.add(dto);
-                }
-                return result;
-            } else {
-                return new ArrayList<>();
-            }
-        } catch (Exception e) {
-            System.err.println("[AutoBidService] Error getting auction bids: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Get single auto-bid by ID
-     */
-    public AutoBidDTO getAutoBid(String autoBidId) {
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(SERVER_URL + "/" + autoBidId).openConnection();
-            conn.setRequestMethod("GET");
-
-            int responseCode = conn.getResponseCode();
-            String response = readResponse(conn);
-
-            if (responseCode == 200) {
-                return objectMapper.readValue(response, AutoBidDTO.class);
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            System.err.println("[AutoBidService] Error getting auto-bid: " + e.getMessage());
-            return null;
-        }
-    }
-
-    private String readResponse(HttpURLConnection conn) throws Exception {
-        BufferedReader reader;
-        if (conn.getResponseCode() >= 400) {
-            reader = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-        } else {
-            reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        }
-
-        StringBuilder response = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            response.append(line);
-        }
-        reader.close();
-        return response.toString();
-    }
 }
 

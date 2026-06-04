@@ -14,8 +14,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 public class ProductDataManager {
@@ -29,9 +27,7 @@ public class ProductDataManager {
     // Thực thể lưu trữ tạm thời phục vụ chuyển màn sang LiveBidding không vỡ Stage
     private Product liveBiddingProductData;
 
-    private final Map<String, ObservableList<String>> historyMap;
     private final Map<String, Double> currentPriceMap;
-    private final Map<String, Integer> timeLeftMap;
     private final Map<String, List<BidHistoryDTO>> bidHistoryCacheMap = new HashMap<>();
     private final Map<String, Boolean> dialogShownMap = new HashMap<>();
 
@@ -49,15 +45,10 @@ public class ProductDataManager {
     private String sortMode = "NEWEST";
     private List<AuctionListDTO> filteredAuctionList = List.of();
 
-    private Timer globalTimer;
-
     private ProductDataManager() {
         myProductList = FXCollections.observableArrayList();
         serverAuctionList = FXCollections.observableArrayList();
-        historyMap = new HashMap<>();
         currentPriceMap = new HashMap<>();
-        timeLeftMap = new HashMap<>();
-        startGlobalCountdown();
     }
 
     public static ProductDataManager getInstance() {
@@ -99,7 +90,6 @@ public class ProductDataManager {
         leadingUserMap.clear();
         dialogShownMap.clear();
         currentPriceMap.clear();
-        timeLeftMap.clear();
         bidHistoryCacheMap.clear();
         selectedAuction = null;
         liveBiddingProductData = null;
@@ -111,28 +101,6 @@ public class ProductDataManager {
         typeFilter = "ALL";
         sortMode = "NEWEST";
         filteredAuctionList = List.of();
-    }
-
-    private void startGlobalCountdown() {
-        globalTimer = new Timer(true);
-        globalTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                for (String auctionId : timeLeftMap.keySet()) {
-                    Integer currentTime = timeLeftMap.get(auctionId);
-                    if (currentTime != null && currentTime > 0) {
-                        timeLeftMap.put(auctionId, currentTime - 1);
-                    }
-                }
-            }
-        }, 0, 1000);
-    }
-
-    public ObservableList<String> getHistoryForProduct(String auctionId) {
-        if (!historyMap.containsKey(auctionId)) {
-            historyMap.put(auctionId, FXCollections.observableArrayList());
-        }
-        return historyMap.get(auctionId);
     }
 
     public synchronized List<BidHistoryDTO> getCachedBidHistory(String auctionId) {
@@ -161,21 +129,6 @@ public class ProductDataManager {
                 .findFirst()
                 .ifPresent(a -> a.setCurrentPrice(price));
     }
-    public void removeAuction(String auctionId) {
-        serverAuctionList.removeIf(a -> a.getAuctionId().equals(auctionId));
-    }
-
-    public int getTimeLeft(String auctionId, int defaultTime) {
-        if (!timeLeftMap.containsKey(auctionId)) {
-            timeLeftMap.put(auctionId, defaultTime);
-        }
-        return timeLeftMap.get(auctionId);
-    }
-
-    public void setTimeLeft(String auctionId, int time) {
-        timeLeftMap.put(auctionId, time);
-    }
-
     public ObservableList<Product> getProductList() { return myProductList; }
     public ObservableList<AuctionListDTO> getServerAuctionList() { return serverAuctionList; }
 
@@ -420,14 +373,6 @@ public class ProductDataManager {
         }
     }
 
-    public void goToPage(int pageNumber) {
-        applyFilter();
-        int totalPages = getTotalPages();
-        if (pageNumber >= 1 && pageNumber <= totalPages) {
-            currentPage = pageNumber;
-        }
-    }
-
     public int getCurrentPage() {
         return currentPage;
     }
@@ -442,19 +387,4 @@ public class ProductDataManager {
         return filteredAuctionList.size();
     }
 
-    public String getSearchKeyword() {
-        return searchKeyword;
-    }
-
-    public String getStatusFilter() {
-        return statusFilter;
-    }
-
-    public String getTypeFilter() {
-        return typeFilter;
-    }
-
-    public String getSortMode() {
-        return sortMode;
-    }
 }

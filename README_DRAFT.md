@@ -185,13 +185,13 @@ AUCTION_SERVER_PORT=5000
 Mở terminal mới, giữ server đang chạy, sau đó chạy:
 
 ```bash
-mvn -pl auction-client -am exec:java -Dexec.mainClass="com.auction.Launcher"
+mvn -pl auction-client -am exec:java -Dexec.mainClass="com.auction.MainApp"
 ```
 
 PowerShell:
 
 ```powershell
-mvn -pl auction-client -am exec:java "-Dexec.mainClass=com.auction.Launcher"
+mvn -pl auction-client -am exec:java "-Dexec.mainClass=com.auction.MainApp"
 ```
 
 Client sẽ kết nối tới server theo:

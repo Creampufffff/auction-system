@@ -8,7 +8,6 @@ import com.auction.domain.model.Product;
 import com.auction.domain.model.ProductDataManager;
 import com.auction.application.service.AccountService;
 import com.auction.application.service.AuctionService;
-import com.auction.application.service.AutoBidService;
 import com.auction.application.service.PeriodicUpdateService;
 import com.auction.shared.session.SessionManager;
 import com.auction.ui.navigation.NavigationService;
@@ -20,8 +19,6 @@ import javafx.fxml.FXML;
 import javafx.scene.chart.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.util.Callback;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -100,7 +97,6 @@ public class LiveBiddingController {
     }
     private final AuctionService auctionService = new AuctionService();
     private final AccountService accountService = new AccountService();
-    private final AutoBidService autoBidService = new AutoBidService();
 
     @FXML
     public void initialize() {
@@ -309,7 +305,6 @@ public class LiveBiddingController {
             updatePriceChangeUI(startingPrice, currentMaxPrice);
 
             XYChart.Series<String, Number> lineSeries = new XYChart.Series<>();
-            XYChart.Series<String, Number> areaSeries = new XYChart.Series<>();
             String chartTimePattern = hasDuplicateChartMinuteLabels(serverHistory) ? "HH:mm:ss" : "HH:mm";
 
             // Build history list and chart data
@@ -896,27 +891,6 @@ public class LiveBiddingController {
 
     private void switchToReturnTarget() {
         NavigationService.getInstance().navigateTo(returnFxmlPath, returnTitle, 1280, 800);
-    }
-
-    private void switchToAuctionList() {
-        try {
-            java.net.URL resource = getClass().getResource("/fxml/AuctionList.fxml");
-            if (resource == null) {
-                throw new IllegalStateException("Không tìm thấy file FXML: /fxml/AuctionList.fxml");
-            }
-
-            Parent root = FXMLLoader.load(resource);
-            Stage stage = (Stage) productNameLabel.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 800);
-            String css = getClass().getResource("/css/style.css").toExternalForm();
-            scene.getStylesheets().add(css);
-            stage.setTitle("UET Auction System");
-            stage.setScene(scene);
-            stage.setMaximized(true);
-            stage.show();
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể chuyển sang màn hình danh sách đấu giá.", e);
-        }
     }
 
     private void setupBackButton() {

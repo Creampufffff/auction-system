@@ -158,30 +158,4 @@ public class NavigationService {
         navigateTo(fxmlPath, title, AUTH_WIDTH, AUTH_HEIGHT, true, false);
     }
 
-    /**
-     * Get the currently active stage for advanced use cases.
-     */
-    public Stage getPrimaryStage() {
-        return primaryStage;
-    }
-
-    /**
-     * Load FXML and return the root node without changing the scene.
-     * Useful for modal/modal-like dialogs.
-     *
-     * @param fxmlPath the FXML resource path
-     * @return the loaded root node
-     */
-    public Parent loadFxml(String fxmlPath) {
-        try {
-            URL fxmlUrl = getClass().getResource(fxmlPath);
-            if (fxmlUrl == null) {
-                throw new IllegalArgumentException("FXML resource not found: " + fxmlPath);
-            }
-            return FXMLLoader.load(fxmlUrl);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 }

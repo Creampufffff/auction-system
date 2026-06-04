@@ -66,11 +66,6 @@ public class BidController {
         }
     }
 
-    public BidHistoryDTO getBid(String bidId) {
-        BidTransaction bid = bidService.getBidById(bidId);
-        return AuctionMapper.toBidHistoryDTO(bid);
-    }
-
     // ✅ Trả về List DTO thay vì List Entity
     public List<BidHistoryDTO> getAllBids() {
         List<BidTransaction> bids = bidService.getAllBids();

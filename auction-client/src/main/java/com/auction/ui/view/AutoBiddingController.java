@@ -11,8 +11,6 @@ import javafx.stage.Stage;
 
 public class AutoBiddingController {
     private String auctionId;
-    private double currentPrice;
-    private double minIncrement;
     private double userBalance;
     private double nextBidAmount;
 
@@ -33,8 +31,6 @@ public class AutoBiddingController {
     public void setAuctionInfo(String auctionId, String auctionName, double currentPrice,
                                double minIncrement, double userBalance) {
         this.auctionId = auctionId;
-        this.currentPrice = currentPrice;
-        this.minIncrement = minIncrement;
         this.userBalance = userBalance;
         this.nextBidAmount = currentPrice + minIncrement;
 

@@ -1,9 +1,6 @@
 package com.auction.app.repository;
 
-import com.app.common.entity.BaseEntity;
-
 import java.util.List;
-import java.util.Optional;
 
 public interface BaseDAO<T> {
     // Lấy một đối tượng theo ID (UUID dạng String)
