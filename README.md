@@ -301,8 +301,8 @@ Session done Failed=0 Scanned=1 Updated=1
 
 ## 13. Link báo cáo PDF và video demo
 
-- Báo cáo PDF: TODO - cập nhật link Google Drive/GitHub release tại đây.
-- Video demo: TODO - cập nhật link video demo tại đây.
+- Báo cáo PDF: [Xem báo cáo trên SharePoint](https://ueteduvn-my.sharepoint.com/:f:/g/personal/25020407_uet_edu_vn/IgApDW7ZpCT7S7kDlFAuM6tVAWhbxiwUZWn15IqKqxZkUCU?e=SMO9Uz)
+- Video demo: [Xem video trên YouTube](https://youtu.be/DPXPXzH-FJE)
 
 ## 14. Phát hành client Windows
 
